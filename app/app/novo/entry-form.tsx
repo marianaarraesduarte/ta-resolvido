@@ -102,12 +102,14 @@ export function EntryForm({
   hasError,
   separateByAccount,
   salaryPatterns,
+  fixedExpenseNames,
 }: {
   categories: Category[];
   defaultDate: string;
   hasError: boolean;
   separateByAccount: boolean;
   salaryPatterns: string[];
+  fixedExpenseNames: string[];
 }) {
   const [mode, setMode] = useState<"manual" | "foto">("manual");
   const [type, setType] = useState<"despesa" | "receita">("despesa");
@@ -191,7 +193,7 @@ export function EntryForm({
       </div>
 
       {mode === "foto" ? (
-        <PhotoTab salaryPatterns={salaryPatterns} />
+        <PhotoTab salaryPatterns={salaryPatterns} fixedExpenseNames={fixedExpenseNames} />
       ) : (
         <form action={createEntry} className="rounded-[20px] bg-brand-card p-[18px]">
           <div className="mb-5 flex gap-1.5 rounded-2xl bg-brand-bg p-1.5">

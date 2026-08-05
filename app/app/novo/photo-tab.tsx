@@ -4,11 +4,18 @@ import { useRef, useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Check, ImagePlus, Trash2 } from "lucide-react";
 import { currency } from "@/lib/tokens";
 import { compressImage } from "@/lib/image-compress";
+import { namesMatch } from "@/lib/text-match";
 import { recognizeStatement, saveRecognizedItems, type RecognizedItem } from "./actions";
 
 type ReviewItem = RecognizedItem & { id: string; isSalary: boolean };
 
-export function PhotoTab({ salaryPatterns }: { salaryPatterns: string[] }) {
+export function PhotoTab({
+  salaryPatterns,
+  fixedExpenseNames,
+}: {
+  salaryPatterns: string[];
+  fixedExpenseNames: string[];
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [items, setItems] = useState<ReviewItem[] | null>(null);
@@ -55,6 +62,10 @@ export function PhotoTab({ salaryPatterns }: { salaryPatterns: string[] }) {
 
   function updateItemDate(id: string, date: string) {
     setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, date } : it)) : prev));
+  }
+
+  function matchedFixedExpense(description: string): string | null {
+    return fixedExpenseNames.find((name) => namesMatch(name, description)) ?? null;
   }
 
   async function handleSave() {
@@ -137,6 +148,11 @@ export function PhotoTab({ salaryPatterns }: { salaryPatterns: string[] }) {
                       <div className="truncate text-[13.5px] font-medium text-brand-ink">
                         {item.description}
                       </div>
+                      {item.type === "despesa" && matchedFixedExpense(item.description) && (
+                        <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
+                          Parece o gasto fixo &quot;{matchedFixedExpense(item.description)}&quot;
+                        </div>
+                      )}
                       <div className="mt-1 flex items-center gap-2.5">
                         <input
                           type="date"

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { dayOfMonth, monthLabel, toDateKey } from "@/lib/date";
 import { currency, levelFor, LEVEL_COLOR } from "@/lib/tokens";
 import { iconForCategory } from "@/lib/category-icons";
+import { namesMatch } from "@/lib/text-match";
+import { FixedExpensesSection } from "./fixed-expenses-section";
 
 type DespesaRow = {
   id: string;
@@ -12,6 +14,8 @@ type DespesaRow = {
   entry_date: string;
   categories: { name: string; icon: string | null } | null;
 };
+
+type FixedExpenseRow = { id: string; name: string; expected_amount: number };
 
 export default async function ResumoPage() {
   const supabase = await createClient();
@@ -25,18 +29,32 @@ export default async function ResumoPage() {
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  const { data } = await supabase
-    .from("entries")
-    .select("id, description, amount, entry_date, categories(name, icon)")
-    .eq("user_id", user.id)
-    .eq("type", "despesa")
-    .gte("entry_date", toDateKey(firstDay))
-    .lte("entry_date", toDateKey(lastDay))
-    .order("entry_date", { ascending: false });
+  const [{ data }, { data: fixedExpensesData }] = await Promise.all([
+    supabase
+      .from("entries")
+      .select("id, description, amount, entry_date, categories(name, icon)")
+      .eq("user_id", user.id)
+      .eq("type", "despesa")
+      .gte("entry_date", toDateKey(firstDay))
+      .lte("entry_date", toDateKey(lastDay))
+      .order("entry_date", { ascending: false }),
+    supabase
+      .from("fixed_expenses")
+      .select("id, name, expected_amount")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true }),
+  ]);
 
   const despesas = (data as unknown as DespesaRow[]) ?? [];
   const total = despesas.reduce((sum, d) => sum + d.amount, 0);
   const average = despesas.length > 0 ? total / despesas.length : 0;
+
+  const fixedExpenses = (fixedExpensesData as FixedExpenseRow[] | null) ?? [];
+  const paidById: Record<string, { description: string; amount: number } | null> = {};
+  for (const fe of fixedExpenses) {
+    const match = despesas.find((d) => namesMatch(fe.name, d.description));
+    paidById[fe.id] = match ? { description: match.description, amount: match.amount } : null;
+  }
 
   return (
     <div className="flex justify-center px-3 py-7">
@@ -52,6 +70,8 @@ export default async function ResumoPage() {
             {monthLabel(today)}
           </div>
         </div>
+
+        <FixedExpensesSection fixedExpenses={fixedExpenses} paidById={paidById} />
 
         <div className="mb-5 flex items-center justify-between rounded-2xl bg-brand-card px-5 py-[18px]">
           <div>

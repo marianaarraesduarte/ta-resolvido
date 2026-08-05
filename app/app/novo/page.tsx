@@ -16,15 +16,17 @@ export default async function NovoLancamentoPage({
 
   if (!user) return null;
 
-  const [{ data: categories }, { data: profile }, { data: salaryPatterns }] = await Promise.all([
-    supabase
-      .from("categories")
-      .select("id, name")
-      .eq("user_id", user.id)
-      .order("name", { ascending: true }),
-    supabase.from("profiles").select("separate_by_account").eq("id", user.id).single(),
-    supabase.from("salary_patterns").select("description_pattern").eq("user_id", user.id),
-  ]);
+  const [{ data: categories }, { data: profile }, { data: salaryPatterns }, { data: fixedExpenses }] =
+    await Promise.all([
+      supabase
+        .from("categories")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .order("name", { ascending: true }),
+      supabase.from("profiles").select("separate_by_account").eq("id", user.id).single(),
+      supabase.from("salary_patterns").select("description_pattern").eq("user_id", user.id),
+      supabase.from("fixed_expenses").select("name").eq("user_id", user.id),
+    ]);
 
   const { error } = await searchParams;
 
@@ -47,6 +49,7 @@ export default async function NovoLancamentoPage({
           hasError={error === "1"}
           separateByAccount={profile?.separate_by_account ?? false}
           salaryPatterns={(salaryPatterns ?? []).map((p) => p.description_pattern)}
+          fixedExpenseNames={(fixedExpenses ?? []).map((f) => f.name)}
         />
       </div>
     </div>

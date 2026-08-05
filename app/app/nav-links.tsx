@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const BASE_LINKS = [
-  { href: "/app", label: "Régua" },
-  { href: "/app/resumo", label: "Resumo" },
-  { href: "/app/categorias", label: "Categorias" },
-  { href: "/app/limites", label: "Limites" },
+  { href: "/app", label: "Meu mês" },
+  { href: "/app/resumo", label: "Resumo do mês" },
+  { href: "/app/categorias", label: "Por categoria" },
+  { href: "/app/limites", label: "Limites de gasto" },
   { href: "/app/metas", label: "Metas" },
 ];
 
