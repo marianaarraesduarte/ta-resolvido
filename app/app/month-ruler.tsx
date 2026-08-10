@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, Plus } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, CreditCard, Plus } from "lucide-react";
 import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 
@@ -14,11 +14,23 @@ export type Entry = {
   entry_date: string;
   category_id: string | null;
   income_type: string | null;
+  card_invoice_id: string | null;
+};
+
+export type CardInvoiceSummary = {
+  id: string;
+  invoiceDate: string;
+  total: number;
+  items: { id: string; description: string; amount: number }[];
 };
 
 const DAY_WIDTH = 22;
 
 type DayBucket = { despesas: Entry[]; receitas: Entry[] };
+
+type Selection =
+  | { kind: "day"; day: number; type: "despesa" | "receita" }
+  | { kind: "invoice"; invoiceId: string };
 
 function tooltipLabel(items: Entry[], total: number): string {
   if (items.length === 1) return `${items[0].description} — ${currency(items[0].amount)}`;
@@ -30,29 +42,43 @@ export function MonthRuler({
   today,
   daysInMonth,
   entries,
+  cardInvoices,
 }: {
   monthName: string;
   today: number;
   daysInMonth: number;
   entries: Entry[];
+  cardInvoices: CardInvoiceSummary[];
 }) {
-  const [selected, setSelected] = useState<{ day: number; type: "despesa" | "receita" } | null>(
-    null,
-  );
+  const [selected, setSelected] = useState<Selection | null>(null);
 
   const hasEntries = entries.length > 0;
   const despesas = entries.filter((e) => e.type === "despesa");
   const receitas = entries.filter((e) => e.type === "receita");
+  // Itens de fatura de cartão viram um marcador consolidado só, não uma
+  // bolinha por compra — por isso ficam de fora da régua "bolinha a bolinha"
+  // e da média usada pra colorir as bolinhas (mas continuam contando no
+  // total "Saiu", em categorias e em limites normalmente).
+  const individualDespesas = despesas.filter((e) => !e.card_invoice_id);
   const despesaAvg =
-    despesas.length > 0 ? despesas.reduce((sum, e) => sum + e.amount, 0) / despesas.length : 0;
+    individualDespesas.length > 0
+      ? individualDespesas.reduce((sum, e) => sum + e.amount, 0) / individualDespesas.length
+      : 0;
 
   const byDay = new Map<number, DayBucket>();
   for (const entry of entries) {
+    if (entry.type === "despesa" && entry.card_invoice_id) continue;
     const day = dayOfMonth(entry.entry_date);
     const bucket = byDay.get(day) ?? { despesas: [], receitas: [] };
     if (entry.type === "despesa") bucket.despesas.push(entry);
     else bucket.receitas.push(entry);
     byDay.set(day, bucket);
+  }
+
+  const invoicesByDay = new Map<number, CardInvoiceSummary[]>();
+  for (const invoice of cardInvoices) {
+    const day = dayOfMonth(invoice.invoiceDate);
+    invoicesByDay.set(day, [...(invoicesByDay.get(day) ?? []), invoice]);
   }
 
   const receitaSoFar = receitas
@@ -62,9 +88,12 @@ export function MonthRuler({
     .filter((e) => dayOfMonth(e.entry_date) <= today)
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const selectedItems = selected
-    ? (byDay.get(selected.day)?.[selected.type === "despesa" ? "despesas" : "receitas"] ?? [])
-    : [];
+  const selectedDayItems =
+    selected?.kind === "day"
+      ? (byDay.get(selected.day)?.[selected.type === "despesa" ? "despesas" : "receitas"] ?? [])
+      : [];
+  const selectedInvoice =
+    selected?.kind === "invoice" ? (cardInvoices.find((i) => i.id === selected.invoiceId) ?? null) : null;
 
   return (
     <div className="flex justify-center px-3 py-7">
@@ -124,11 +153,14 @@ export function MonthRuler({
             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
               const isToday = day === today;
               const bucket = byDay.get(day);
+              const dayInvoices = invoicesByDay.get(day) ?? [];
               const despesaTotal = bucket?.despesas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
               const receitaTotal = bucket?.receitas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
               const level = bucket?.despesas.length ? levelFor(despesaTotal, despesaAvg) : null;
-              const isSelectedDespesa = selected?.day === day && selected.type === "despesa";
-              const isSelectedReceita = selected?.day === day && selected.type === "receita";
+              const isSelectedDespesa =
+                selected?.kind === "day" && selected.day === day && selected.type === "despesa";
+              const isSelectedReceita =
+                selected?.kind === "day" && selected.day === day && selected.type === "receita";
 
               return (
                 <div
@@ -142,7 +174,7 @@ export function MonthRuler({
                         <div className="group relative mb-1.5">
                           <button
                             type="button"
-                            onClick={() => setSelected({ day, type: "receita" })}
+                            onClick={() => setSelected({ kind: "day", day, type: "receita" })}
                             aria-label={`Entradas do dia ${day}`}
                             className={
                               isSelectedReceita
@@ -178,12 +210,38 @@ export function MonthRuler({
                   )}
 
                   {hasEntries && (
-                    <div className="mt-1 flex flex-1 items-start justify-center">
+                    <div className="mt-1 flex flex-1 flex-col items-center gap-1">
+                      {dayInvoices.map((invoice) => {
+                        const isSelectedInvoice =
+                          selected?.kind === "invoice" && selected.invoiceId === invoice.id;
+                        return (
+                          <div key={invoice.id} className="group relative">
+                            <button
+                              type="button"
+                              onClick={() => setSelected({ kind: "invoice", invoiceId: invoice.id })}
+                              aria-label={`Fatura do cartão do dia ${day}`}
+                              className={
+                                isSelectedInvoice
+                                  ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
+                                  : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
+                              }
+                              style={{ background: "var(--accent)" }}
+                            >
+                              <CreditCard size={8} className="-rotate-12 text-brand-card" />
+                            </button>
+                            <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
+                              Fatura · {invoice.items.length}{" "}
+                              {invoice.items.length === 1 ? "compra" : "compras"} —{" "}
+                              {currency(invoice.total)}
+                            </div>
+                          </div>
+                        );
+                      })}
                       {level ? (
                         <div className="group relative">
                           <button
                             type="button"
-                            onClick={() => setSelected({ day, type: "despesa" })}
+                            onClick={() => setSelected({ kind: "day", day, type: "despesa" })}
                             aria-label={`Gastos do dia ${day}`}
                             className={
                               isSelectedDespesa
@@ -208,14 +266,42 @@ export function MonthRuler({
           )}
         </div>
 
-        {selected && selectedItems.length > 0 && (
+        {cardInvoices.map((invoice) => (
+          <button
+            key={invoice.id}
+            type="button"
+            onClick={() => setSelected({ kind: "invoice", invoiceId: invoice.id })}
+            className="mb-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
+            style={{ background: "color-mix(in srgb, var(--accent) 16%, #FBFAF6)" }}
+          >
+            <div
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+              style={{ background: "var(--accent)" }}
+            >
+              <CreditCard size={16} className="text-brand-card" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-semibold text-brand-ink">
+                Fatura do cartão · dia {dayOfMonth(invoice.invoiceDate)}
+              </div>
+              <div className="text-xs text-brand-ink-soft">
+                {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
+              </div>
+            </div>
+            <div className="flex-shrink-0 font-display text-[15px] font-bold text-brand-ink">
+              {currency(invoice.total)}
+            </div>
+          </button>
+        ))}
+
+        {selected?.kind === "day" && selectedDayItems.length > 0 && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
             <div className="mb-2 text-xs text-brand-ink-soft">
               Dia {selected.day} · {selected.type === "receita" ? "entrada" : "saída"}
-              {selectedItems.length > 1 ? ` · ${selectedItems.length} lançamentos` : ""}
+              {selectedDayItems.length > 1 ? ` · ${selectedDayItems.length} lançamentos` : ""}
             </div>
             <div className="flex flex-col gap-2">
-              {selectedItems.map((item) => (
+              {selectedDayItems.map((item) => (
                 <div key={item.id} className="flex items-center justify-between gap-3">
                   <span className="text-[15px] font-medium text-brand-ink">
                     {item.description}
@@ -238,8 +324,29 @@ export function MonthRuler({
           </div>
         )}
 
+        {selectedInvoice && (
+          <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
+            <div className="mb-2 text-xs text-brand-ink-soft">
+              Fatura do cartão · dia {dayOfMonth(selectedInvoice.invoiceDate)} ·{" "}
+              {selectedInvoice.items.length} {selectedInvoice.items.length === 1 ? "compra" : "compras"}
+            </div>
+            <div className="flex flex-col gap-2">
+              {selectedInvoice.items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between gap-3">
+                  <span className="text-[15px] font-medium text-brand-ink">
+                    {item.description}
+                  </span>
+                  <span className="whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
+                    -{currency(item.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {hasEntries && (
-          <div className="mb-7 flex flex-wrap gap-3.5">
+          <div className="mb-7 flex flex-wrap items-center gap-3.5">
             {(
               [
                 [TOKENS.sage, "entrada / gasto leve"],
@@ -252,6 +359,13 @@ export function MonthRuler({
                 <span className="text-[11.5px] text-brand-ink-soft">{label}</span>
               </div>
             ))}
+            <div className="flex items-center gap-1.5">
+              <div
+                className="h-2 w-2 rotate-12 rounded-[2px]"
+                style={{ background: "var(--accent)" }}
+              />
+              <span className="text-[11.5px] text-brand-ink-soft">fatura do cartão</span>
+            </div>
           </div>
         )}
 

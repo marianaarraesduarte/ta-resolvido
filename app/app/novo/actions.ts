@@ -224,3 +224,80 @@ export async function saveRecognizedItems(
 
   redirect("/app");
 }
+
+export type RecognizedCardItem = {
+  description: string;
+  amount: number;
+};
+
+/**
+ * PLACEHOLDER: mesma ressalva de recognizeStatement — ainda simula um
+ * resultado fixo. Itens de fatura de cartão são sempre despesa (sem
+ * receita/salário), por isso a assinatura é mais simples.
+ */
+export async function recognizeCardInvoice(_imageDataUrl: string): Promise<RecognizedCardItem[]> {
+  await new Promise((resolve) => setTimeout(resolve, 900));
+
+  return [
+    { description: "Netflix", amount: 39.9 },
+    { description: "Amazon", amount: 156.5 },
+    { description: "Posto Ipiranga", amount: 120 },
+    { description: "Restaurante", amount: 78.4 },
+  ];
+}
+
+export async function saveCardInvoice(
+  items: { description: string; amount: number }[],
+  invoiceDate: string,
+): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (items.length === 0 || !invoiceDate) {
+    throw new Error("Nada pra salvar.");
+  }
+
+  const { data: invoice, error: invoiceError } = await supabase
+    .from("card_invoices")
+    .insert({ user_id: user.id, invoice_date: invoiceDate })
+    .select("id")
+    .single();
+
+  if (invoiceError || !invoice) {
+    throw new Error("Não deu pra salvar a fatura agora.");
+  }
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("id, name")
+    .eq("user_id", user.id);
+  const categoryByName = new Map((categories ?? []).map((c) => [c.name, c.id]));
+
+  const rows = items.map((item) => {
+    const suggested = suggestCategoryName(item.description);
+    return {
+      user_id: user.id,
+      type: "despesa" as const,
+      amount: item.amount,
+      description: item.description,
+      entry_date: invoiceDate,
+      category_id: suggested ? (categoryByName.get(suggested) ?? null) : null,
+      source: "foto" as const,
+      payment_method: "cartao" as const,
+      card_invoice_id: invoice.id as string,
+    };
+  });
+
+  const { error } = await supabase.from("entries").insert(rows);
+  if (error) {
+    throw new Error("Não deu pra salvar os lançamentos agora.");
+  }
+
+  redirect("/app");
+}

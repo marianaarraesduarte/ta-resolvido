@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, CreditCard } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { dayOfMonth, monthLabel, toDateKey } from "@/lib/date";
 import { currency, levelFor, LEVEL_COLOR } from "@/lib/tokens";
@@ -12,6 +12,7 @@ type DespesaRow = {
   description: string;
   amount: number;
   entry_date: string;
+  payment_method: "conta" | "cartao";
   categories: { name: string; icon: string | null } | null;
 };
 
@@ -32,7 +33,7 @@ export default async function ResumoPage() {
   const [{ data }, { data: fixedExpensesData }] = await Promise.all([
     supabase
       .from("entries")
-      .select("id, description, amount, entry_date, categories(name, icon)")
+      .select("id, description, amount, entry_date, payment_method, categories(name, icon)")
       .eq("user_id", user.id)
       .eq("type", "despesa")
       .gte("entry_date", toDateKey(firstDay))
@@ -116,8 +117,18 @@ export default async function ResumoPage() {
                     <Icon size={16} className="text-brand-ink" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14.5px] font-medium text-brand-ink">
-                      {d.description}
+                    <div className="flex items-center gap-1.5">
+                      <div className="truncate text-[14.5px] font-medium text-brand-ink">
+                        {d.description}
+                      </div>
+                      {d.payment_method === "cartao" && (
+                        <CreditCard
+                          size={12}
+                          className="flex-shrink-0"
+                          style={{ color: "var(--accent)" }}
+                          aria-label="Gasto no cartão"
+                        />
+                      )}
                     </div>
                     <div className="text-xs text-brand-ink-soft">
                       Dia {dayOfMonth(d.entry_date)}
