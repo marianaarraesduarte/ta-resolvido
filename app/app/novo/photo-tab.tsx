@@ -5,12 +5,16 @@ import { CreditCard, Receipt } from "lucide-react";
 import { BankStatementReview } from "./bank-statement-review";
 import { CardInvoiceReview } from "./card-invoice-review";
 
+type Category = { id: string; name: string };
+
 export function PhotoTab({
   salaryPatterns,
   fixedExpenseNames,
+  categories,
 }: {
   salaryPatterns: string[];
   fixedExpenseNames: string[];
+  categories: Category[];
 }) {
   const [source, setSource] = useState<"extrato" | "fatura">("extrato");
 
@@ -44,9 +48,13 @@ export function PhotoTab({
       </div>
 
       {source === "extrato" ? (
-        <BankStatementReview salaryPatterns={salaryPatterns} fixedExpenseNames={fixedExpenseNames} />
+        <BankStatementReview
+          salaryPatterns={salaryPatterns}
+          fixedExpenseNames={fixedExpenseNames}
+          categories={categories}
+        />
       ) : (
-        <CardInvoiceReview fixedExpenseNames={fixedExpenseNames} />
+        <CardInvoiceReview fixedExpenseNames={fixedExpenseNames} categories={categories} />
       )}
     </div>
   );

@@ -2,15 +2,21 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 import { compressImage } from "@/lib/image-compress";
+import { readFileAsDataUrl } from "@/lib/read-file";
+
+const MAX_PDF_SIZE = 8 * 1024 * 1024; // 8mb, mesmo limite do body das server actions
 
 /**
- * Orquestra upload + compressão + chamada de reconhecimento de uma foto.
- * Compartilhado entre as revisões de extrato bancário e fatura de cartão —
- * cada uma passa sua própria função de reconhecimento e formato de item.
+ * Orquestra upload + preparo (compressão de imagem, ou leitura direta pra
+ * PDF) + chamada de reconhecimento de uma foto ou PDF. Compartilhado entre
+ * as revisões de extrato bancário e fatura de cartão — cada uma passa sua
+ * própria função de reconhecimento e formato de item.
  */
 export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T[]>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPdf, setIsPdf] = useState(false);
+  const [fileName, setFileName] = useState("");
   const [items, setItems] = useState<T[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
@@ -21,14 +27,25 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
     setError("");
     setItems(null);
     setPreviewUrl(null);
+    setIsPdf(false);
+    setFileName(file.name);
+
+    const filePdf = file.type === "application/pdf";
+
+    if (filePdf && file.size > MAX_PDF_SIZE) {
+      setError("Esse PDF é grande demais (máximo 8MB). Tenta um arquivo menor.");
+      return;
+    }
+
     try {
-      const dataUrl = await compressImage(file);
+      const dataUrl = filePdf ? await readFileAsDataUrl(file) : await compressImage(file);
       setPreviewUrl(dataUrl);
+      setIsPdf(filePdf);
       setAnalyzing(true);
       const recognized = await recognize(dataUrl);
       setItems(recognized);
     } catch {
-      setError("Não deu pra analisar essa imagem agora. Tenta de novo.");
+      setError("Não deu pra analisar esse arquivo agora. Tenta de novo.");
     } finally {
       setAnalyzing(false);
     }
@@ -37,6 +54,8 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
   return {
     fileInputRef,
     previewUrl,
+    isPdf,
+    fileName,
     items,
     setItems,
     analyzing,

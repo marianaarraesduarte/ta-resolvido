@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { setAccentColor, setHideGoalsScreen, setSeparateByAccount } from "./actions";
+import {
+  setAccentColor,
+  setHideGoalsScreen,
+  setMonthlyInsightsEnabled,
+  setSeparateByAccount,
+} from "./actions";
 
 const ACCENT_COLORS = [
   { key: "amber", label: "Âmbar", hex: "#D9A441" },
@@ -35,14 +40,19 @@ export function ConfigBody({
   initialSeparateByAccount,
   initialAccentColor,
   initialHideGoalsScreen,
+  initialMonthlyInsightsEnabled,
 }: {
   initialSeparateByAccount: boolean;
   initialAccentColor: string;
   initialHideGoalsScreen: boolean;
+  initialMonthlyInsightsEnabled: boolean;
 }) {
   const [separateByAccount, setSeparateByAccountState] = useState(initialSeparateByAccount);
   const [accentColor, setAccentColorState] = useState(initialAccentColor);
   const [hideGoalsScreen, setHideGoalsScreenState] = useState(initialHideGoalsScreen);
+  const [monthlyInsightsEnabled, setMonthlyInsightsEnabledState] = useState(
+    initialMonthlyInsightsEnabled,
+  );
 
   function handleToggleAccount() {
     const next = !separateByAccount;
@@ -59,6 +69,12 @@ export function ConfigBody({
     const next = !hideGoalsScreen;
     setHideGoalsScreenState(next);
     setHideGoalsScreen(next).catch(() => {});
+  }
+
+  function handleToggleMonthlyInsights() {
+    const next = !monthlyInsightsEnabled;
+    setMonthlyInsightsEnabledState(next);
+    setMonthlyInsightsEnabled(next).catch(() => {});
   }
 
   return (
@@ -117,6 +133,20 @@ export function ConfigBody({
           </div>
         </div>
         <Toggle on={hideGoalsScreen} onClick={handleToggleHideGoals} />
+      </div>
+
+      <div className="mb-2 mt-6 text-[13px] font-semibold text-brand-ink">Análise mensal</div>
+      <div className="flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4">
+        <div className="pr-4">
+          <div className="text-[14.5px] font-medium text-brand-ink">
+            Comentário sobre o mês anterior
+          </div>
+          <div className="mt-0.5 text-xs leading-snug text-brand-ink-soft">
+            Um comentário curto e opcional sobre como foi seu mês, tipo um amigo comentando —
+            avisado por um sininho no app, nunca por e-mail.
+          </div>
+        </div>
+        <Toggle on={monthlyInsightsEnabled} onClick={handleToggleMonthlyInsights} />
       </div>
     </>
   );

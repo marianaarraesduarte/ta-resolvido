@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { suggestCategoryName } from "@/lib/category-keywords";
-import { toDateKey } from "@/lib/date";
+import { extractFromDocument, Type } from "@/lib/gemini";
 
 export async function createEntry(formData: FormData) {
   const supabase = await createClient();
@@ -123,33 +123,69 @@ export type RecognizedItem = {
   amount: number;
   type: "despesa" | "receita";
   date: string;
+  category: string | null;
 };
 
-/**
- * PLACEHOLDER: ainda não está ligado a um serviço real de leitura de imagem.
- * Simula um resultado fixo pra permitir testar o fluxo de revisão e
- * confirmação por completo. Trocar o corpo desta função por uma chamada a
- * uma API de visão (ex: Claude, GPT-4V) quando houver uma chave de API —
- * a assinatura (recebe a imagem em data URL, devolve RecognizedItem[])
- * não deve precisar mudar. Uma API real deve extrair a data de cada linha
- * do extrato individualmente (não é a mesma data pra tudo).
- */
-export async function recognizeStatement(_imageDataUrl: string): Promise<RecognizedItem[]> {
-  await new Promise((resolve) => setTimeout(resolve, 900));
+const NO_CATEGORY = "Sem categoria";
 
-  // Datas fixas dentro do mês atual (não "dias atrás", pra não cair no mês
-  // anterior quando o teste acontece logo no começo do mês).
-  const now = new Date();
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dayInThisMonth = (day: number) =>
-    toDateKey(new Date(now.getFullYear(), now.getMonth(), Math.min(day, lastDayOfMonth)));
+function statementSchema(categoryNames: string[]) {
+  return {
+    type: Type.ARRAY,
+    items: {
+      type: Type.OBJECT,
+      properties: {
+        description: { type: Type.STRING },
+        amount: { type: Type.NUMBER },
+        type: { type: Type.STRING, enum: ["despesa", "receita"] },
+        date: { type: Type.STRING },
+        category: { type: Type.STRING, enum: [...categoryNames, NO_CATEGORY] },
+      },
+      required: ["description", "amount", "type", "date", "category"],
+    },
+  };
+}
 
-  return [
-    { description: "Salário", amount: 4500, type: "receita", date: dayInThisMonth(1) },
-    { description: "Mercado São João", amount: 89.9, type: "despesa", date: dayInThisMonth(8) },
-    { description: "Uber", amount: 24.5, type: "despesa", date: dayInThisMonth(15) },
-    { description: "Farmácia", amount: 42.0, type: "despesa", date: toDateKey(now) },
-  ];
+function statementPrompt(categoryNames: string[]): string {
+  return `Você está analisando uma foto ou PDF de um comprovante ou extrato bancário em português do Brasil. Identifique cada lançamento (transação) que aparece na imagem.
+
+Para cada um, extraia:
+- description: descrição curta (nome do estabelecimento ou origem do lançamento)
+- amount: valor em reais, sempre um número positivo (sem sinal de + ou -)
+- type: "despesa" se for uma saída/débito, "receita" se for uma entrada/crédito — use o sinal (+/-), a cor, ou o rótulo ("crédito"/"débito") que aparecer no extrato pra decidir
+- date: data do lançamento no formato YYYY-MM-DD; se o ano não estiver visível na imagem, use ${new Date().getFullYear()}
+- category: só pra despesas, escolha a categoria que melhor descreve o estabelecimento entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Use seu conhecimento geral sobre o tipo de estabelecimento (ex: nomes de app de comida = provavelmente a categoria de lazer/alimentação, nome de posto de combustível = transporte). Se for uma receita, ou se nenhuma categoria se encaixar bem, use "${NO_CATEGORY}".
+
+Se a imagem tiver várias transações (um extrato inteiro, não só um comprovante), retorne todas elas, uma por item. Se não conseguir identificar nenhum lançamento, retorne uma lista vazia.`;
+}
+
+export async function recognizeStatement(fileDataUrl: string): Promise<RecognizedItem[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
+  }
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("name")
+    .eq("user_id", user.id);
+  const categoryNames = (categories ?? []).map((c) => c.name);
+
+  try {
+    const items = await extractFromDocument<RecognizedItem[]>(
+      fileDataUrl,
+      statementPrompt(categoryNames),
+      statementSchema(categoryNames),
+    );
+    return items.map((item) => ({
+      ...item,
+      category: item.category === NO_CATEGORY ? null : item.category,
+    }));
+  } catch {
+    throw new Error("Não deu pra analisar esse arquivo agora.");
+  }
 }
 
 export async function saveRecognizedItems(
@@ -159,6 +195,7 @@ export async function saveRecognizedItems(
     type: "despesa" | "receita";
     isSalary: boolean;
     date: string;
+    category: string | null;
   }[],
 ): Promise<void> {
   const supabase = await createClient();
@@ -167,7 +204,7 @@ export async function saveRecognizedItems(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
   if (items.length === 0 || items.some((item) => !item.date)) {
@@ -182,14 +219,14 @@ export async function saveRecognizedItems(
 
   const rows = items.map((item) => {
     if (item.type === "despesa") {
-      const suggested = suggestCategoryName(item.description);
+      const categoryName = item.category ?? suggestCategoryName(item.description);
       return {
         user_id: user.id,
         type: "despesa" as const,
         amount: item.amount,
         description: item.description,
         entry_date: item.date,
-        category_id: suggested ? (categoryByName.get(suggested) ?? null) : null,
+        category_id: categoryName ? (categoryByName.get(categoryName) ?? null) : null,
         source: "foto" as const,
       };
     }
@@ -221,33 +258,72 @@ export async function saveRecognizedItems(
       .from("salary_patterns")
       .upsert(salaryPatterns, { onConflict: "user_id,description_pattern" });
   }
-
-  redirect("/app");
 }
 
 export type RecognizedCardItem = {
   description: string;
   amount: number;
+  category: string | null;
 };
 
-/**
- * PLACEHOLDER: mesma ressalva de recognizeStatement — ainda simula um
- * resultado fixo. Itens de fatura de cartão são sempre despesa (sem
- * receita/salário), por isso a assinatura é mais simples.
- */
-export async function recognizeCardInvoice(_imageDataUrl: string): Promise<RecognizedCardItem[]> {
-  await new Promise((resolve) => setTimeout(resolve, 900));
+function cardInvoiceSchema(categoryNames: string[]) {
+  return {
+    type: Type.ARRAY,
+    items: {
+      type: Type.OBJECT,
+      properties: {
+        description: { type: Type.STRING },
+        amount: { type: Type.NUMBER },
+        category: { type: Type.STRING, enum: [...categoryNames, NO_CATEGORY] },
+      },
+      required: ["description", "amount", "category"],
+    },
+  };
+}
 
-  return [
-    { description: "Netflix", amount: 39.9 },
-    { description: "Amazon", amount: 156.5 },
-    { description: "Posto Ipiranga", amount: 120 },
-    { description: "Restaurante", amount: 78.4 },
-  ];
+function cardInvoicePrompt(categoryNames: string[]): string {
+  return `Você está analisando uma foto ou PDF de uma fatura de cartão de crédito em português do Brasil. Identifique cada compra/lançamento individual na fatura — não o total, taxas, juros ou dados de pagamento.
+
+Para cada compra, extraia:
+- description: descrição curta (nome do estabelecimento)
+- amount: valor em reais, sempre um número positivo
+- category: escolha a categoria que melhor descreve o estabelecimento entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Use seu conhecimento geral sobre o tipo de estabelecimento pra decidir, mesmo que o nome seja abreviado ou tenha código (ex: "UBER *TRIP", "IFD*IFOOD"). Se nenhuma categoria se encaixar bem, use "${NO_CATEGORY}".
+
+Se não conseguir identificar nenhuma compra, retorne uma lista vazia.`;
+}
+
+export async function recognizeCardInvoice(fileDataUrl: string): Promise<RecognizedCardItem[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
+  }
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("name")
+    .eq("user_id", user.id);
+  const categoryNames = (categories ?? []).map((c) => c.name);
+
+  try {
+    const items = await extractFromDocument<RecognizedCardItem[]>(
+      fileDataUrl,
+      cardInvoicePrompt(categoryNames),
+      cardInvoiceSchema(categoryNames),
+    );
+    return items.map((item) => ({
+      ...item,
+      category: item.category === NO_CATEGORY ? null : item.category,
+    }));
+  } catch {
+    throw new Error("Não deu pra analisar esse arquivo agora.");
+  }
 }
 
 export async function saveCardInvoice(
-  items: { description: string; amount: number }[],
+  items: { description: string; amount: number; category: string | null }[],
   invoiceDate: string,
 ): Promise<void> {
   const supabase = await createClient();
@@ -256,7 +332,7 @@ export async function saveCardInvoice(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
   if (items.length === 0 || !invoiceDate) {
@@ -280,14 +356,14 @@ export async function saveCardInvoice(
   const categoryByName = new Map((categories ?? []).map((c) => [c.name, c.id]));
 
   const rows = items.map((item) => {
-    const suggested = suggestCategoryName(item.description);
+    const categoryName = item.category ?? suggestCategoryName(item.description);
     return {
       user_id: user.id,
       type: "despesa" as const,
       amount: item.amount,
       description: item.description,
       entry_date: invoiceDate,
-      category_id: suggested ? (categoryByName.get(suggested) ?? null) : null,
+      category_id: categoryName ? (categoryByName.get(categoryName) ?? null) : null,
       source: "foto" as const,
       payment_method: "cartao" as const,
       card_invoice_id: invoice.id as string,
@@ -298,6 +374,4 @@ export async function saveCardInvoice(
   if (error) {
     throw new Error("Não deu pra salvar os lançamentos agora.");
   }
-
-  redirect("/app");
 }

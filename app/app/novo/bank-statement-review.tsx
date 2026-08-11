@@ -1,32 +1,47 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Check, ImagePlus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowDownCircle, ArrowUpCircle, Check, FileText, ImagePlus, Trash2 } from "lucide-react";
 import { currency } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import { recognizeStatement, saveRecognizedItems, type RecognizedItem } from "./actions";
 
+type Category = { id: string; name: string };
 type ReviewItem = RecognizedItem & { id: string; isSalary: boolean };
 
 export function BankStatementReview({
   salaryPatterns,
   fixedExpenseNames,
+  categories,
 }: {
   salaryPatterns: string[];
   fixedExpenseNames: string[];
+  categories: Category[];
 }) {
-  const { fileInputRef, previewUrl, items, setItems, analyzing, error, setError, handleFileChange } =
-    usePhotoRecognition<ReviewItem>(async (dataUrl) => {
-      const recognized = await recognizeStatement(dataUrl);
-      return recognized.map((item, i) => ({
-        ...item,
-        id: `${i}-${item.description}`,
-        isSalary:
-          item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
-      }));
-    });
+  const {
+    fileInputRef,
+    previewUrl,
+    isPdf,
+    fileName,
+    items,
+    setItems,
+    analyzing,
+    error,
+    setError,
+    handleFileChange,
+  } = usePhotoRecognition<ReviewItem>(async (dataUrl) => {
+    const recognized = await recognizeStatement(dataUrl);
+    return recognized.map((item, i) => ({
+      ...item,
+      id: `${i}-${item.description}`,
+      isSalary:
+        item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
+    }));
+  });
 
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
 
   function toggleSalary(id: string) {
@@ -43,6 +58,10 @@ export function BankStatementReview({
     setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, date } : it)) : prev));
   }
 
+  function updateItemCategory(id: string, category: string | null) {
+    setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, category } : it)) : prev));
+  }
+
   function matchedFixedExpense(description: string): string | null {
     return fixedExpenseNames.find((name) => namesMatch(name, description)) ?? null;
   }
@@ -53,14 +72,17 @@ export function BankStatementReview({
     setError("");
     try {
       await saveRecognizedItems(
-        items.map(({ description, amount, type, isSalary, date }) => ({
+        items.map(({ description, amount, type, isSalary, date, category }) => ({
           description,
           amount,
           type,
           isSalary,
           date,
+          category,
         })),
       );
+      router.push("/app");
+      router.refresh();
     } catch {
       setError("Não deu pra salvar os lançamentos agora.");
       setSaving(false);
@@ -73,15 +95,10 @@ export function BankStatementReview({
         Tire uma foto do comprovante ou print do extrato inteiro — a gente separa cada gasto e
         cada entrada de dinheiro pra você.
       </p>
-      <p className="mb-3.5 rounded-xl bg-brand-bg px-3 py-2 text-[11.5px] leading-snug text-brand-ink-soft">
-        O reconhecimento automático ainda não está ligado a um serviço real — por enquanto ele
-        simula um resultado de exemplo, só pra você testar como fica a revisão antes de salvar.
-      </p>
-
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         capture="environment"
         className="hidden"
         onChange={handleFileChange}
@@ -95,15 +112,26 @@ export function BankStatementReview({
         >
           <ImagePlus size={26} className="text-brand-ink" />
           <span className="text-[13.5px] font-medium">
-            Toque pra tirar foto ou escolher da galeria
+            Toque pra tirar foto, escolher da galeria ou selecionar um PDF
           </span>
         </button>
       ) : (
         <div>
-          <div className="relative mb-3.5 h-[140px] w-full overflow-hidden rounded-2xl border border-brand-line">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewUrl} alt="Print enviado" className="h-full w-full object-cover" />
-          </div>
+          {isPdf ? (
+            <div className="mb-3.5 flex items-center gap-3 rounded-2xl border border-brand-line bg-white px-4 py-3.5">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-bg">
+                <FileText size={18} className="text-brand-ink" />
+              </div>
+              <div className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-brand-ink">
+                {fileName}
+              </div>
+            </div>
+          ) : (
+            <div className="relative mb-3.5 h-[140px] w-full overflow-hidden rounded-2xl border border-brand-line">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewUrl} alt="Print enviado" className="h-full w-full object-cover" />
+            </div>
+          )}
 
           {analyzing && (
             <p className="mb-3 text-[13px] text-brand-ink-soft">Analisando a imagem...</p>
@@ -132,7 +160,7 @@ export function BankStatementReview({
                           Parece o gasto fixo &quot;{matchedFixedExpense(item.description)}&quot;
                         </div>
                       )}
-                      <div className="mt-1 flex items-center gap-2.5">
+                      <div className="mt-1 flex flex-wrap items-center gap-2.5">
                         <input
                           type="date"
                           value={item.date}
@@ -140,6 +168,21 @@ export function BankStatementReview({
                           aria-label={`Data de ${item.description}`}
                           className="rounded-md border border-brand-line bg-white px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
                         />
+                        {item.type === "despesa" && (
+                          <select
+                            value={item.category ?? ""}
+                            onChange={(e) => updateItemCategory(item.id, e.target.value || null)}
+                            aria-label={`Categoria de ${item.description}`}
+                            className="rounded-md border border-brand-line bg-white px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
+                          >
+                            <option value="">Sem categoria</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.name}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                         {item.type === "receita" && (
                           <button
                             type="button"

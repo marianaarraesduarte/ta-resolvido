@@ -40,7 +40,7 @@ function GoalRow({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onChange(percent - 5)}
+            onClick={() => onChange(percent - 1)}
             className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-white text-brand-ink"
           >
             <Minus size={12} />
@@ -50,7 +50,7 @@ function GoalRow({
           </span>
           <button
             type="button"
-            onClick={() => onChange(percent + 5)}
+            onClick={() => onChange(percent + 1)}
             className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-white text-brand-ink"
           >
             <Plus size={12} />

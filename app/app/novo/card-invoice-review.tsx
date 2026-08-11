@@ -1,27 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ImagePlus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, FileText, ImagePlus, Trash2 } from "lucide-react";
 import { currency } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { namesMatch } from "@/lib/text-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import { recognizeCardInvoice, saveCardInvoice, type RecognizedCardItem } from "./actions";
 
+type Category = { id: string; name: string };
 type ReviewItem = RecognizedCardItem & { id: string };
 
-export function CardInvoiceReview({ fixedExpenseNames }: { fixedExpenseNames: string[] }) {
-  const { fileInputRef, previewUrl, items, setItems, analyzing, error, setError, handleFileChange } =
-    usePhotoRecognition<ReviewItem>(async (dataUrl) => {
-      const recognized = await recognizeCardInvoice(dataUrl);
-      return recognized.map((item, i) => ({ ...item, id: `${i}-${item.description}` }));
-    });
+export function CardInvoiceReview({
+  fixedExpenseNames,
+  categories,
+}: {
+  fixedExpenseNames: string[];
+  categories: Category[];
+}) {
+  const {
+    fileInputRef,
+    previewUrl,
+    isPdf,
+    fileName,
+    items,
+    setItems,
+    analyzing,
+    error,
+    setError,
+    handleFileChange,
+  } = usePhotoRecognition<ReviewItem>(async (dataUrl) => {
+    const recognized = await recognizeCardInvoice(dataUrl);
+    return recognized.map((item, i) => ({ ...item, id: `${i}-${item.description}` }));
+  });
 
+  const router = useRouter();
   const [invoiceDate, setInvoiceDate] = useState(() => toDateKey(new Date()));
   const [saving, setSaving] = useState(false);
 
   function removeItem(id: string) {
     setItems((prev) => (prev ? prev.filter((it) => it.id !== id) : prev));
+  }
+
+  function updateItemCategory(id: string, category: string | null) {
+    setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, category } : it)) : prev));
   }
 
   function matchedFixedExpense(description: string): string | null {
@@ -36,9 +59,11 @@ export function CardInvoiceReview({ fixedExpenseNames }: { fixedExpenseNames: st
     setError("");
     try {
       await saveCardInvoice(
-        items.map(({ description, amount }) => ({ description, amount })),
+        items.map(({ description, amount, category }) => ({ description, amount, category })),
         invoiceDate,
       );
+      router.push("/app");
+      router.refresh();
     } catch {
       setError("Não deu pra salvar a fatura agora.");
       setSaving(false);
@@ -51,15 +76,10 @@ export function CardInvoiceReview({ fixedExpenseNames }: { fixedExpenseNames: st
         Tire uma foto da fatura do cartão inteira — a gente junta todas as compras numa marcação
         só na régua, mas cada uma mantém sua própria categoria.
       </p>
-      <p className="mb-3.5 rounded-xl bg-brand-bg px-3 py-2 text-[11.5px] leading-snug text-brand-ink-soft">
-        O reconhecimento automático ainda não está ligado a um serviço real — por enquanto ele
-        simula um resultado de exemplo, só pra você testar como fica a revisão antes de salvar.
-      </p>
-
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         capture="environment"
         className="hidden"
         onChange={handleFileChange}
@@ -73,15 +93,26 @@ export function CardInvoiceReview({ fixedExpenseNames }: { fixedExpenseNames: st
         >
           <ImagePlus size={26} className="text-brand-ink" />
           <span className="text-[13.5px] font-medium">
-            Toque pra tirar foto ou escolher da galeria
+            Toque pra tirar foto, escolher da galeria ou selecionar um PDF
           </span>
         </button>
       ) : (
         <div>
-          <div className="relative mb-3.5 h-[140px] w-full overflow-hidden rounded-2xl border border-brand-line">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewUrl} alt="Fatura enviada" className="h-full w-full object-cover" />
-          </div>
+          {isPdf ? (
+            <div className="mb-3.5 flex items-center gap-3 rounded-2xl border border-brand-line bg-white px-4 py-3.5">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-bg">
+                <FileText size={18} className="text-brand-ink" />
+              </div>
+              <div className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-brand-ink">
+                {fileName}
+              </div>
+            </div>
+          ) : (
+            <div className="relative mb-3.5 h-[140px] w-full overflow-hidden rounded-2xl border border-brand-line">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewUrl} alt="Fatura enviada" className="h-full w-full object-cover" />
+            </div>
+          )}
 
           {analyzing && (
             <p className="mb-3 text-[13px] text-brand-ink-soft">Analisando a imagem...</p>
@@ -105,6 +136,19 @@ export function CardInvoiceReview({ fixedExpenseNames }: { fixedExpenseNames: st
                           Parece o gasto fixo &quot;{matchedFixedExpense(item.description)}&quot;
                         </div>
                       )}
+                      <select
+                        value={item.category ?? ""}
+                        onChange={(e) => updateItemCategory(item.id, e.target.value || null)}
+                        aria-label={`Categoria de ${item.description}`}
+                        className="mt-1 rounded-md border border-brand-line bg-white px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
+                      >
+                        <option value="">Sem categoria</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="flex-shrink-0 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
                       -{currency(item.amount)}

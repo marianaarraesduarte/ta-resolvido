@@ -193,7 +193,11 @@ export function EntryForm({
       </div>
 
       {mode === "foto" ? (
-        <PhotoTab salaryPatterns={salaryPatterns} fixedExpenseNames={fixedExpenseNames} />
+        <PhotoTab
+          salaryPatterns={salaryPatterns}
+          fixedExpenseNames={fixedExpenseNames}
+          categories={categories}
+        />
       ) : (
         <form action={createEntry} className="rounded-[20px] bg-brand-card p-[18px]">
           <div className="mb-5 flex gap-1.5 rounded-2xl bg-brand-bg p-1.5">

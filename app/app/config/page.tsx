@@ -18,7 +18,9 @@ export default async function ConfigPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("separate_by_account, accent_color, hide_goals_screen, reminder_frequency")
+    .select(
+      "separate_by_account, accent_color, hide_goals_screen, reminder_frequency, monthly_insights_enabled",
+    )
     .eq("id", user.id)
     .single();
 
@@ -39,6 +41,7 @@ export default async function ConfigPage() {
           initialSeparateByAccount={profile?.separate_by_account ?? false}
           initialAccentColor={profile?.accent_color ?? "#D9A441"}
           initialHideGoalsScreen={profile?.hide_goals_screen ?? false}
+          initialMonthlyInsightsEnabled={profile?.monthly_insights_enabled ?? true}
         />
 
         <Link

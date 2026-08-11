@@ -37,6 +37,13 @@ export default async function LembretePage() {
           <div className="font-display text-xl font-bold text-brand-ink">Lembrete do print</div>
         </div>
 
+        <div className="mb-5 rounded-xl bg-brand-coral/10 px-3.5 py-2.5">
+          <p className="text-[12px] font-medium leading-snug text-brand-coral">
+            Versão beta: essa preferência já fica salva, mas o envio automático do lembrete por
+            e-mail ainda não está ativo. Em breve a gente liga de vez.
+          </p>
+        </div>
+
         <p className="mb-5 text-[13.5px] leading-snug text-brand-ink-soft">
           Com que frequência você quer que a gente te lembre de mandar o print do extrato?
         </p>

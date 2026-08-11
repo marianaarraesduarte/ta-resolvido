@@ -41,3 +41,13 @@ export async function setHideGoalsScreen(value: boolean): Promise<void> {
   if (error) throw new Error("Não deu pra salvar agora.");
   revalidatePath("/app", "layout");
 }
+
+export async function setMonthlyInsightsEnabled(value: boolean): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ monthly_insights_enabled: value })
+    .eq("id", user.id);
+  if (error) throw new Error("Não deu pra salvar agora.");
+  revalidatePath("/app", "layout");
+}
