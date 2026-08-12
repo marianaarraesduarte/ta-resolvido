@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, CreditCard } from "lucide-react";
+import { ChevronLeft, CreditCard, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { dayOfMonth, monthLabel, toDateKey } from "@/lib/date";
 import { currency, levelFor, LEVEL_COLOR } from "@/lib/tokens";
@@ -105,8 +105,9 @@ export default async function ResumoPage() {
               const Icon = iconForCategory(d.categories?.icon);
               const color = LEVEL_COLOR[levelFor(d.amount, average)];
               return (
-                <div
+                <Link
                   key={d.id}
+                  href={`/app/lancamento/${d.id}`}
                   className={
                     i === 0
                       ? "flex items-center gap-3 px-4 py-3.5"
@@ -140,7 +141,8 @@ export default async function ResumoPage() {
                   >
                     {currency(d.amount)}
                   </div>
-                </div>
+                  <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />
+                </Link>
               );
             })}
           </div>

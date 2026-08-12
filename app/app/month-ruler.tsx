@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, CreditCard, Plus } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, CreditCard, Pencil, Plus } from "lucide-react";
 import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 
@@ -302,12 +302,16 @@ export function MonthRuler({
             </div>
             <div className="flex flex-col gap-2">
               {selectedDayItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-3">
-                  <span className="text-[15px] font-medium text-brand-ink">
+                <Link
+                  key={item.id}
+                  href={`/app/lancamento/${item.id}`}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-brand-ink">
                     {item.description}
                   </span>
                   <span
-                    className="whitespace-nowrap font-display text-[15px] font-bold"
+                    className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold"
                     style={{
                       color:
                         selected.type === "receita"
@@ -318,7 +322,8 @@ export function MonthRuler({
                     {selected.type === "receita" ? "+" : "-"}
                     {currency(item.amount)}
                   </span>
-                </div>
+                  <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />
+                </Link>
               ))}
             </div>
           </div>
@@ -332,14 +337,19 @@ export function MonthRuler({
             </div>
             <div className="flex flex-col gap-2">
               {selectedInvoice.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-3">
-                  <span className="text-[15px] font-medium text-brand-ink">
+                <Link
+                  key={item.id}
+                  href={`/app/lancamento/${item.id}`}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-brand-ink">
                     {item.description}
                   </span>
-                  <span className="whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
+                  <span className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
                     -{currency(item.amount)}
                   </span>
-                </div>
+                  <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />
+                </Link>
               ))}
             </div>
           </div>
