@@ -353,7 +353,7 @@ export function EntryForm({
           type="date"
           required
           defaultValue={defaultDate}
-          className={inputClass}
+          className={`${inputClass} min-w-0`}
         />
       </div>
 

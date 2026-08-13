@@ -209,7 +209,7 @@ export function EditEntryForm({
             type="date"
             value={entryDate}
             onChange={(e) => setEntryDate(e.target.value)}
-            className={inputClass}
+            className={`${inputClass} min-w-0`}
           />
         </div>
 

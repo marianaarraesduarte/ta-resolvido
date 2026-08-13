@@ -99,7 +99,6 @@ export function BankStatementReview({
         ref={fileInputRef}
         type="file"
         accept="image/*,application/pdf"
-        capture="environment"
         className="hidden"
         onChange={handleFileChange}
       />
