@@ -5,3 +5,10 @@
 body {
   @apply bg-brand-bg text-brand-ink;
 }
+
+/* Safari no iOS renderiza o ícone de calendário de type="date" fora da
+   caixa do input, estourando a largura do container mesmo com w-full. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
