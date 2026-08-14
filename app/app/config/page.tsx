@@ -56,6 +56,19 @@ export default async function ConfigPage() {
           </div>
           <ChevronRight size={18} className="text-brand-ink-soft" />
         </Link>
+
+        <Link
+          href="/app/config/instalar"
+          className="mt-2.5 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
+        >
+          <div>
+            <div className="text-[14.5px] font-medium text-brand-ink">Instalar o app</div>
+            <div className="mt-0.5 text-xs text-brand-ink-soft">
+              Coloque na tela inicial do seu celular
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-brand-ink-soft" />
+        </Link>
       </div>
     </div>
   );
