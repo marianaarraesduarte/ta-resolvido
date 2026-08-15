@@ -12,13 +12,17 @@ type SaldoContextValue = {
 const SaldoContext = createContext<SaldoContextValue | null>(null);
 
 export function SaldoProvider({
+  saldoInicial,
+  receitaAcumulada,
+  despesaAcumulada,
   receitaDoMes,
-  despesaDoMes,
   initialGoalPercents,
   children,
 }: {
+  saldoInicial: number;
+  receitaAcumulada: number;
+  despesaAcumulada: number;
   receitaDoMes: number;
-  despesaDoMes: number;
   initialGoalPercents: Record<GoalKind, number>;
   children: React.ReactNode;
 }) {
@@ -28,11 +32,11 @@ export function SaldoProvider({
     const totalPct = Object.values(goalPercents).reduce((sum, p) => sum + p, 0);
     const investido = (receitaDoMes * totalPct) / 100;
     return {
-      saldo: receitaDoMes - despesaDoMes - investido,
+      saldo: saldoInicial + receitaAcumulada - despesaAcumulada - investido,
       setGoalPercent: (kind, percent) =>
         setGoalPercents((prev) => ({ ...prev, [kind]: percent })),
     };
-  }, [goalPercents, receitaDoMes, despesaDoMes]);
+  }, [goalPercents, saldoInicial, receitaAcumulada, despesaAcumulada, receitaDoMes]);
 
   return <SaldoContext.Provider value={value}>{children}</SaldoContext.Provider>;
 }

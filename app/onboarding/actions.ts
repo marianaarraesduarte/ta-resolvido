@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function completeOnboarding(): Promise<void> {
+export async function completeOnboarding(initialBalance: number): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,7 +13,14 @@ export async function completeOnboarding(): Promise<void> {
     redirect("/login");
   }
 
-  await supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
+  await supabase
+    .from("profiles")
+    .update({
+      onboarding_completed: true,
+      initial_balance: initialBalance,
+      initial_balance_date: new Date().toISOString().slice(0, 10),
+    })
+    .eq("id", user.id);
 
   redirect("/app");
 }

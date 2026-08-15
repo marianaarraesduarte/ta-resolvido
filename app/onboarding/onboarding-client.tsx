@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Camera, PenLine, Ruler } from "lucide-react";
-import { TOKENS } from "@/lib/tokens";
+import { ArrowRight, Camera, PenLine, Ruler, Wallet } from "lucide-react";
+import { TOKENS, completeCents, parseCurrencyInput } from "@/lib/tokens";
 import { completeOnboarding } from "./actions";
 
 const SLIDES = [
@@ -26,6 +26,12 @@ const SLIDES = [
     ),
     title: "Do seu jeito",
     text: "Digite o gasto na mão ou manda um print do extrato do banco. A gente lê pra você.",
+  },
+  {
+    icon: <Wallet size={40} className="text-brand-ink" />,
+    title: "Seu saldo atual",
+    text: "Quanto você tem hoje na conta? Isso vira o ponto de partida do seu saldo aqui no app.",
+    isBalance: true,
   },
 ];
 
@@ -53,13 +59,14 @@ function RulerPreview() {
 export function OnboardingClient() {
   const [step, setStep] = useState(0);
   const [finishing, setFinishing] = useState(false);
+  const [balance, setBalance] = useState("");
   const slide = SLIDES[step];
   const isLast = step === SLIDES.length - 1;
 
   async function handleFinish() {
     setFinishing(true);
     try {
-      await completeOnboarding();
+      await completeOnboarding(balance ? parseCurrencyInput(balance) : 0);
     } catch {
       setFinishing(false);
     }
@@ -68,7 +75,7 @@ export function OnboardingClient() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-brand-bg px-3 py-7">
       <div className="flex min-h-[480px] w-full max-w-sm flex-col items-center rounded-[28px] bg-brand-card px-7 pb-7 pt-10 text-center">
-        {!slide.isIntro && (
+        {!slide.isIntro && !isLast && (
           <button
             type="button"
             onClick={() => setStep(SLIDES.length - 1)}
@@ -93,6 +100,33 @@ export function OnboardingClient() {
           </div>
 
           {step === 1 && <RulerPreview />}
+
+          {slide.isBalance && (
+            <div className="w-full text-left">
+              <div className="relative mx-auto max-w-[220px]">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px] text-brand-ink-soft">
+                  R$
+                </span>
+                <input
+                  autoFocus
+                  value={balance}
+                  onChange={(e) => setBalance(e.target.value)}
+                  onBlur={(e) => setBalance(completeCents(e.target.value))}
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  className="w-full rounded-2xl border border-brand-line bg-white py-3 pl-9 pr-3.5 text-center text-[16px] text-brand-ink outline-none focus:border-brand-ink"
+                />
+              </div>
+              <p className="mx-auto mt-3.5 max-w-[260px] text-center text-[12px] leading-snug text-brand-ink-soft">
+                O ideal é começar no dia que você recebe o salário, ou no primeiro dia do mês —
+                assim fica fácil acompanhar.
+              </p>
+              <p className="mx-auto mt-2 max-w-[260px] text-center text-[12px] leading-snug text-brand-ink-soft">
+                Se for lançar um extrato antigo, esse valor é o que você tinha no primeiro dia
+                dele, não hoje.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mb-5 mt-4 flex gap-1.5">

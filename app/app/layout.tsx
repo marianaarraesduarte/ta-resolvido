@@ -23,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "onboarding_completed, hide_goals_screen, accent_color, monthly_insights_enabled, income_basis",
+      "onboarding_completed, hide_goals_screen, accent_color, monthly_insights_enabled, income_basis, initial_balance, initial_balance_date",
     )
     .eq("id", user.id)
     .single();
@@ -37,6 +37,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const firstDayKey = toDateKey(firstDay);
+  const lastDayKey = toDateKey(lastDay);
 
   const [{ count: unreadInsights }, { data: entriesData }, { data: goalsData }] =
     await Promise.all([
@@ -47,20 +49,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         .is("read_at", null),
       supabase
         .from("entries")
-        .select("type, amount, income_type")
+        .select("type, amount, income_type, entry_date")
         .eq("user_id", user.id)
-        .gte("entry_date", toDateKey(firstDay))
-        .lte("entry_date", toDateKey(lastDay)),
+        .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01"),
       supabase.from("goals").select("kind, percent").eq("user_id", user.id),
     ]);
 
   const entries = entriesData ?? [];
   const salaryOnly = profile?.income_basis === "salary_only";
-  const receitaDoMes = entries
-    .filter((e) => e.type === "receita" && (!salaryOnly || e.income_type === "salario"))
-    .reduce((sum, e) => sum + e.amount, 0);
-  const despesaDoMes = entries
+  const isReceita = (e: (typeof entries)[number]) =>
+    e.type === "receita" && (!salaryOnly || e.income_type === "salario");
+  const isDoMes = (e: (typeof entries)[number]) =>
+    e.entry_date >= firstDayKey && e.entry_date <= lastDayKey;
+
+  const receitaAcumulada = entries.filter(isReceita).reduce((sum, e) => sum + e.amount, 0);
+  const despesaAcumulada = entries
     .filter((e) => e.type === "despesa")
+    .reduce((sum, e) => sum + e.amount, 0);
+  const receitaDoMes = entries
+    .filter((e) => isReceita(e) && isDoMes(e))
     .reduce((sum, e) => sum + e.amount, 0);
 
   const goalsByKind = new Map((goalsData ?? []).map((g) => [g.kind as GoalKind, g.percent]));
@@ -70,8 +77,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <SaldoProvider
+      saldoInicial={profile?.initial_balance ?? 0}
+      receitaAcumulada={receitaAcumulada}
+      despesaAcumulada={despesaAcumulada}
       receitaDoMes={receitaDoMes}
-      despesaDoMes={despesaDoMes}
       initialGoalPercents={initialGoalPercents}
     >
       <div
