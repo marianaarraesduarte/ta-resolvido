@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Minus, Pencil, PiggyBank, Plus, X } from "lucide-react";
 import { completeCents, currency, parseCurrencyInput, TOKENS } from "@/lib/tokens";
+import { useSaldo } from "@/lib/saldo-context";
 import {
   createReserve,
   deleteReserve,
@@ -197,6 +198,7 @@ export function MetasBody({
   goals: { kind: GoalKind; percent: number }[];
   reserves: Reserve[];
 }) {
+  const { setGoalPercent: setSaldoGoalPercent } = useSaldo();
   const [incomeBasis, setIncomeBasisState] = useState(initialIncomeBasis);
   const [goalPercents, setGoalPercents] = useState<Record<GoalKind, number>>(() => {
     const map = {} as Record<GoalKind, number>;
@@ -222,6 +224,7 @@ export function MetasBody({
   function handleGoalChange(kind: GoalKind, percent: number) {
     const clamped = Math.max(0, Math.min(100, percent));
     setGoalPercents((prev) => ({ ...prev, [kind]: clamped }));
+    setSaldoGoalPercent(kind, clamped);
     setGoalPercent(kind, clamped).catch(() => {});
   }
 
