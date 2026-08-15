@@ -46,9 +46,21 @@ function GoalRow({
           >
             <Minus size={12} />
           </button>
-          <span className="w-9 text-center font-display text-[15px] font-bold text-brand-ink">
-            {percent}%
-          </span>
+          <div className="flex w-11 items-baseline justify-center">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={percent}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^0-9]/g, "");
+                onChange(digits === "" ? 0 : Number(digits));
+              }}
+              onFocus={(e) => e.target.select()}
+              aria-label={`${label} — porcentagem`}
+              className="w-7 bg-transparent text-right font-display text-[15px] font-bold text-brand-ink outline-none"
+            />
+            <span className="font-display text-[15px] font-bold text-brand-ink">%</span>
+          </div>
           <button
             type="button"
             onClick={() => onChange(percent + 1)}

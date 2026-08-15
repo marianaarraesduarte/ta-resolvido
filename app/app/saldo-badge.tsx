@@ -10,11 +10,11 @@ export function SaldoBadge() {
 
   return (
     <div
-      className="flex items-baseline gap-1.5 rounded-full px-3 py-[7px]"
+      className="flex items-baseline gap-2 rounded-full px-3.5 py-2"
       style={{ background: `color-mix(in srgb, ${color} 14%, ${TOKENS.card})` }}
     >
-      <span className="text-[10px] font-medium text-brand-ink-soft">Saldo</span>
-      <span className="font-display text-[13.5px] font-bold" style={{ color }}>
+      <span className="text-[11px] font-medium text-brand-ink-soft">Saldo</span>
+      <span className="font-display text-[22px] font-bold" style={{ color }}>
         {currency(saldo)}
       </span>
     </div>
