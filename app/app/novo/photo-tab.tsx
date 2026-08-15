@@ -6,14 +6,15 @@ import { BankStatementReview } from "./bank-statement-review";
 import { CardInvoiceReview } from "./card-invoice-review";
 
 type Category = { id: string; name: string };
+type FixedExpense = { name: string; expected_amount: number };
 
 export function PhotoTab({
   salaryPatterns,
-  fixedExpenseNames,
+  fixedExpenses,
   categories,
 }: {
   salaryPatterns: string[];
-  fixedExpenseNames: string[];
+  fixedExpenses: FixedExpense[];
   categories: Category[];
 }) {
   const [source, setSource] = useState<"extrato" | "fatura">("extrato");
@@ -50,11 +51,11 @@ export function PhotoTab({
       {source === "extrato" ? (
         <BankStatementReview
           salaryPatterns={salaryPatterns}
-          fixedExpenseNames={fixedExpenseNames}
+          fixedExpenses={fixedExpenses}
           categories={categories}
         />
       ) : (
-        <CardInvoiceReview fixedExpenseNames={fixedExpenseNames} categories={categories} />
+        <CardInvoiceReview fixedExpenses={fixedExpenses} categories={categories} />
       )}
     </div>
   );

@@ -25,7 +25,7 @@ export default async function NovoLancamentoPage({
         .order("name", { ascending: true }),
       supabase.from("profiles").select("separate_by_account").eq("id", user.id).single(),
       supabase.from("salary_patterns").select("description_pattern").eq("user_id", user.id),
-      supabase.from("fixed_expenses").select("name").eq("user_id", user.id),
+      supabase.from("fixed_expenses").select("name, expected_amount").eq("user_id", user.id),
     ]);
 
   const { error } = await searchParams;
@@ -49,7 +49,7 @@ export default async function NovoLancamentoPage({
           hasError={error === "1"}
           separateByAccount={profile?.separate_by_account ?? false}
           salaryPatterns={(salaryPatterns ?? []).map((p) => p.description_pattern)}
-          fixedExpenseNames={(fixedExpenses ?? []).map((f) => f.name)}
+          fixedExpenses={fixedExpenses ?? []}
         />
       </div>
     </div>

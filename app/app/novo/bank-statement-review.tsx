@@ -9,15 +9,16 @@ import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import { recognizeStatement, saveRecognizedItems, type RecognizedItem } from "./actions";
 
 type Category = { id: string; name: string };
+type FixedExpense = { name: string; expected_amount: number };
 type ReviewItem = RecognizedItem & { id: string; isSalary: boolean };
 
 export function BankStatementReview({
   salaryPatterns,
-  fixedExpenseNames,
+  fixedExpenses,
   categories,
 }: {
   salaryPatterns: string[];
-  fixedExpenseNames: string[];
+  fixedExpenses: FixedExpense[];
   categories: Category[];
 }) {
   const {
@@ -62,8 +63,11 @@ export function BankStatementReview({
     setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, category } : it)) : prev));
   }
 
-  function matchedFixedExpense(description: string): string | null {
-    return fixedExpenseNames.find((name) => namesMatch(name, description)) ?? null;
+  function matchedFixedExpense(description: string, amount: number): string | null {
+    const byAmount = fixedExpenses.find((fe) => Math.abs(fe.expected_amount - amount) < 0.01);
+    if (byAmount) return byAmount.name;
+    const byName = fixedExpenses.find((fe) => namesMatch(fe.name, description));
+    return byName?.name ?? null;
   }
 
   async function handleSave() {
@@ -154,9 +158,9 @@ export function BankStatementReview({
                       <div className="truncate text-[13.5px] font-medium text-brand-ink">
                         {item.description}
                       </div>
-                      {item.type === "despesa" && matchedFixedExpense(item.description) && (
+                      {item.type === "despesa" && matchedFixedExpense(item.description, item.amount) && (
                         <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
-                          Parece o gasto fixo &quot;{matchedFixedExpense(item.description)}&quot;
+                          Parece o gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
                         </div>
                       )}
                       <div className="mt-1 flex flex-wrap items-center gap-2.5">

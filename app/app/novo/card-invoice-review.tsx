@@ -10,13 +10,14 @@ import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import { recognizeCardInvoice, saveCardInvoice, type RecognizedCardItem } from "./actions";
 
 type Category = { id: string; name: string };
+type FixedExpense = { name: string; expected_amount: number };
 type ReviewItem = RecognizedCardItem & { id: string };
 
 export function CardInvoiceReview({
-  fixedExpenseNames,
+  fixedExpenses,
   categories,
 }: {
-  fixedExpenseNames: string[];
+  fixedExpenses: FixedExpense[];
   categories: Category[];
 }) {
   const {
@@ -47,8 +48,11 @@ export function CardInvoiceReview({
     setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, category } : it)) : prev));
   }
 
-  function matchedFixedExpense(description: string): string | null {
-    return fixedExpenseNames.find((name) => namesMatch(name, description)) ?? null;
+  function matchedFixedExpense(description: string, amount: number): string | null {
+    const byAmount = fixedExpenses.find((fe) => Math.abs(fe.expected_amount - amount) < 0.01);
+    if (byAmount) return byAmount.name;
+    const byName = fixedExpenses.find((fe) => namesMatch(fe.name, description));
+    return byName?.name ?? null;
   }
 
   const total = (items ?? []).reduce((sum, it) => sum + it.amount, 0);
@@ -130,9 +134,9 @@ export function CardInvoiceReview({
                       <div className="truncate text-[13.5px] font-medium text-brand-ink">
                         {item.description}
                       </div>
-                      {matchedFixedExpense(item.description) && (
+                      {matchedFixedExpense(item.description, item.amount) && (
                         <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
-                          Parece o gasto fixo &quot;{matchedFixedExpense(item.description)}&quot;
+                          Parece o gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
                         </div>
                       )}
                       <select

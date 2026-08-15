@@ -102,14 +102,14 @@ export function EntryForm({
   hasError,
   separateByAccount,
   salaryPatterns,
-  fixedExpenseNames,
+  fixedExpenses,
 }: {
   categories: Category[];
   defaultDate: string;
   hasError: boolean;
   separateByAccount: boolean;
   salaryPatterns: string[];
-  fixedExpenseNames: string[];
+  fixedExpenses: { name: string; expected_amount: number }[];
 }) {
   const [mode, setMode] = useState<"manual" | "foto">("manual");
   const [type, setType] = useState<"despesa" | "receita">("despesa");
@@ -195,7 +195,7 @@ export function EntryForm({
       {mode === "foto" ? (
         <PhotoTab
           salaryPatterns={salaryPatterns}
-          fixedExpenseNames={fixedExpenseNames}
+          fixedExpenses={fixedExpenses}
           categories={categories}
         />
       ) : (
