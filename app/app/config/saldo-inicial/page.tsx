@@ -38,9 +38,9 @@ export default async function SaldoInicialPage() {
 
         <div className="mb-5 rounded-xl bg-brand-amber/10 px-3.5 py-2.5">
           <p className="text-[12px] font-medium leading-snug text-brand-amber">
-            Quer lançar o mês inteiro desde o dia 1? Muda a data pra o primeiro dia do mês, e o
-            valor pro saldo que você tinha <strong>naquele dia</strong> (confere no extrato do
-            banco) — não o saldo de hoje.
+            Usa sempre a data de <strong>hoje</strong> e o saldo que você vê no banco{" "}
+            <strong>agora</strong> — mesmo se for lançar gastos de dias anteriores do mês. Gastos
+            antigos não mexem nesse saldo, só aparecem no resumo do mês.
           </p>
         </div>
 

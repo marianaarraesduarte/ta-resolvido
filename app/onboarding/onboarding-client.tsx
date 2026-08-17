@@ -118,12 +118,12 @@ export function OnboardingClient() {
                 />
               </div>
               <p className="mx-auto mt-3.5 max-w-[260px] text-center text-[12px] leading-snug text-brand-ink-soft">
-                O ideal é começar no dia que você recebe o salário, ou no primeiro dia do mês —
-                assim fica fácil acompanhar.
+                Usa o saldo que você vê no banco <strong>agora</strong>, hoje — mesmo se for
+                lançar gastos de dias anteriores do mês.
               </p>
               <p className="mx-auto mt-2 max-w-[260px] text-center text-[12px] leading-snug text-brand-ink-soft">
-                Se for lançar um extrato antigo, esse valor é o que você tinha no primeiro dia
-                dele, não hoje.
+                Gastos antigos não mexem nesse saldo, só aparecem no resumo do mês — então nada
+                desacerta.
               </p>
             </div>
           )}
