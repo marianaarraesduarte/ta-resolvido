@@ -13,6 +13,7 @@ const config: Config = {
           amber: "#D9A441",
           coral: "#C1553D",
           sage: "#6F8F6A",
+          plum: "#7A5C7E",
           line: "#D9D3C4",
         },
       },
