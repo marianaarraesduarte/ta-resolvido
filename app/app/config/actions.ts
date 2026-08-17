@@ -51,3 +51,14 @@ export async function setMonthlyInsightsEnabled(value: boolean): Promise<void> {
   if (error) throw new Error("Não deu pra salvar agora.");
   revalidatePath("/app", "layout");
 }
+
+export async function setInitialBalance(amount: number, date: string): Promise<void> {
+  const { supabase, user } = await requireUser();
+  if (!date) throw new Error("Escolhe uma data.");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ initial_balance: amount, initial_balance_date: date })
+    .eq("id", user.id);
+  if (error) throw new Error("Não deu pra salvar agora.");
+  revalidatePath("/app", "layout");
+}

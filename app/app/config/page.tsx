@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { currency } from "@/lib/tokens";
 import { ConfigBody } from "./config-body";
 
 function reminderLabel(freq: number): string {
@@ -19,7 +20,7 @@ export default async function ConfigPage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "separate_by_account, accent_color, hide_goals_screen, reminder_frequency, monthly_insights_enabled",
+      "separate_by_account, accent_color, hide_goals_screen, reminder_frequency, monthly_insights_enabled, initial_balance",
     )
     .eq("id", user.id)
     .single();
@@ -45,8 +46,21 @@ export default async function ConfigPage() {
         />
 
         <Link
-          href="/app/config/lembrete"
+          href="/app/config/saldo-inicial"
           className="mt-2 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
+        >
+          <div>
+            <div className="text-[14.5px] font-medium text-brand-ink">Saldo inicial</div>
+            <div className="mt-0.5 text-xs text-brand-ink-soft">
+              {currency(profile?.initial_balance ?? 0)}
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-brand-ink-soft" />
+        </Link>
+
+        <Link
+          href="/app/config/lembrete"
+          className="mt-2.5 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
         >
           <div>
             <div className="text-[14.5px] font-medium text-brand-ink">Lembrete do print</div>
