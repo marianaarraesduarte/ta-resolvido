@@ -157,10 +157,21 @@ export default function LoginPage() {
 
         {authMode === "magic" &&
           (status === "sent" ? (
-            <p className="text-sm text-brand-ink">
-              Enviamos um link de acesso pra <strong>{email}</strong>. Abre seu e-mail e clica nele
-              pra entrar.
-            </p>
+            <div>
+              <p className="text-sm text-brand-ink">
+                Enviamos um link de acesso pra <strong>{email}</strong>. Abre seu e-mail e clica
+                nele pra entrar.
+              </p>
+              <div className="mt-3 rounded-xl bg-brand-amber/15 px-3.5 py-3">
+                <p className="text-[13.5px] font-bold leading-snug text-brand-amber">
+                  Não achou o e-mail? Olha na caixa de Spam ou Lixo Eletrônico.
+                </p>
+                <p className="mt-1 text-[12.5px] leading-snug text-brand-ink-soft">
+                  Às vezes ele cai lá, principalmente em e-mails @hotmail, @live ou @outlook.
+                  Achando, marca como &quot;Não é spam&quot; pra não acontecer de novo.
+                </p>
+              </div>
+            </div>
           ) : (
             <form onSubmit={handleMagicLink} className="flex flex-col gap-3">
               <label className="text-sm font-medium text-brand-ink" htmlFor="email">
@@ -216,12 +227,23 @@ export default function LoginPage() {
             )}
 
             {status === "sent" ? (
-              <p className="text-sm text-brand-ink">
-                {passwordMode === "forgot"
-                  ? `Mandamos um link pra redefinir sua senha em `
-                  : `Mandamos um link de confirmação pra `}
-                <strong>{email}</strong>. Abre seu e-mail e clica nele pra continuar.
-              </p>
+              <div>
+                <p className="text-sm text-brand-ink">
+                  {passwordMode === "forgot"
+                    ? `Mandamos um link pra redefinir sua senha em `
+                    : `Mandamos um link de confirmação pra `}
+                  <strong>{email}</strong>. Abre seu e-mail e clica nele pra continuar.
+                </p>
+                <div className="mt-3 rounded-xl bg-brand-amber/15 px-3.5 py-3">
+                  <p className="text-[13.5px] font-bold leading-snug text-brand-amber">
+                    Não achou o e-mail? Olha na caixa de Spam ou Lixo Eletrônico.
+                  </p>
+                  <p className="mt-1 text-[12.5px] leading-snug text-brand-ink-soft">
+                    Às vezes ele cai lá, principalmente em e-mails @hotmail, @live ou @outlook.
+                    Achando, marca como &quot;Não é spam&quot; pra não acontecer de novo.
+                  </p>
+                </div>
+              </div>
             ) : passwordMode === "signin" ? (
               <form onSubmit={handleSignIn} className="flex flex-col gap-3">
                 <label className="text-sm font-medium text-brand-ink" htmlFor="email-signin">
