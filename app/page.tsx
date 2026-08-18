@@ -30,13 +30,19 @@ const FREE_FEATURES = [
   "Categorias",
 ];
 
-const PAID_FEATURES = [
-  "Foto/print do extrato em lote (reconhecimento automático de gastos e receitas)",
-  "Reconhecimento automático de salário e gastos fixos recorrentes",
-  "Análise do mês — um resumo simples de como foi, sem gráfico complicado",
-  "Metas de investimento e reservas planejadas",
-  "Limites por categoria com alerta",
-  "Lembrete configurável de envio do print",
+const PAID_FEATURES: { text: string; image?: string }[] = [
+  { text: "Manda o extrato inteiro de uma vez — sem digitar gasto por gasto" },
+  { text: "Seu salário e as contas fixas já entram sozinhos, mês após mês" },
+  { text: "Um resumo do seu mês pronto, sem precisar montar gráfico nenhum" },
+  {
+    text: "Vê quanto já guardou pra cada meta, sem abrir conta separada",
+    image: "/metas-preview.png",
+  },
+  {
+    text: "Sabe antes de estourar o orçamento, não só depois",
+    image: "/limites-preview.png",
+  },
+  { text: "Um empurrãozinho pra lembrar de mandar o extrato, do jeito que você escolher" },
 ];
 
 const FAQ = [
@@ -250,9 +256,22 @@ export default async function RootPage() {
             <div className="mb-5 text-[12.5px] text-brand-card/70">Tudo do plano grátis, mais:</div>
             <ul className="mb-6 flex flex-col gap-2.5">
               {PAID_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-[13.5px] text-brand-card/85">
-                  <Check size={15} className="mt-0.5 flex-shrink-0" style={{ color: "#D9A441" }} />
-                  {f}
+                <li key={f.text} className="flex flex-col gap-2.5">
+                  <div className="flex items-start gap-2 text-[13.5px] text-brand-card/85">
+                    <Check size={15} className="mt-0.5 flex-shrink-0" style={{ color: "#D9A441" }} />
+                    {f.text}
+                  </div>
+                  {f.image && (
+                    <div className="ml-[23px] max-w-[170px] overflow-hidden rounded-2xl shadow-lg">
+                      <Image
+                        src={f.image}
+                        alt={f.text}
+                        width={375}
+                        height={812}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -314,6 +333,22 @@ export default async function RootPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Dúvidas / Contato */}
+      <section className="px-5 pb-16 text-center sm:px-10">
+        <h2 className="mb-2.5 font-display text-2xl font-bold text-brand-ink">
+          Ficou com alguma dúvida?
+        </h2>
+        <p className="text-[15px] text-brand-ink-soft">
+          Manda um e-mail pra gente:{" "}
+          <a
+            href="mailto:contato@taresolvido.app"
+            className="font-semibold text-brand-ink underline underline-offset-2"
+          >
+            contato@taresolvido.app
+          </a>
+        </p>
       </section>
 
       {/* 11. CTA final */}
