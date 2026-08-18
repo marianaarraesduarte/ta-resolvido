@@ -4,66 +4,68 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, RotateCcw } from "lucide-react";
 
-type Question = { text: string; options: { label: string; value: number }[] };
+type Profile = "organizada" | "meio" | "piloto";
+
+type Question = { text: string; options: { label: string; profile: Profile }[] };
 
 const QUESTIONS: Question[] = [
   {
     text: "Sem abrir o extrato, você sabe quanto gastou esse mês?",
     options: [
-      { label: "Sei bem", value: 0 },
-      { label: "Mais ou menos", value: 1 },
-      { label: "Nem imagino", value: 2 },
+      { label: "Sei bem", profile: "organizada" },
+      { label: "Mais ou menos", profile: "meio" },
+      { label: "Nem imagino", profile: "piloto" },
     ],
   },
   {
-    text: "Já perdeu o fio da meada nas contas alguma vez?",
+    text: "Quando um gasto inesperado aparece, o que costuma acontecer?",
     options: [
-      { label: "Nunca", value: 0 },
-      { label: "De vez em quando", value: 1 },
-      { label: "Direto", value: 2 },
+      { label: "Eu já tenho uma reserva pra isso", profile: "organizada" },
+      { label: "Eu ajusto o resto do mês na correria", profile: "meio" },
+      { label: "Eu descubro o problema só quando já é tarde", profile: "piloto" },
     ],
   },
   {
-    text: "Hoje, como você acompanha seus gastos?",
+    text: "Como você guarda hoje o controle dos seus gastos?",
     options: [
-      { label: "Planilha", value: 1 },
-      { label: "Anoto no papel ou de cabeça", value: 1 },
-      { label: "De nenhum jeito", value: 2 },
+      { label: "Planilha ou app, mas não uso direito", profile: "organizada" },
+      { label: "Papel ou nota no celular", profile: "meio" },
+      { label: "Não guardo em lugar nenhum", profile: "piloto" },
     ],
   },
 ];
 
-const RESULTS = [
-  {
-    max: 2,
-    title: "Perfil Organizado(a) em risco",
-    body: "Você já tem uma boa noção das contas, mas confia na memória — e memória falha. Um lugar só pra ver tudo evita a surpresa do fim do mês.",
+const RESULTS: Record<Profile, { title: string; body: string }> = {
+  organizada: {
+    title: "Organizada, mas cansada",
+    body: "Você já tem uma noção boa das suas finanças — só que mantém isso funcionando na base do esforço. O Tá Resolvido tira esse peso sem te fazer perder o controle que você já tem.",
   },
-  {
-    max: 4,
-    title: "Perfil Consciente, sem sistema",
-    body: "Você se preocupa e até tenta acompanhar, mas sem um jeito simples de fazer isso, o esforço não vira controle de verdade.",
+  meio: {
+    title: "No meio do caminho",
+    body: "Você não está perdida, mas também não tem uma visão clara do mês inteiro. A régua do Tá Resolvido é feita pra fechar exatamente essa lacuna.",
   },
-  {
-    max: 6,
-    title: "Perfil Só no Improviso",
-    body: "Hoje o dinheiro passa e você descobre depois pra onde foi. É exatamente esse ponto que o Tá Resolvido resolve.",
+  piloto: {
+    title: "Sobrevivendo no piloto automático",
+    body: "Você não é desorganizada — só está sobrecarregada, igual muita gente. O Tá Resolvido foi pensado exatamente pra quem não tem tempo nem cabeça sobrando pra mais um sistema complicado.",
   },
-];
+};
 
-function resultFor(score: number) {
-  return RESULTS.find((r) => score <= r.max) ?? RESULTS[RESULTS.length - 1];
+function majorityProfile(answers: Profile[]): Profile {
+  const counts: Record<Profile, number> = { organizada: 0, meio: 0, piloto: 0 };
+  for (const a of answers) counts[a] += 1;
+  return (Object.keys(counts) as Profile[]).reduce((best, key) =>
+    counts[key] > counts[best] ? key : best,
+  );
 }
 
 export function Quiz() {
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
+  const [answers, setAnswers] = useState<Profile[]>([]);
 
   const done = step >= QUESTIONS.length;
-  const score = answers.reduce((sum, v) => sum + v, 0);
 
-  function choose(value: number) {
-    setAnswers((prev) => [...prev, value]);
+  function choose(profile: Profile) {
+    setAnswers((prev) => [...prev, profile]);
     setStep((s) => s + 1);
   }
 
@@ -93,7 +95,7 @@ export function Quiz() {
               <button
                 key={opt.label}
                 type="button"
-                onClick={() => choose(opt.value)}
+                onClick={() => choose(opt.profile)}
                 className="rounded-2xl border-[1.5px] border-brand-line bg-white px-5 py-3.5 text-left text-[15px] font-medium text-brand-ink transition-colors hover:border-brand-plum"
               >
                 {opt.label}
@@ -104,19 +106,19 @@ export function Quiz() {
       ) : (
         <div className="text-center">
           <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-brand-plum">
-            Seu resultado
+            Seu perfil
           </div>
           <h3 className="mb-3 font-display text-2xl font-bold text-brand-ink">
-            {resultFor(score).title}
+            {RESULTS[majorityProfile(answers)].title}
           </h3>
           <p className="mb-6 text-[14.5px] leading-relaxed text-brand-ink-soft">
-            {resultFor(score).body}
+            {RESULTS[majorityProfile(answers)].body}
           </p>
           <Link
             href="/login"
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-plum py-4 font-display text-[15px] font-semibold text-white"
           >
-            Quero resolver isso
+            Quero organizar meu mês
             <ArrowRight size={17} />
           </Link>
           <button
