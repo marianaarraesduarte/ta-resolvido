@@ -1,6 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Camera, Check, ImageOff, PenLine, Ruler } from "lucide-react";
+import { ArrowRight, Camera, Check, PenLine, Ruler } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Quiz } from "./quiz";
 
@@ -148,11 +149,14 @@ export default async function RootPage() {
             dinheiro marcados nela, do jeito que sua semana realmente aconteceu.
           </p>
         </div>
-        <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-2 rounded-[28px] border-2 border-dashed border-brand-line bg-brand-card/60 px-6 py-14 text-center">
-          <ImageOff size={26} className="text-brand-ink-soft" />
-          <span className="text-[13px] font-medium text-brand-ink-soft">
-            Print real da régua do app entra aqui
-          </span>
+        <div className="mx-auto mt-8 max-w-[280px] overflow-hidden rounded-[28px] shadow-lg">
+          <Image
+            src="/regua-preview.png"
+            alt="Tela da régua do mês no Tá Resolvido, mostrando o total que entrou e saiu no mês e cada gasto marcado dia a dia"
+            width={650}
+            height={1408}
+            className="w-full"
+          />
         </div>
       </section>
 
