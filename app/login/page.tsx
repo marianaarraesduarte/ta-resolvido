@@ -26,18 +26,21 @@ export default function LoginPage() {
 
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [accountExists, setAccountExists] = useState(false);
 
   function switchAuthMode(mode: AuthMode) {
     setAuthMode(mode);
     setPasswordMode("signin");
     setStatus("idle");
     setErrorMessage("");
+    setAccountExists(false);
   }
 
   function switchPasswordMode(mode: PasswordMode) {
     setPasswordMode(mode);
     setStatus("idle");
     setErrorMessage("");
+    setAccountExists(false);
   }
 
   async function handleMagicLink(e: FormEvent) {
@@ -79,6 +82,7 @@ export default function LoginPage() {
   async function handleSignUp(e: FormEvent) {
     e.preventDefault();
     setErrorMessage("");
+    setAccountExists(false);
 
     if (password.length < 6) {
       setErrorMessage("A senha precisa ter pelo menos 6 caracteres.");
@@ -93,7 +97,7 @@ export default function LoginPage() {
 
     setStatus("sending");
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
@@ -101,6 +105,12 @@ export default function LoginPage() {
 
     if (error) {
       setErrorMessage(rateLimitAwareMessage(error.status, "Não deu pra criar a conta agora."));
+      setStatus("error");
+    } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+      // Supabase finge sucesso quando o e-mail já tem conta confirmada (evita
+      // vazar quais e-mails existem) — não manda e-mail nenhum nesse caso.
+      setErrorMessage("Esse e-mail já tem uma conta — não criamos outra, e nenhum e-mail foi enviado.");
+      setAccountExists(true);
       setStatus("error");
     } else {
       setStatus("sent");
@@ -342,7 +352,29 @@ export default function LoginPage() {
                 >
                   {status === "sending" ? "Criando..." : "Criar conta"}
                 </button>
-                {status === "error" && <p className="text-sm text-brand-coral">{errorMessage}</p>}
+                {status === "error" && (
+                  <div className="rounded-xl bg-brand-coral/10 px-3.5 py-3">
+                    <p className="text-sm font-medium text-brand-coral">{errorMessage}</p>
+                    {accountExists && (
+                      <div className="mt-2.5 flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => switchPasswordMode("signin")}
+                          className="rounded-lg bg-brand-ink px-3.5 py-2 text-xs font-semibold text-brand-card"
+                        >
+                          Entrar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => switchPasswordMode("forgot")}
+                          className="text-xs font-medium text-brand-ink-soft underline underline-offset-2"
+                        >
+                          Esqueci minha senha
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </form>
             ) : (
               <form onSubmit={handleForgotPassword} className="flex flex-col gap-3">
