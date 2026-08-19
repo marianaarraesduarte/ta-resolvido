@@ -1,17 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, FileText, ImagePlus, Trash2 } from "lucide-react";
-import { currency } from "@/lib/tokens";
+import { AlertTriangle, Check, FileText, ImagePlus, Trash2 } from "lucide-react";
+import { completeCents, currency, parseCurrencyInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { namesMatch } from "@/lib/text-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
-import { recognizeCardInvoice, saveCardInvoice, type RecognizedCardItem } from "./actions";
+import {
+  checkExistingInvoiceDate,
+  recognizeCardInvoice,
+  saveCardInvoice,
+  type RecognizedCardItem,
+} from "./actions";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
-type ReviewItem = RecognizedCardItem & { id: string };
+type ReviewItem = RecognizedCardItem & { id: string; amountText: string };
 
 export function CardInvoiceReview({
   fixedExpenses,
@@ -33,12 +38,28 @@ export function CardInvoiceReview({
     handleFileChange,
   } = usePhotoRecognition<ReviewItem>(async (dataUrl) => {
     const recognized = await recognizeCardInvoice(dataUrl);
-    return recognized.map((item, i) => ({ ...item, id: `${i}-${item.description}` }));
+    return recognized.map((item, i) => ({
+      ...item,
+      id: `${i}-${item.description}`,
+      amountText: item.amount.toFixed(2).replace(".", ","),
+    }));
   });
 
   const router = useRouter();
   const [invoiceDate, setInvoiceDate] = useState(() => toDateKey(new Date()));
   const [saving, setSaving] = useState(false);
+  const [duplicateDate, setDuplicateDate] = useState(false);
+
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    let cancelled = false;
+    checkExistingInvoiceDate(invoiceDate).then((exists) => {
+      if (!cancelled) setDuplicateDate(exists);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [invoiceDate, items]);
 
   function removeItem(id: string) {
     setItems((prev) => (prev ? prev.filter((it) => it.id !== id) : prev));
@@ -46,6 +67,30 @@ export function CardInvoiceReview({
 
   function updateItemCategory(id: string, category: string | null) {
     setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, category } : it)) : prev));
+  }
+
+  function updateItemDescription(id: string, description: string) {
+    setItems((prev) =>
+      prev ? prev.map((it) => (it.id === id ? { ...it, description } : it)) : prev,
+    );
+  }
+
+  function updateItemAmountText(id: string, amountText: string) {
+    setItems((prev) =>
+      prev ? prev.map((it) => (it.id === id ? { ...it, amountText } : it)) : prev,
+    );
+  }
+
+  function commitItemAmount(id: string) {
+    setItems((prev) =>
+      prev
+        ? prev.map((it) => {
+            if (it.id !== id) return it;
+            const amountText = completeCents(it.amountText);
+            return { ...it, amountText, amount: parseCurrencyInput(amountText) };
+          })
+        : prev,
+    );
   }
 
   function matchedFixedExpense(description: string, amount: number): string | null {
@@ -131,9 +176,12 @@ export function CardInvoiceReview({
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-2.5 px-3.5 py-3">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13.5px] font-medium text-brand-ink">
-                        {item.description}
-                      </div>
+                      <input
+                        value={item.description}
+                        onChange={(e) => updateItemDescription(item.id, e.target.value)}
+                        aria-label="Descrição"
+                        className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                      />
                       {matchedFixedExpense(item.description, item.amount) && (
                         <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
                           Parece o gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
@@ -153,8 +201,16 @@ export function CardInvoiceReview({
                         ))}
                       </select>
                     </div>
-                    <div className="flex-shrink-0 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
-                      -{currency(item.amount)}
+                    <div className="flex flex-shrink-0 items-center gap-0.5 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
+                      -
+                      <input
+                        value={item.amountText}
+                        onChange={(e) => updateItemAmountText(item.id, e.target.value)}
+                        onBlur={() => commitItemAmount(item.id)}
+                        inputMode="decimal"
+                        aria-label="Valor"
+                        className="w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                      />
                     </div>
                     <button
                       type="button"
@@ -189,6 +245,13 @@ export function CardInvoiceReview({
                   onChange={(e) => setInvoiceDate(e.target.value)}
                   className="w-full rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
                 />
+                {duplicateDate && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-brand-coral">
+                    <AlertTriangle size={12} className="flex-shrink-0" />
+                    Você já tem uma fatura salva com essa data de vencimento — confere se não é a
+                    mesma fatura enviada de novo
+                  </div>
+                )}
               </div>
 
               {error && <p className="mb-3 text-sm text-brand-coral">{error}</p>}

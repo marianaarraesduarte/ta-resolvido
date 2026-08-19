@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { suggestCategoryName } from "@/lib/category-keywords";
+import { namesMatch } from "@/lib/text-match";
 import { extractFromDocument, Type } from "@/lib/gemini";
 
 const FREE_PHOTO_LIMIT = 3;
@@ -161,6 +162,7 @@ export type RecognizedItem = {
   type: "despesa" | "receita";
   date: string;
   category: string | null;
+  possibleDuplicate: boolean;
 };
 
 const NO_CATEGORY = "Sem categoria";
@@ -213,15 +215,31 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
   const categoryNames = (categories ?? []).map((c) => c.name);
 
   try {
-    const items = await extractFromDocument<RecognizedItem[]>(
+    const items = await extractFromDocument<Omit<RecognizedItem, "possibleDuplicate">[]>(
       fileDataUrl,
       statementPrompt(categoryNames),
       statementSchema(categoryNames),
     );
     await logPhotoRecognition(supabase, user.id);
+
+    const dates = [...new Set(items.map((item) => item.date))];
+    const { data: existing } = dates.length
+      ? await supabase
+          .from("entries")
+          .select("amount, entry_date, description")
+          .eq("user_id", user.id)
+          .in("entry_date", dates)
+      : { data: [] };
+
     return items.map((item) => ({
       ...item,
       category: item.category === NO_CATEGORY ? null : item.category,
+      possibleDuplicate: (existing ?? []).some(
+        (e) =>
+          e.entry_date === item.date &&
+          Math.abs(e.amount - item.amount) < 0.01 &&
+          namesMatch(e.description, item.description),
+      ),
     }));
   } catch {
     throw new Error("Não deu pra analisar esse arquivo agora.");
@@ -363,6 +381,24 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
   } catch {
     throw new Error("Não deu pra analisar esse arquivo agora.");
   }
+}
+
+export async function checkExistingInvoiceDate(invoiceDate: string): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("card_invoices")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("invoice_date", invoiceDate)
+    .limit(1)
+    .maybeSingle();
+
+  return !!data;
 }
 
 export async function saveCardInvoice(

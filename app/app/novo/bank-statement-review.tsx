@@ -2,15 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownCircle, ArrowUpCircle, Check, FileText, ImagePlus, Trash2 } from "lucide-react";
-import { currency } from "@/lib/tokens";
+import {
+  AlertTriangle,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Check,
+  FileText,
+  ImagePlus,
+  Trash2,
+} from "lucide-react";
+import { completeCents, parseCurrencyInput } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import { recognizeStatement, saveRecognizedItems, type RecognizedItem } from "./actions";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
-type ReviewItem = RecognizedItem & { id: string; isSalary: boolean };
+type ReviewItem = RecognizedItem & { id: string; isSalary: boolean; amountText: string };
 
 export function BankStatementReview({
   salaryPatterns,
@@ -39,6 +47,7 @@ export function BankStatementReview({
       id: `${i}-${item.description}`,
       isSalary:
         item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
+      amountText: item.amount.toFixed(2).replace(".", ","),
     }));
   });
 
@@ -61,6 +70,30 @@ export function BankStatementReview({
 
   function updateItemCategory(id: string, category: string | null) {
     setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, category } : it)) : prev));
+  }
+
+  function updateItemDescription(id: string, description: string) {
+    setItems((prev) =>
+      prev ? prev.map((it) => (it.id === id ? { ...it, description } : it)) : prev,
+    );
+  }
+
+  function updateItemAmountText(id: string, amountText: string) {
+    setItems((prev) =>
+      prev ? prev.map((it) => (it.id === id ? { ...it, amountText } : it)) : prev,
+    );
+  }
+
+  function commitItemAmount(id: string) {
+    setItems((prev) =>
+      prev
+        ? prev.map((it) => {
+            if (it.id !== id) return it;
+            const amountText = completeCents(it.amountText);
+            return { ...it, amountText, amount: parseCurrencyInput(amountText) };
+          })
+        : prev,
+    );
   }
 
   function matchedFixedExpense(description: string, amount: number): string | null {
@@ -148,16 +181,32 @@ export function BankStatementReview({
               </p>
               <div className="mb-3.5 divide-y divide-brand-bg overflow-hidden rounded-2xl border border-brand-line">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2.5 px-3.5 py-3">
+                  <div
+                    key={item.id}
+                    className={
+                      item.possibleDuplicate
+                        ? "flex items-center gap-2.5 bg-brand-coral/10 px-3.5 py-3"
+                        : "flex items-center gap-2.5 px-3.5 py-3"
+                    }
+                  >
                     {item.type === "receita" ? (
                       <ArrowUpCircle size={15} className="flex-shrink-0 text-brand-sage" />
                     ) : (
                       <ArrowDownCircle size={15} className="flex-shrink-0 text-brand-coral" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13.5px] font-medium text-brand-ink">
-                        {item.description}
-                      </div>
+                      <input
+                        value={item.description}
+                        onChange={(e) => updateItemDescription(item.id, e.target.value)}
+                        aria-label="Descrição"
+                        className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                      />
+                      {item.possibleDuplicate && (
+                        <div className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                          <AlertTriangle size={11} className="flex-shrink-0" />
+                          Pode ser repetido — já tem algo parecido nessa data
+                        </div>
+                      )}
                       {item.type === "despesa" && matchedFixedExpense(item.description, item.amount) && (
                         <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
                           Parece o gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
@@ -201,9 +250,16 @@ export function BankStatementReview({
                         )}
                       </div>
                     </div>
-                    <div className="flex-shrink-0 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
+                    <div className="flex flex-shrink-0 items-center gap-0.5 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
                       {item.type === "receita" ? "+" : "-"}
-                      {currency(item.amount)}
+                      <input
+                        value={item.amountText}
+                        onChange={(e) => updateItemAmountText(item.id, e.target.value)}
+                        onBlur={() => commitItemAmount(item.id)}
+                        inputMode="decimal"
+                        aria-label="Valor"
+                        className="w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                      />
                     </div>
                     <button
                       type="button"
