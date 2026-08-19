@@ -10,6 +10,11 @@ type GoalRow = { kind: GoalKind; percent: number };
 type ReserveRow = { id: string; name: string; target_amount: number; saved_amount: number };
 
 const GOAL_KINDS: GoalKind[] = ["liberdade_financeira", "longo_prazo", "curto_prazo"];
+const GOAL_LABELS: Record<GoalKind, string> = {
+  liberdade_financeira: "Liberdade financeira",
+  longo_prazo: "Longo prazo",
+  curto_prazo: "Curto prazo",
+};
 
 export default async function MetasPage() {
   const supabase = await createClient();
@@ -23,23 +28,39 @@ export default async function MetasPage() {
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  const [{ data: profile }, { data: receitasData }, { data: goalsData }, { data: reservesData }] =
-    await Promise.all([
-      supabase.from("profiles").select("income_basis").eq("id", user.id).single(),
-      supabase
-        .from("entries")
-        .select("amount, income_type")
-        .eq("user_id", user.id)
-        .eq("type", "receita")
-        .gte("entry_date", toDateKey(firstDay))
-        .lte("entry_date", toDateKey(lastDay)),
-      supabase.from("goals").select("kind, percent").eq("user_id", user.id),
-      supabase
-        .from("reserves")
-        .select("id, name, target_amount, saved_amount")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true }),
-    ]);
+  const [
+    { data: profile },
+    { data: receitasData },
+    { data: goalsData },
+    { data: reservesData },
+    { data: confirmedData },
+  ] = await Promise.all([
+    supabase.from("profiles").select("income_basis").eq("id", user.id).single(),
+    supabase
+      .from("entries")
+      .select("amount, income_type")
+      .eq("user_id", user.id)
+      .eq("type", "receita")
+      .gte("entry_date", toDateKey(firstDay))
+      .lte("entry_date", toDateKey(lastDay)),
+    supabase.from("goals").select("kind, percent").eq("user_id", user.id),
+    supabase
+      .from("reserves")
+      .select("id, name, target_amount, saved_amount")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("entries")
+      .select("description")
+      .eq("user_id", user.id)
+      .eq("type", "despesa")
+      .gte("entry_date", toDateKey(firstDay))
+      .lte("entry_date", toDateKey(lastDay))
+      .in(
+        "description",
+        GOAL_KINDS.map((kind) => `Investimento — ${GOAL_LABELS[kind]}`),
+      ),
+  ]);
 
   const receitas = (receitasData as ReceitaRow[] | null) ?? [];
   const receitaAll = receitas.reduce((sum, r) => sum + r.amount, 0);
@@ -52,6 +73,11 @@ export default async function MetasPage() {
     goalsByKind.set(g.kind, g.percent);
   }
   const goals = GOAL_KINDS.map((kind) => ({ kind, percent: goalsByKind.get(kind) ?? 0 }));
+
+  const confirmedDescriptions = new Set((confirmedData ?? []).map((e) => e.description));
+  const confirmedKinds = GOAL_KINDS.filter((kind) =>
+    confirmedDescriptions.has(`Investimento — ${GOAL_LABELS[kind]}`),
+  );
 
   return (
     <div className="flex justify-center px-3 py-7">
@@ -71,6 +97,7 @@ export default async function MetasPage() {
           receitaAll={receitaAll}
           receitaSalaryOnly={receitaSalaryOnly}
           goals={goals}
+          confirmedKinds={confirmedKinds}
           reserves={(reservesData as ReserveRow[] | null) ?? []}
         />
       </div>

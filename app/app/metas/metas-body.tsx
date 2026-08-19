@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Minus, Pencil, PiggyBank, Plus, X } from "lucide-react";
+import { Check, Minus, Pencil, PiggyBank, Plus, X } from "lucide-react";
 import { completeCents, currency, parseCurrencyInput, TOKENS } from "@/lib/tokens";
 import {
+  confirmGoalInvestment,
   createReserve,
   deleteReserve,
   setGoalPercent,
   setIncomeBasis,
+  unconfirmGoalInvestment,
   updateReserveProgress,
 } from "./actions";
 
@@ -26,13 +28,21 @@ function GoalRow({
   percent,
   receita,
   onChange,
+  confirmed,
+  confirming,
+  onToggleConfirm,
 }: {
   label: string;
   color: string;
   percent: number;
   receita: number;
   onChange: (percent: number) => void;
+  confirmed: boolean;
+  confirming: boolean;
+  onToggleConfirm: () => void;
 }) {
+  const amount = (receita * percent) / 100;
+
   return (
     <div className="mb-5 last:mb-0">
       <div className="mb-2 flex items-center justify-between">
@@ -75,9 +85,30 @@ function GoalRow({
           style={{ width: `${percent}%`, background: color }}
         />
       </div>
-      <div className="text-right text-xs text-brand-ink-soft">
-        = {currency((receita * percent) / 100)} / mês
+      <div className="mb-2 text-right text-xs text-brand-ink-soft">
+        = {currency(amount)} / mês
       </div>
+      <button
+        type="button"
+        disabled={confirming || amount <= 0}
+        onClick={onToggleConfirm}
+        className="flex w-full items-center gap-2 rounded-xl bg-brand-bg px-3 py-2.5 text-left disabled:opacity-60"
+      >
+        <span
+          className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-md border-[1.5px]"
+          style={{
+            background: confirmed ? TOKENS.sage : "transparent",
+            borderColor: confirmed ? TOKENS.sage : "#D9D3C4",
+          }}
+        >
+          {confirmed && <Check size={12} className="text-white" />}
+        </span>
+        <span className="text-[12.5px] font-medium text-brand-ink-soft">
+          {confirmed
+            ? `Investido esse mês — descontado do saldo`
+            : `Já investi esse valor esse mês`}
+        </span>
+      </button>
     </div>
   );
 }
@@ -201,12 +232,14 @@ export function MetasBody({
   receitaAll,
   receitaSalaryOnly,
   goals: initialGoals,
+  confirmedKinds: initialConfirmedKinds,
   reserves: initialReserves,
 }: {
   incomeBasis: "all" | "salary_only";
   receitaAll: number;
   receitaSalaryOnly: number;
   goals: { kind: GoalKind; percent: number }[];
+  confirmedKinds: GoalKind[];
   reserves: Reserve[];
 }) {
   const [incomeBasis, setIncomeBasisState] = useState(initialIncomeBasis);
@@ -215,6 +248,13 @@ export function MetasBody({
     for (const g of initialGoals) map[g.kind] = g.percent;
     return map;
   });
+  const [confirmed, setConfirmed] = useState<Record<GoalKind, boolean>>(() => {
+    const map = {} as Record<GoalKind, boolean>;
+    for (const g of initialGoals) map[g.kind] = initialConfirmedKinds.includes(g.kind);
+    return map;
+  });
+  const [confirmingKind, setConfirmingKind] = useState<GoalKind | null>(null);
+  const [confirmError, setConfirmError] = useState("");
   const [reserves, setReserves] = useState(initialReserves);
 
   const [addingReserve, setAddingReserve] = useState(false);
@@ -235,6 +275,25 @@ export function MetasBody({
     const clamped = Math.max(0, Math.min(100, percent));
     setGoalPercents((prev) => ({ ...prev, [kind]: clamped }));
     setGoalPercent(kind, clamped).catch(() => {});
+  }
+
+  async function handleToggleConfirm(kind: GoalKind) {
+    setConfirmError("");
+    setConfirmingKind(kind);
+    try {
+      if (confirmed[kind]) {
+        await unconfirmGoalInvestment(kind);
+        setConfirmed((prev) => ({ ...prev, [kind]: false }));
+      } else {
+        const amount = (receita * (goalPercents[kind] ?? 0)) / 100;
+        await confirmGoalInvestment(kind, amount);
+        setConfirmed((prev) => ({ ...prev, [kind]: true }));
+      }
+    } catch (e) {
+      setConfirmError(e instanceof Error ? e.message : "Não deu pra atualizar agora.");
+    } finally {
+      setConfirmingKind(null);
+    }
   }
 
   async function handleUpdateReserve(id: string, saved: number, target: number) {
@@ -318,9 +377,15 @@ export function MetasBody({
             percent={goalPercents[g.kind] ?? 0}
             receita={receita}
             onChange={(percent) => handleGoalChange(g.kind, percent)}
+            confirmed={confirmed[g.kind] ?? false}
+            confirming={confirmingKind === g.kind}
+            onToggleConfirm={() => handleToggleConfirm(g.kind)}
           />
         ))}
       </div>
+      {confirmError && (
+        <p className="mb-3 text-center text-xs text-brand-coral">{confirmError}</p>
+      )}
       <div className="mb-6 text-center text-[11.5px] text-brand-ink-soft">
         No total, você está investindo{" "}
         <strong className="text-brand-ink">{totalPct}%</strong> da sua receita (

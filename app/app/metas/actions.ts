@@ -1,8 +1,19 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { toDateKey } from "@/lib/date";
 
 type GoalKind = "liberdade_financeira" | "longo_prazo" | "curto_prazo";
+
+const GOAL_LABELS: Record<GoalKind, string> = {
+  liberdade_financeira: "Liberdade financeira",
+  longo_prazo: "Longo prazo",
+  curto_prazo: "Curto prazo",
+};
+
+function goalDescription(kind: GoalKind): string {
+  return `Investimento — ${GOAL_LABELS[kind]}`;
+}
 
 export async function setIncomeBasis(basis: "all" | "salary_only"): Promise<void> {
   const supabase = await createClient();
@@ -33,6 +44,55 @@ export async function setGoalPercent(kind: GoalKind, percent: number): Promise<v
     .upsert({ user_id: user.id, kind, percent: clamped }, { onConflict: "user_id,kind" });
 
   if (error) throw new Error("Não deu pra salvar agora.");
+}
+
+export async function confirmGoalInvestment(kind: GoalKind, amount: number): Promise<string> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  if (!amount || amount <= 0) throw new Error("Defina uma % maior que zero antes de confirmar.");
+
+  const { data, error } = await supabase
+    .from("entries")
+    .insert({
+      user_id: user.id,
+      type: "despesa",
+      amount,
+      description: goalDescription(kind),
+      entry_date: toDateKey(new Date()),
+      source: "manual",
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error("Não deu pra confirmar agora.");
+  return data.id;
+}
+
+export async function unconfirmGoalInvestment(kind: GoalKind): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  const { error } = await supabase
+    .from("entries")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("type", "despesa")
+    .eq("description", goalDescription(kind))
+    .gte("entry_date", toDateKey(firstDay))
+    .lte("entry_date", toDateKey(lastDay));
+
+  if (error) throw new Error("Não deu pra desmarcar agora.");
 }
 
 export async function createReserve(
