@@ -22,7 +22,7 @@ export default async function InsightsPage() {
       >
         <ChevronLeft size={18} />
       </Link>
-      <div className="font-display text-xl font-bold text-brand-ink">Análises do mês</div>
+      <div className="font-display text-xl font-bold text-brand-ink">Comentário do mês</div>
     </div>
   );
 
@@ -32,7 +32,7 @@ export default async function InsightsPage() {
       <div className="flex justify-center px-3 py-7">
         <div className="w-full max-w-sm">
           {header}
-          <Upsell feature="Análise mensal" />
+          <Upsell feature="Comentário do mês" />
         </div>
       </div>
     );

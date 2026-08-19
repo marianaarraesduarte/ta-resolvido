@@ -33,7 +33,7 @@ export default async function MetasPage() {
       >
         <ChevronLeft size={18} />
       </Link>
-      <div className="font-display text-xl font-bold text-brand-ink">Metas e reservas</div>
+      <div className="font-display text-xl font-bold text-brand-ink">Guardando dinheiro</div>
     </div>
   );
 
@@ -43,7 +43,7 @@ export default async function MetasPage() {
       <div className="flex justify-center px-3 py-7">
         <div className="w-full max-w-sm">
           {header}
-          <Upsell feature="Metas e reservas" />
+          <Upsell feature="Guardando dinheiro" />
         </div>
       </div>
     );

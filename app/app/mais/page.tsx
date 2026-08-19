@@ -21,21 +21,21 @@ export default async function MaisPage() {
   const items = [
     {
       href: "/app/limites",
-      label: "Limites de gasto",
+      label: "Quanto posso gastar",
       desc: "Defina quanto gastar por categoria",
       icon: Gauge,
       locked: isFree,
     },
     !profile?.hide_goals_screen && {
       href: "/app/metas",
-      label: "Metas e reservas",
+      label: "Guardando dinheiro",
       desc: "Investimentos e dinheiro guardado",
       icon: Target,
       locked: isFree,
     },
     {
       href: "/app/insights",
-      label: "Análise mensal",
+      label: "Comentário do mês",
       desc: "Um resumo simples do seu mês",
       icon: Sparkles,
       locked: isFree,

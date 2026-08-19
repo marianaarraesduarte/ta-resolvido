@@ -60,6 +60,40 @@ export async function updateFixedExpense(
   }
 }
 
+export async function bulkDeleteEntries(ids: string[]): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+  if (ids.length === 0) return;
+
+  const { error } = await supabase.from("entries").delete().in("id", ids).eq("user_id", user.id);
+
+  if (error) {
+    throw new Error("Não deu pra excluir esses lançamentos agora.");
+  }
+}
+
+export async function bulkSetCategory(ids: string[], categoryId: string | null): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+  if (ids.length === 0) return;
+
+  const { error } = await supabase
+    .from("entries")
+    .update({ category_id: categoryId })
+    .in("id", ids)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error("Não deu pra trocar a categoria agora.");
+  }
+}
+
 export async function deleteFixedExpense(id: string): Promise<void> {
   const supabase = await createClient();
   const {

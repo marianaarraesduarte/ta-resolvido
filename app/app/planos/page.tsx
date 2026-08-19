@@ -13,7 +13,7 @@ const FREE_FEATURES = [
 const PAID_FEATURES = [
   "Fotos/PDFs sem limite (extrato e fatura)",
   "Reconhecimento automático de salário e gastos fixos recorrentes",
-  "Análise do mês — um resumo simples de como foi, sem gráfico complicado",
+  "Comentário do mês — um resumo simples de como foi, sem gráfico complicado",
   "Metas de investimento e reservas planejadas",
   "Limites por categoria com alerta",
   "Lembrete configurável de envio do print",

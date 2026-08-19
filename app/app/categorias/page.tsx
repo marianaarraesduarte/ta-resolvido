@@ -70,11 +70,11 @@ export default async function CategoriasPage() {
           >
             <ChevronLeft size={18} />
           </Link>
-          <div className="font-display text-xl font-bold text-brand-ink">Onde foi</div>
+          <div className="font-display text-xl font-bold text-brand-ink">Onde gastei</div>
         </div>
 
         {ordered.length === 0 ? (
-          <div className="rounded-2xl bg-brand-card p-5">
+          <div className="rounded-2xl border border-brand-line bg-brand-card p-5">
             <div className="text-[15.5px] font-medium leading-snug text-brand-ink">
               Nada marcado ainda esse mês.
             </div>
@@ -84,7 +84,7 @@ export default async function CategoriasPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-hidden rounded-2xl bg-brand-card">
+            <div className="overflow-hidden rounded-2xl border border-brand-line bg-brand-card">
               {ordered.map((c, i) => {
                 const Icon = iconForCategory(c.icon);
                 const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;

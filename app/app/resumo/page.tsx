@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { ChevronLeft, CreditCard, Pencil } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { dayOfMonth, monthLabel, toDateKey } from "@/lib/date";
-import { currency, levelFor, LEVEL_COLOR } from "@/lib/tokens";
-import { iconForCategory } from "@/lib/category-icons";
+import { monthLabel, toDateKey } from "@/lib/date";
+import { currency } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
 import { FixedExpensesSection } from "./fixed-expenses-section";
+import { EntriesList } from "./entries-list";
 
 type DespesaRow = {
   id: string;
@@ -13,6 +13,7 @@ type DespesaRow = {
   amount: number;
   entry_date: string;
   payment_method: "conta" | "cartao";
+  category_id: string | null;
   categories: { name: string; icon: string | null } | null;
 };
 
@@ -30,10 +31,12 @@ export default async function ResumoPage() {
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  const [{ data }, { data: fixedExpensesData }] = await Promise.all([
+  const [{ data }, { data: fixedExpensesData }, { data: categoriesData }] = await Promise.all([
     supabase
       .from("entries")
-      .select("id, description, amount, entry_date, payment_method, categories(name, icon)")
+      .select(
+        "id, description, amount, entry_date, payment_method, category_id, categories(name, icon)",
+      )
       .eq("user_id", user.id)
       .eq("type", "despesa")
       .gte("entry_date", toDateKey(firstDay))
@@ -44,11 +47,11 @@ export default async function ResumoPage() {
       .select("id, name, expected_amount")
       .eq("user_id", user.id)
       .order("name", { ascending: true }),
+    supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
   ]);
 
   const despesas = (data as unknown as DespesaRow[]) ?? [];
   const total = despesas.reduce((sum, d) => sum + d.amount, 0);
-  const average = despesas.length > 0 ? total / despesas.length : 0;
 
   const fixedExpenses = (fixedExpensesData as FixedExpenseRow[] | null) ?? [];
   const paidById: Record<string, { description: string; amount: number } | null> = {};
@@ -74,7 +77,7 @@ export default async function ResumoPage() {
 
         <FixedExpensesSection fixedExpenses={fixedExpenses} paidById={paidById} />
 
-        <div className="mb-5 flex items-center justify-between rounded-2xl bg-brand-card px-5 py-[18px]">
+        <div className="mb-5 flex items-center justify-between rounded-2xl border border-brand-line bg-brand-card px-5 py-[18px]">
           <div>
             <div className="text-[13px] text-brand-ink-soft">Total do mês</div>
             <div className="font-display text-2xl font-bold text-brand-ink">
@@ -88,65 +91,7 @@ export default async function ResumoPage() {
           </div>
         </div>
 
-        <div className="mb-2 text-[13px] font-semibold text-brand-ink">Tudo que foi marcado</div>
-
-        {despesas.length === 0 ? (
-          <div className="rounded-2xl bg-brand-card p-5">
-            <div className="text-[15.5px] font-medium leading-snug text-brand-ink">
-              Nada marcado ainda esse mês.
-            </div>
-            <div className="mt-1.5 text-[13.5px] leading-snug text-brand-ink-soft">
-              Assim que você marcar um gasto, ele aparece aqui.
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl bg-brand-card">
-            {despesas.map((d, i) => {
-              const Icon = iconForCategory(d.categories?.icon);
-              const color = LEVEL_COLOR[levelFor(d.amount, average)];
-              return (
-                <Link
-                  key={d.id}
-                  href={`/app/lancamento/${d.id}`}
-                  className={
-                    i === 0
-                      ? "flex items-center gap-3 px-4 py-3.5"
-                      : "flex items-center gap-3 border-t border-brand-bg px-4 py-3.5"
-                  }
-                >
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-bg">
-                    <Icon size={16} className="text-brand-ink" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <div className="truncate text-[14.5px] font-medium text-brand-ink">
-                        {d.description}
-                      </div>
-                      {d.payment_method === "cartao" && (
-                        <CreditCard
-                          size={12}
-                          className="flex-shrink-0"
-                          style={{ color: "var(--accent)" }}
-                          aria-label="Gasto no cartão"
-                        />
-                      )}
-                    </div>
-                    <div className="text-xs text-brand-ink-soft">
-                      Dia {dayOfMonth(d.entry_date)}
-                    </div>
-                  </div>
-                  <div
-                    className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold"
-                    style={{ color }}
-                  >
-                    {currency(d.amount)}
-                  </div>
-                  <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <EntriesList entries={despesas} categories={categoriesData ?? []} />
       </div>
     </div>
   );

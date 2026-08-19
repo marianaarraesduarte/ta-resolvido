@@ -33,7 +33,7 @@ export default async function LimitesPage() {
       >
         <ChevronLeft size={18} />
       </Link>
-      <div className="font-display text-xl font-bold text-brand-ink">Limites por categoria</div>
+      <div className="font-display text-xl font-bold text-brand-ink">Quanto posso gastar</div>
     </div>
   );
 
@@ -42,7 +42,7 @@ export default async function LimitesPage() {
       <div className="flex justify-center px-3 py-7">
         <div className="w-full max-w-sm">
           {header}
-          <Upsell feature="Limites por categoria" />
+          <Upsell feature="Quanto posso gastar" />
         </div>
       </div>
     );
