@@ -135,6 +135,42 @@ export async function createCategory(name: string): Promise<{ id: string; name: 
   return data;
 }
 
+export async function renameCategory(
+  categoryId: string,
+  name: string,
+): Promise<{ id: string; name: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Não autenticado.");
+  }
+
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error("Digite um nome pra categoria.");
+  }
+
+  const { data, error } = await supabase
+    .from("categories")
+    .update({ name: trimmed })
+    .eq("id", categoryId)
+    .eq("user_id", user.id)
+    .select("id, name")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("Já existe uma categoria com esse nome.");
+    }
+    throw new Error("Não deu pra renomear essa categoria agora.");
+  }
+
+  return data;
+}
+
 export async function deleteCategory(categoryId: string): Promise<void> {
   const supabase = await createClient();
   const {

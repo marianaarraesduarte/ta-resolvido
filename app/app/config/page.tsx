@@ -54,6 +54,19 @@ export default async function ConfigPage() {
         </Link>
 
         <Link
+          href="/app/config/categorias"
+          className="mt-2.5 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
+        >
+          <div>
+            <div className="text-[14.5px] font-medium text-brand-ink">Categorias</div>
+            <div className="mt-0.5 text-xs text-brand-ink-soft">
+              Renomeie, crie ou apague categorias
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-brand-ink-soft" />
+        </Link>
+
+        <Link
           href="/app/config/instalar"
           className="mt-2.5 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
         >
