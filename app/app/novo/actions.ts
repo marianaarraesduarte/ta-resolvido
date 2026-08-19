@@ -3,10 +3,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { suggestCategoryName } from "@/lib/category-keywords";
-import { namesMatch } from "@/lib/text-match";
+import { isCompleto, isPhotoLimitReached, FREE_PHOTO_LIMIT } from "@/lib/plan";
+import { isPossibleDuplicate } from "@/lib/duplicate-check";
 import { extractFromDocument, Type } from "@/lib/gemini";
-
-const FREE_PHOTO_LIMIT = 3;
 
 async function enforcePhotoLimit(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -17,7 +16,7 @@ async function enforcePhotoLimit(
     .select("plan")
     .eq("id", userId)
     .single();
-  if (profile?.plan === "completo") return;
+  if (isCompleto(profile?.plan)) return;
 
   const firstDay = new Date();
   firstDay.setDate(1);
@@ -29,7 +28,7 @@ async function enforcePhotoLimit(
     .eq("user_id", userId)
     .gte("created_at", firstDay.toISOString());
 
-  if ((count ?? 0) >= FREE_PHOTO_LIMIT) {
+  if (isPhotoLimitReached(profile?.plan, count ?? 0)) {
     throw new Error(
       `Você já usou suas ${FREE_PHOTO_LIMIT} fotos grátis desse mês. Assine o Completo pra reconhecer sem limite.`,
     );
@@ -270,12 +269,7 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
     return items.map((item) => ({
       ...item,
       category: item.category === NO_CATEGORY ? null : item.category,
-      possibleDuplicate: (existing ?? []).some(
-        (e) =>
-          e.entry_date === item.date &&
-          Math.abs(e.amount - item.amount) < 0.01 &&
-          namesMatch(e.description, item.description),
-      ),
+      possibleDuplicate: isPossibleDuplicate(item, existing ?? []),
     }));
   } catch {
     throw new Error("Não deu pra analisar esse arquivo agora.");

@@ -3,6 +3,7 @@ import { Bell, Settings } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureMonthlyInsight } from "@/lib/monthly-insight";
+import { calculateSaldo } from "@/lib/saldo";
 import { SaldoBadge } from "./saldo-badge";
 import { NavLinks } from "./nav-links";
 
@@ -47,15 +48,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01"),
   ]);
 
-  const entries = entriesData ?? [];
-  const salaryOnly = profile?.income_basis === "salary_only";
-  const receitaAcumulada = entries
-    .filter((e) => e.type === "receita" && (!salaryOnly || e.income_type === "salario"))
-    .reduce((sum, e) => sum + e.amount, 0);
-  const despesaAcumulada = entries
-    .filter((e) => e.type === "despesa")
-    .reduce((sum, e) => sum + e.amount, 0);
-  const saldo = (profile?.initial_balance ?? 0) + receitaAcumulada - despesaAcumulada;
+  const saldo = calculateSaldo(entriesData ?? [], {
+    initialBalance: profile?.initial_balance ?? 0,
+    salaryOnly: profile?.income_basis === "salary_only",
+  });
 
   return (
     <div

@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { completeCents, parseCurrencyInput } from "@/lib/tokens";
-import { namesMatch } from "@/lib/text-match";
+import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import { recognizeStatement, saveRecognizedItems, type RecognizedItem } from "./actions";
 
@@ -97,10 +97,7 @@ export function BankStatementReview({
   }
 
   function matchedFixedExpense(description: string, amount: number): string | null {
-    const byAmount = fixedExpenses.find((fe) => Math.abs(fe.expected_amount - amount) < 0.01);
-    if (byAmount) return byAmount.name;
-    const byName = fixedExpenses.find((fe) => namesMatch(fe.name, description));
-    return byName?.name ?? null;
+    return matchFixedExpense(description, amount, fixedExpenses);
   }
 
   async function handleSave() {
