@@ -1,10 +1,6 @@
-"use client";
-
-import { useSaldo } from "@/lib/saldo-context";
 import { currency, TOKENS } from "@/lib/tokens";
 
-export function SaldoBadge() {
-  const { saldo } = useSaldo();
+export function SaldoBadge({ saldo }: { saldo: number }) {
   const positive = saldo >= 0;
   const color = positive ? TOKENS.sage : TOKENS.coral;
 
