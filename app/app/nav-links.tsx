@@ -2,26 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Gauge, Ruler, Tags, Target, type LucideIcon } from "lucide-react";
+import { ClipboardList, LayoutGrid, Ruler, Tags, type LucideIcon } from "lucide-react";
 
-const BASE_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/app", label: "Meu mês", icon: Ruler },
   { href: "/app/resumo", label: "Resumo do mês", icon: ClipboardList },
   { href: "/app/categorias", label: "Por categoria", icon: Tags },
-  { href: "/app/limites", label: "Limites de gasto", icon: Gauge },
-  { href: "/app/metas", label: "Metas", icon: Target },
+  { href: "/app/mais", label: "Mais", icon: LayoutGrid },
 ];
 
-export function NavLinks({ hideMetas }: { hideMetas: boolean }) {
+// Telas que, quando abertas, mantêm o ícone "Mais" marcado como ativo.
+const MAIS_PATHS = ["/app/mais", "/app/limites", "/app/metas", "/app/insights", "/app/planos"];
+
+export function NavLinks() {
   const pathname = usePathname();
-  const links = hideMetas ? BASE_LINKS.filter((l) => l.href !== "/app/metas") : BASE_LINKS;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-brand-line bg-brand-card pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5">
       <div className="relative mx-auto flex max-w-sm items-start justify-around px-2">
         <div className="pointer-events-none absolute inset-x-3 top-3 h-px bg-brand-line" />
-        {links.map((link) => {
-          const active = pathname === link.href;
+        {LINKS.map((link) => {
+          const active =
+            link.href === "/app/mais"
+              ? MAIS_PATHS.some((p) => pathname === p || pathname.startsWith("/app/config/lembrete"))
+              : pathname === link.href;
           const Icon = link.icon;
           return (
             <Link

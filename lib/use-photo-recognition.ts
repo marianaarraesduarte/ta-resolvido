@@ -44,8 +44,10 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
       setAnalyzing(true);
       const recognized = await recognize(dataUrl);
       setItems(recognized);
-    } catch {
-      setError("Não deu pra analisar esse arquivo agora. Tenta de novo.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Não deu pra analisar esse arquivo agora. Tenta de novo.",
+      );
     } finally {
       setAnalyzing(false);
     }

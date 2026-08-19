@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { monthLabel } from "@/lib/date";
+import { Upsell } from "../upsell";
 
 type InsightRow = { id: string; month_start: string; content: string; read_at: string | null };
 
@@ -12,6 +13,30 @@ export default async function InsightsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  const header = (
+    <div className="mb-5 flex items-center gap-2.5">
+      <Link
+        href="/app"
+        className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+      >
+        <ChevronLeft size={18} />
+      </Link>
+      <div className="font-display text-xl font-bold text-brand-ink">Análises do mês</div>
+    </div>
+  );
+
+  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+  if (planRow?.plan !== "completo") {
+    return (
+      <div className="flex justify-center px-3 py-7">
+        <div className="w-full max-w-sm">
+          {header}
+          <Upsell feature="Análise mensal" />
+        </div>
+      </div>
+    );
+  }
 
   const { data } = await supabase
     .from("monthly_insights")
@@ -32,15 +57,7 @@ export default async function InsightsPage() {
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
-        <div className="mb-5 flex items-center gap-2.5">
-          <Link
-            href="/app"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-          >
-            <ChevronLeft size={18} />
-          </Link>
-          <div className="font-display text-xl font-bold text-brand-ink">Análises do mês</div>
-        </div>
+        {header}
 
         {insights.length === 0 ? (
           <div className="rounded-2xl bg-brand-card p-5">

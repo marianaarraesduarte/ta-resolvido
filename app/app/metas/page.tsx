@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
 import { MetasBody } from "./metas-body";
+import { Upsell } from "../upsell";
 
 type GoalKind = "liberdade_financeira" | "longo_prazo" | "curto_prazo";
 type ReceitaRow = { amount: number; income_type: string | null };
@@ -23,6 +24,30 @@ export default async function MetasPage() {
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  const header = (
+    <div className="mb-5 flex items-center gap-2.5">
+      <Link
+        href="/app"
+        className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+      >
+        <ChevronLeft size={18} />
+      </Link>
+      <div className="font-display text-xl font-bold text-brand-ink">Metas e reservas</div>
+    </div>
+  );
+
+  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+  if (planRow?.plan !== "completo") {
+    return (
+      <div className="flex justify-center px-3 py-7">
+        <div className="w-full max-w-sm">
+          {header}
+          <Upsell feature="Metas e reservas" />
+        </div>
+      </div>
+    );
+  }
 
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -82,15 +107,7 @@ export default async function MetasPage() {
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
-        <div className="mb-5 flex items-center gap-2.5">
-          <Link
-            href="/app"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-          >
-            <ChevronLeft size={18} />
-          </Link>
-          <div className="font-display text-xl font-bold text-brand-ink">Metas e reservas</div>
-        </div>
+        {header}
 
         <MetasBody
           incomeBasis={(profile?.income_basis as "all" | "salary_only") ?? "all"}

@@ -5,6 +5,43 @@ import { createClient } from "@/lib/supabase/server";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { extractFromDocument, Type } from "@/lib/gemini";
 
+const FREE_PHOTO_LIMIT = 3;
+
+async function enforcePhotoLimit(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<void> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", userId)
+    .single();
+  if (profile?.plan === "completo") return;
+
+  const firstDay = new Date();
+  firstDay.setDate(1);
+  firstDay.setHours(0, 0, 0, 0);
+
+  const { count } = await supabase
+    .from("photo_recognitions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", firstDay.toISOString());
+
+  if ((count ?? 0) >= FREE_PHOTO_LIMIT) {
+    throw new Error(
+      `Você já usou suas ${FREE_PHOTO_LIMIT} fotos grátis desse mês. Assine o Completo pra reconhecer sem limite.`,
+    );
+  }
+}
+
+async function logPhotoRecognition(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<void> {
+  await supabase.from("photo_recognitions").insert({ user_id: userId });
+}
+
 export async function createEntry(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -167,6 +204,8 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
+  await enforcePhotoLimit(supabase, user.id);
+
   const { data: categories } = await supabase
     .from("categories")
     .select("name")
@@ -179,6 +218,7 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
       statementPrompt(categoryNames),
       statementSchema(categoryNames),
     );
+    await logPhotoRecognition(supabase, user.id);
     return items.map((item) => ({
       ...item,
       category: item.category === NO_CATEGORY ? null : item.category,
@@ -301,6 +341,8 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
+  await enforcePhotoLimit(supabase, user.id);
+
   const { data: categories } = await supabase
     .from("categories")
     .select("name")
@@ -313,6 +355,7 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
       cardInvoicePrompt(categoryNames),
       cardInvoiceSchema(categoryNames),
     );
+    await logPhotoRecognition(supabase, user.id);
     return items.map((item) => ({
       ...item,
       category: item.category === NO_CATEGORY ? null : item.category,

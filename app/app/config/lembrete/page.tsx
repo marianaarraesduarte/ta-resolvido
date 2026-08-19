@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { currency } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import { LembreteBody } from "./lembrete-body";
+import { Upsell } from "../../upsell";
 
 export default async function LembretePage() {
   const supabase = await createClient();
@@ -12,6 +13,30 @@ export default async function LembretePage() {
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  const header = (
+    <div className="mb-6 flex items-center gap-2.5">
+      <Link
+        href="/app/mais"
+        className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+      >
+        <ChevronLeft size={18} />
+      </Link>
+      <div className="font-display text-xl font-bold text-brand-ink">Lembrete do print</div>
+    </div>
+  );
+
+  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+  if (planRow?.plan !== "completo") {
+    return (
+      <div className="flex justify-center px-3 py-7">
+        <div className="w-full max-w-sm">
+          {header}
+          <Upsell feature="Lembrete do print" />
+        </div>
+      </div>
+    );
+  }
 
   const [{ data: profile }, { data: lastEntry }] = await Promise.all([
     supabase.from("profiles").select("reminder_frequency").eq("id", user.id).single(),
@@ -27,15 +52,7 @@ export default async function LembretePage() {
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-2.5">
-          <Link
-            href="/app/config"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-          >
-            <ChevronLeft size={18} />
-          </Link>
-          <div className="font-display text-xl font-bold text-brand-ink">Lembrete do print</div>
-        </div>
+        {header}
 
         <p className="mb-5 text-[13.5px] leading-snug text-brand-ink-soft">
           Com que frequência você quer que a gente te lembre de mandar o print do extrato?

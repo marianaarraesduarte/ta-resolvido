@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
 import { currency } from "@/lib/tokens";
 import { CategoryLimitRow } from "./limit-row";
+import { Upsell } from "../upsell";
 
 type CategoryRow = {
   id: string;
@@ -21,6 +22,31 @@ export default async function LimitesPage() {
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  const { data: profile } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+
+  const header = (
+    <div className="mb-5 flex items-center gap-2.5">
+      <Link
+        href="/app"
+        className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+      >
+        <ChevronLeft size={18} />
+      </Link>
+      <div className="font-display text-xl font-bold text-brand-ink">Limites por categoria</div>
+    </div>
+  );
+
+  if (profile?.plan !== "completo") {
+    return (
+      <div className="flex justify-center px-3 py-7">
+        <div className="w-full max-w-sm">
+          {header}
+          <Upsell feature="Limites por categoria" />
+        </div>
+      </div>
+    );
+  }
 
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -57,17 +83,7 @@ export default async function LimitesPage() {
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
-        <div className="mb-5 flex items-center gap-2.5">
-          <Link
-            href="/app"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-          >
-            <ChevronLeft size={18} />
-          </Link>
-          <div className="font-display text-xl font-bold text-brand-ink">
-            Limites por categoria
-          </div>
-        </div>
+        {header}
 
         <p className="mb-5 text-[13.5px] leading-snug text-brand-ink-soft">
           Defina quanto você não quer passar em cada categoria. A gente avisa quando chegar perto

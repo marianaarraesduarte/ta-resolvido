@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "onboarding_completed, hide_goals_screen, accent_color, monthly_insights_enabled, income_basis, initial_balance, initial_balance_date",
+      "onboarding_completed, hide_goals_screen, accent_color, monthly_insights_enabled, income_basis, initial_balance, initial_balance_date, plan",
     )
     .eq("id", user.id)
     .single();
@@ -28,7 +28,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/onboarding");
   }
 
-  await ensureMonthlyInsight(supabase, user.id, profile?.monthly_insights_enabled ?? true);
+  // Análise mensal é recurso do plano Completo — não gera (nem gasta chamada
+  // de IA) pra quem está no grátis.
+  if (profile?.plan === "completo") {
+    await ensureMonthlyInsight(supabase, user.id, profile?.monthly_insights_enabled ?? true);
+  }
 
   const [{ count: unreadInsights }, { data: entriesData }] = await Promise.all([
     supabase
@@ -90,7 +94,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main>{children}</main>
-      <NavLinks hideMetas={profile?.hide_goals_screen ?? false} />
+      <NavLinks />
     </div>
   );
 }

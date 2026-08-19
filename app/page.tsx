@@ -28,10 +28,11 @@ const FREE_FEATURES = [
   "Régua do mês",
   "Resumo do mês",
   "Categorias",
+  "3 fotos ou PDFs reconhecidos por mês",
 ];
 
 const PAID_FEATURES: { text: string; image?: string }[] = [
-  { text: "Manda o extrato inteiro de uma vez — sem digitar gasto por gasto" },
+  { text: "Fotos e PDFs sem limite — manda o extrato inteiro de uma vez, sem digitar gasto por gasto" },
   { text: "Seu salário e as contas fixas já entram sozinhos, mês após mês" },
   { text: "Um resumo do seu mês pronto, sem precisar montar gráfico nenhum" },
   {
