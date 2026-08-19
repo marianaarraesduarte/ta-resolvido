@@ -20,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "onboarding_completed, hide_goals_screen, accent_color, monthly_insights_enabled, income_basis, initial_balance, initial_balance_date, plan",
+      "onboarding_completed, accent_color, monthly_insights_enabled, income_basis, initial_balance, initial_balance_date, plan",
     )
     .eq("id", user.id)
     .single();

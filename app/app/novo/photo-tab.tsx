@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CreditCard, Receipt } from "lucide-react";
 import { BankStatementReview } from "./bank-statement-review";
 import { CardInvoiceReview } from "./card-invoice-review";
@@ -12,10 +13,12 @@ export function PhotoTab({
   salaryPatterns,
   fixedExpenses,
   categories,
+  photosRemaining,
 }: {
   salaryPatterns: string[];
   fixedExpenses: FixedExpense[];
   categories: Category[];
+  photosRemaining: number | null;
 }) {
   const [source, setSource] = useState<"extrato" | "fatura">("extrato");
 
@@ -47,6 +50,22 @@ export function PhotoTab({
           Fatura do cartão
         </button>
       </div>
+
+      {photosRemaining !== null &&
+        (photosRemaining > 0 ? (
+          <p className="mb-3.5 text-[12.5px] text-brand-ink-soft">
+            Você ainda tem {photosRemaining} {photosRemaining === 1 ? "foto grátis" : "fotos grátis"}{" "}
+            esse mês.
+          </p>
+        ) : (
+          <p className="mb-3.5 text-[12.5px] font-medium text-brand-coral">
+            Você já usou suas fotos grátis desse mês.{" "}
+            <Link href="/app/planos" className="underline underline-offset-2">
+              Assine o Completo
+            </Link>{" "}
+            pra reconhecer sem limite.
+          </p>
+        ))}
 
       {source === "extrato" ? (
         <BankStatementReview

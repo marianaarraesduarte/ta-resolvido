@@ -12,7 +12,7 @@ export default async function MaisPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan, hide_goals_screen")
+    .select("plan")
     .eq("id", user.id)
     .single();
 
@@ -26,7 +26,7 @@ export default async function MaisPage() {
       icon: Gauge,
       locked: isFree,
     },
-    !profile?.hide_goals_screen && {
+    {
       href: "/app/metas",
       label: "Guardando dinheiro",
       desc: "Investimentos e dinheiro guardado",
@@ -47,13 +47,7 @@ export default async function MaisPage() {
       icon: Bell,
       locked: isFree,
     },
-  ].filter(Boolean) as {
-    href: string;
-    label: string;
-    desc: string;
-    icon: typeof Gauge;
-    locked: boolean;
-  }[];
+  ];
 
   return (
     <div className="flex justify-center px-3 py-7">

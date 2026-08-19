@@ -14,9 +14,7 @@ export default async function ConfigPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select(
-      "separate_by_account, accent_color, hide_goals_screen, monthly_insights_enabled, initial_balance",
-    )
+    .select("separate_by_account, accent_color, monthly_insights_enabled, initial_balance")
     .eq("id", user.id)
     .single();
 
@@ -36,7 +34,6 @@ export default async function ConfigPage() {
         <ConfigBody
           initialSeparateByAccount={profile?.separate_by_account ?? false}
           initialAccentColor={profile?.accent_color ?? "#D9A441"}
-          initialHideGoalsScreen={profile?.hide_goals_screen ?? false}
           initialMonthlyInsightsEnabled={profile?.monthly_insights_enabled ?? true}
         />
 
@@ -48,19 +45,6 @@ export default async function ConfigPage() {
             <div className="text-[14.5px] font-medium text-brand-ink">Saldo inicial</div>
             <div className="mt-0.5 text-xs text-brand-ink-soft">
               {currency(profile?.initial_balance ?? 0)}
-            </div>
-          </div>
-          <ChevronRight size={18} className="text-brand-ink-soft" />
-        </Link>
-
-        <Link
-          href="/app/config/categorias"
-          className="mt-2.5 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
-        >
-          <div>
-            <div className="text-[14.5px] font-medium text-brand-ink">Categorias</div>
-            <div className="mt-0.5 text-xs text-brand-ink-soft">
-              Renomeie, crie ou apague categorias
             </div>
           </div>
           <ChevronRight size={18} className="text-brand-ink-soft" />

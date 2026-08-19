@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { monthLabel, toDateKey } from "@/lib/date";
 import { currency } from "@/lib/tokens";
@@ -70,7 +70,14 @@ export default async function CategoriasPage() {
           >
             <ChevronLeft size={18} />
           </Link>
-          <div className="font-display text-xl font-bold text-brand-ink">Onde gastei</div>
+          <div className="flex-1 font-display text-xl font-bold text-brand-ink">Onde gastei</div>
+          <Link
+            href="/app/config/categorias"
+            aria-label="Editar categorias"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink-soft"
+          >
+            <Pencil size={16} />
+          </Link>
         </div>
 
         {ordered.length === 0 ? (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
+import { isCompleto, FREE_PHOTO_LIMIT } from "@/lib/plan";
 import { EntryForm } from "./entry-form";
 
 export default async function NovoLancamentoPage({
@@ -16,17 +17,35 @@ export default async function NovoLancamentoPage({
 
   if (!user) return null;
 
-  const [{ data: categories }, { data: profile }, { data: salaryPatterns }, { data: fixedExpenses }] =
-    await Promise.all([
-      supabase
-        .from("categories")
-        .select("id, name")
-        .eq("user_id", user.id)
-        .order("name", { ascending: true }),
-      supabase.from("profiles").select("separate_by_account").eq("id", user.id).single(),
-      supabase.from("salary_patterns").select("description_pattern").eq("user_id", user.id),
-      supabase.from("fixed_expenses").select("name, expected_amount").eq("user_id", user.id),
-    ]);
+  const firstDayOfMonth = new Date();
+  firstDayOfMonth.setDate(1);
+  firstDayOfMonth.setHours(0, 0, 0, 0);
+
+  const [
+    { data: categories },
+    { data: profile },
+    { data: salaryPatterns },
+    { data: fixedExpenses },
+    { count: photosUsed },
+  ] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id, name")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true }),
+    supabase.from("profiles").select("separate_by_account, plan").eq("id", user.id).single(),
+    supabase.from("salary_patterns").select("description_pattern").eq("user_id", user.id),
+    supabase.from("fixed_expenses").select("name, expected_amount").eq("user_id", user.id),
+    supabase
+      .from("photo_recognitions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", firstDayOfMonth.toISOString()),
+  ]);
+
+  const photosRemaining = isCompleto(profile?.plan)
+    ? null
+    : Math.max(0, FREE_PHOTO_LIMIT - (photosUsed ?? 0));
 
   const { error } = await searchParams;
 
@@ -50,6 +69,7 @@ export default async function NovoLancamentoPage({
           separateByAccount={profile?.separate_by_account ?? false}
           salaryPatterns={(salaryPatterns ?? []).map((p) => p.description_pattern)}
           fixedExpenses={fixedExpenses ?? []}
+          photosRemaining={photosRemaining}
         />
       </div>
     </div>

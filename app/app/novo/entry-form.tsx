@@ -103,6 +103,7 @@ export function EntryForm({
   separateByAccount,
   salaryPatterns,
   fixedExpenses,
+  photosRemaining,
 }: {
   categories: Category[];
   defaultDate: string;
@@ -110,6 +111,7 @@ export function EntryForm({
   separateByAccount: boolean;
   salaryPatterns: string[];
   fixedExpenses: { name: string; expected_amount: number }[];
+  photosRemaining: number | null;
 }) {
   const [mode, setMode] = useState<"manual" | "foto">("manual");
   const [type, setType] = useState<"despesa" | "receita">("despesa");
@@ -197,6 +199,7 @@ export function EntryForm({
           salaryPatterns={salaryPatterns}
           fixedExpenses={fixedExpenses}
           categories={categories}
+          photosRemaining={photosRemaining}
         />
       ) : (
         <form action={createEntry} className="rounded-[20px] bg-brand-card p-[18px]">

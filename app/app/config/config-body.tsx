@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import {
-  setAccentColor,
-  setHideGoalsScreen,
-  setMonthlyInsightsEnabled,
-  setSeparateByAccount,
-} from "./actions";
+import { setAccentColor, setMonthlyInsightsEnabled, setSeparateByAccount } from "./actions";
 
 const ACCENT_COLORS = [
   { key: "amber", label: "Âmbar", hex: "#D9A441" },
@@ -39,17 +34,14 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 export function ConfigBody({
   initialSeparateByAccount,
   initialAccentColor,
-  initialHideGoalsScreen,
   initialMonthlyInsightsEnabled,
 }: {
   initialSeparateByAccount: boolean;
   initialAccentColor: string;
-  initialHideGoalsScreen: boolean;
   initialMonthlyInsightsEnabled: boolean;
 }) {
   const [separateByAccount, setSeparateByAccountState] = useState(initialSeparateByAccount);
   const [accentColor, setAccentColorState] = useState(initialAccentColor);
-  const [hideGoalsScreen, setHideGoalsScreenState] = useState(initialHideGoalsScreen);
   const [monthlyInsightsEnabled, setMonthlyInsightsEnabledState] = useState(
     initialMonthlyInsightsEnabled,
   );
@@ -63,12 +55,6 @@ export function ConfigBody({
   function handleSelectColor(hex: string) {
     setAccentColorState(hex);
     setAccentColor(hex).catch(() => {});
-  }
-
-  function handleToggleHideGoals() {
-    const next = !hideGoalsScreen;
-    setHideGoalsScreenState(next);
-    setHideGoalsScreen(next).catch(() => {});
   }
 
   function handleToggleMonthlyInsights() {
@@ -124,19 +110,7 @@ export function ConfigBody({
         </div>
       </div>
 
-      <div className="mb-2 text-[13px] font-semibold text-brand-ink">Guardando dinheiro</div>
-      <div className="flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4">
-        <div className="pr-4">
-          <div className="text-[14.5px] font-medium text-brand-ink">Ocultar tela de metas</div>
-          <div className="mt-0.5 text-xs leading-snug text-brand-ink-soft">
-            Some com &quot;Guardando dinheiro&quot; do menu, pra quem não investe ou não quer usar
-            essa parte.
-          </div>
-        </div>
-        <Toggle on={hideGoalsScreen} onClick={handleToggleHideGoals} />
-      </div>
-
-      <div className="mb-2 mt-6 text-[13px] font-semibold text-brand-ink">Comentário do mês</div>
+      <div className="mb-2 text-[13px] font-semibold text-brand-ink">Comentário do mês</div>
       <div className="flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4">
         <div className="pr-4">
           <div className="text-[14.5px] font-medium text-brand-ink">
