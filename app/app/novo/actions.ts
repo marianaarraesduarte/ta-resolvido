@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { isCompleto, isPhotoLimitReached, FREE_PHOTO_LIMIT } from "@/lib/plan";
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
+import { matchCategoryPattern } from "@/lib/category-pattern-match";
 import { extractFromDocument, Type } from "@/lib/gemini";
 
 async function enforcePhotoLimit(
@@ -245,9 +246,16 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
 
   const { data: categories } = await supabase
     .from("categories")
-    .select("name")
+    .select("id, name")
     .eq("user_id", user.id);
   const categoryNames = (categories ?? []).map((c) => c.name);
+  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+
+  const { data: patternsData } = await supabase
+    .from("category_patterns")
+    .select("description_pattern, category_id")
+    .eq("user_id", user.id);
+  const patterns = patternsData ?? [];
 
   try {
     const items = await extractFromDocument<Omit<RecognizedItem, "possibleDuplicate">[]>(
@@ -266,11 +274,20 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
           .in("entry_date", dates)
       : { data: [] };
 
-    return items.map((item) => ({
-      ...item,
-      category: item.category === NO_CATEGORY ? null : item.category,
-      possibleDuplicate: isPossibleDuplicate(item, existing ?? []),
-    }));
+    return items.map((item) => {
+      const baseCategory = item.category === NO_CATEGORY ? null : item.category;
+      const learnedCategoryId =
+        item.type === "despesa" ? matchCategoryPattern(item.description, patterns) : null;
+      const category = learnedCategoryId
+        ? (categoryNameById.get(learnedCategoryId) ?? baseCategory)
+        : baseCategory;
+
+      return {
+        ...item,
+        category,
+        possibleDuplicate: isPossibleDuplicate(item, existing ?? []),
+      };
+    });
   } catch {
     throw new Error("Não deu pra analisar esse arquivo agora.");
   }
@@ -334,6 +351,20 @@ export async function saveRecognizedItems(
     throw new Error("Não deu pra salvar os lançamentos agora.");
   }
 
+  const categoryPatterns = rows
+    .filter((r) => r.type === "despesa" && r.category_id)
+    .map((r) => ({
+      user_id: user.id,
+      description_pattern: r.description.trim(),
+      category_id: r.category_id as string,
+    }));
+
+  if (categoryPatterns.length > 0) {
+    await supabase
+      .from("category_patterns")
+      .upsert(categoryPatterns, { onConflict: "user_id,description_pattern" });
+  }
+
   const salaryPatterns = items
     .filter((item) => item.type === "receita" && item.isSalary)
     .map((item) => ({
@@ -393,9 +424,16 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
 
   const { data: categories } = await supabase
     .from("categories")
-    .select("name")
+    .select("id, name")
     .eq("user_id", user.id);
   const categoryNames = (categories ?? []).map((c) => c.name);
+  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+
+  const { data: patternsData } = await supabase
+    .from("category_patterns")
+    .select("description_pattern, category_id")
+    .eq("user_id", user.id);
+  const patterns = patternsData ?? [];
 
   try {
     const items = await extractFromDocument<RecognizedCardItem[]>(
@@ -404,10 +442,14 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
       cardInvoiceSchema(categoryNames),
     );
     await logPhotoRecognition(supabase, user.id);
-    return items.map((item) => ({
-      ...item,
-      category: item.category === NO_CATEGORY ? null : item.category,
-    }));
+    return items.map((item) => {
+      const baseCategory = item.category === NO_CATEGORY ? null : item.category;
+      const learnedCategoryId = matchCategoryPattern(item.description, patterns);
+      const category = learnedCategoryId
+        ? (categoryNameById.get(learnedCategoryId) ?? baseCategory)
+        : baseCategory;
+      return { ...item, category };
+    });
   } catch {
     throw new Error("Não deu pra analisar esse arquivo agora.");
   }
@@ -482,5 +524,19 @@ export async function saveCardInvoice(
   const { error } = await supabase.from("entries").insert(rows);
   if (error) {
     throw new Error("Não deu pra salvar os lançamentos agora.");
+  }
+
+  const categoryPatterns = rows
+    .filter((r) => r.category_id)
+    .map((r) => ({
+      user_id: user.id,
+      description_pattern: r.description.trim(),
+      category_id: r.category_id as string,
+    }));
+
+  if (categoryPatterns.length > 0) {
+    await supabase
+      .from("category_patterns")
+      .upsert(categoryPatterns, { onConflict: "user_id,description_pattern" });
   }
 }
