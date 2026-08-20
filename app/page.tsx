@@ -26,24 +26,27 @@ const STEPS = [
 const FREE_FEATURES = [
   "Lançamento manual de gastos e receitas",
   "Régua do mês",
-  "Resumo do mês",
+  "Quanto gastei",
   "Categorias",
   "3 fotos ou PDFs reconhecidos por mês",
 ];
 
-const PAID_FEATURES: { text: string; image?: string }[] = [
+const PAID_FEATURES: { text: string; image?: string; imageHeight?: number }[] = [
   { text: "Fotos e PDFs sem limite — manda o extrato inteiro de uma vez, sem digitar gasto por gasto" },
   { text: "Seu salário e as contas fixas já entram sozinhos, mês após mês" },
   { text: "Um resumo do seu mês pronto, sem precisar montar gráfico nenhum" },
   {
     text: "Vê quanto já guardou pra cada meta, sem abrir conta separada",
     image: "/metas-preview.png",
+    imageHeight: 773,
   },
   {
     text: "Sabe antes de estourar o orçamento, não só depois",
     image: "/limites-preview.png",
+    imageHeight: 763,
   },
   { text: "Um empurrãozinho pra lembrar de mandar o extrato, do jeito que você escolher" },
+  { text: "Aprende a categoria certa a partir das suas correções — não erra de novo" },
 ];
 
 const FAQ = [
@@ -268,7 +271,7 @@ export default async function RootPage() {
                         src={f.image}
                         alt={f.text}
                         width={375}
-                        height={812}
+                        height={f.imageHeight ?? 812}
                         className="w-full"
                       />
                     </div>
@@ -287,10 +290,10 @@ export default async function RootPage() {
 
         <div className="mx-auto mt-4 max-w-3xl rounded-2xl bg-brand-amber/12 px-6 py-4 text-center">
           <div className="font-display text-[14.5px] font-bold text-brand-ink">
-            🎉 Preço fundador: R$19,90/mês pra sempre
+            🎉 Preço fundador: R$19,90/mês nos primeiros 3 meses
           </div>
           <div className="mt-0.5 text-[12.5px] text-brand-ink-soft">
-            Pros primeiros 100 que assinarem. Depois, volta pro preço cheio.
+            Depois, volta pro preço cheio (R$29,90/mês).
           </div>
         </div>
       </section>
