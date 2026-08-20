@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 const FREE_FEATURES = [
   "Lançamento manual de gastos e receitas",
   "Régua do mês",
-  "Resumo do mês",
+  "Quanto gastei",
   "Categorias",
   "3 fotos/PDFs reconhecidos por mês",
 ];
@@ -95,9 +95,14 @@ export default async function PlanosPage() {
               ))}
             </ul>
             {plan !== "completo" && (
-              <div className="rounded-2xl bg-brand-card/10 px-4 py-3 text-center text-[13px] text-brand-card/85">
-                Assinatura em breve por aqui — por enquanto, chama a gente.
-              </div>
+              <a
+                href="https://pay.hotmart.com/S107243172M"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center rounded-2xl bg-brand-plum py-3.5 font-display text-[14.5px] font-semibold text-white"
+              >
+                Assinar o Plano Completo
+              </a>
             )}
           </div>
         </div>
