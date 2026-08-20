@@ -1,30 +1,70 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
   "rounded-xl border border-brand-line bg-white px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const [linkInvalid, setLinkInvalid] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
+  // O link do e-mail de redefinição de senha pode chegar de duas formas
+  // diferentes dependendo de onde é aberto (comum trocar de app no celular):
+  // com um "?code=" na URL, ou com os tokens depois de "#" (o cliente do
+  // Supabase não processa esse segundo formato sozinho — só o servidor não
+  // consegue ler nenhum dos dois, por isso isso é tratado aqui, não em
+  // /auth/callback).
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.replace("/login");
+    let cancelled = false;
+
+    async function establishSession() {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        window.history.replaceState(null, "", window.location.pathname);
+        return !error;
+      }
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        window.history.replaceState(null, "", window.location.pathname);
+        return !error;
+      }
+
+      const { data } = await supabase.auth.getUser();
+      return !!data.user;
+    }
+
+    establishSession().then((ok) => {
+      if (cancelled) return;
+      if (ok) {
+        setChecking(false);
       } else {
+        setLinkInvalid(true);
         setChecking(false);
       }
     });
-  }, [router]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -54,6 +94,28 @@ export default function ResetPasswordPage() {
   }
 
   if (checking) return null;
+
+  if (linkInvalid) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-brand-bg px-4">
+        <div className="w-full max-w-sm rounded-2xl bg-brand-card p-8 shadow-sm">
+          <h1 className="mb-1 font-display text-2xl font-bold text-brand-ink">
+            Link expirado ou já usado
+          </h1>
+          <p className="mb-6 text-sm text-brand-ink-soft">
+            Esse link de redefinição de senha não é mais válido — cada link só funciona uma vez.
+            Pede um novo na tela de login.
+          </p>
+          <a
+            href="/login"
+            className="block rounded-xl bg-brand-ink px-4 py-3 text-center font-display font-semibold text-brand-card"
+          >
+            Voltar pro login
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-brand-bg px-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type PasswordMode = "signin" | "signup" | "forgot";
@@ -46,6 +46,17 @@ export default function LoginPage() {
     setErrorMessage("");
     setAccountExists(false);
   }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "auth") {
+      setErrorMessage(
+        "Esse link não é mais válido — pode já ter sido usado ou ter expirado. Pede um novo com \"Esqueci minha senha\".",
+      );
+      setStatus("error");
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   async function handleSignIn(e: FormEvent) {
     e.preventDefault();
@@ -106,7 +117,7 @@ export default function LoginPage() {
     setErrorMessage("");
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
     if (error) {
