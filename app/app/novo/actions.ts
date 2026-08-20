@@ -6,7 +6,7 @@ import { suggestCategoryName } from "@/lib/category-keywords";
 import { isCompleto, isPhotoLimitReached, FREE_PHOTO_LIMIT } from "@/lib/plan";
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
 import { matchCategoryPattern } from "@/lib/category-pattern-match";
-import { extractFromDocument, Type } from "@/lib/gemini";
+import { extractFromDocument, extractFromText, Type } from "@/lib/gemini";
 
 async function enforcePhotoLimit(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -293,6 +293,118 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
   }
 }
 
+export type ChatItem = {
+  description: string;
+  amount: number | null;
+  type: "despesa" | "receita";
+  date: string;
+  category: string | null;
+  possibleDuplicate: boolean;
+};
+
+function chatSchema(categoryNames: string[]) {
+  return {
+    type: Type.ARRAY,
+    items: {
+      type: Type.OBJECT,
+      properties: {
+        description: { type: Type.STRING },
+        amount: { type: Type.NUMBER, nullable: true },
+        type: { type: Type.STRING, enum: ["despesa", "receita"] },
+        date: { type: Type.STRING },
+        category: { type: Type.STRING, enum: [...categoryNames, NO_CATEGORY] },
+      },
+      required: ["description", "type", "date", "category"],
+    },
+  };
+}
+
+function chatPrompt(categoryNames: string[], today: string): string {
+  return `Você está lendo uma mensagem em português que uma pessoa escreveu contando um ou mais gastos ou recebimentos do dia a dia dela. Hoje é ${today}.
+
+Para cada lançamento que você identificar na mensagem, extraia:
+- description: descrição curta (o que foi, ou de onde veio o dinheiro)
+- amount: o valor em reais, sempre um número positivo. Se a mensagem não disser o valor claramente, deixe null — não invente um número.
+- type: "despesa" se foi um gasto, "receita" se foi dinheiro que entrou
+- date: data no formato YYYY-MM-DD. Resolva termos relativos ("hoje", "ontem", "anteontem") usando ${today} como referência. Se a mensagem não disser nada sobre quando, use ${today}.
+- category: só pra despesas, escolha a categoria que melhor combina entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Se for receita, ou se nenhuma categoria combinar bem, use "${NO_CATEGORY}".
+
+Se a mensagem descrever mais de um lançamento, retorne todos, um por item. Se não conseguir identificar nenhum lançamento de dinheiro na mensagem, retorne uma lista vazia.`;
+}
+
+export async function recognizeChatMessage(message: string): Promise<ChatItem[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .single();
+  if (!isCompleto(profile?.plan)) {
+    throw new Error("Lançar pelo chat é um recurso do plano Completo.");
+  }
+
+  if (!message.trim()) {
+    throw new Error("Escreve alguma coisa antes de enviar.");
+  }
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("id, name")
+    .eq("user_id", user.id);
+  const categoryNames = (categories ?? []).map((c) => c.name);
+  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+
+  const { data: patternsData } = await supabase
+    .from("category_patterns")
+    .select("description_pattern, category_id")
+    .eq("user_id", user.id);
+  const patterns = patternsData ?? [];
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const items = await extractFromText<Omit<ChatItem, "possibleDuplicate">[]>(
+      message,
+      chatPrompt(categoryNames, today),
+      chatSchema(categoryNames),
+    );
+
+    const dates = [...new Set(items.map((item) => item.date))];
+    const { data: existing } = dates.length
+      ? await supabase
+          .from("entries")
+          .select("amount, entry_date, description")
+          .eq("user_id", user.id)
+          .in("entry_date", dates)
+      : { data: [] };
+
+    return items.map((item) => {
+      const baseCategory = item.category === NO_CATEGORY ? null : item.category;
+      const learnedCategoryId =
+        item.type === "despesa" ? matchCategoryPattern(item.description, patterns) : null;
+      const category = learnedCategoryId
+        ? (categoryNameById.get(learnedCategoryId) ?? baseCategory)
+        : baseCategory;
+
+      return {
+        ...item,
+        category,
+        possibleDuplicate:
+          item.amount !== null ? isPossibleDuplicate({ ...item, amount: item.amount }, existing ?? []) : false,
+      };
+    });
+  } catch {
+    throw new Error("Não deu pra entender essa mensagem agora.");
+  }
+}
+
 export async function saveRecognizedItems(
   items: {
     description: string;
@@ -302,6 +414,7 @@ export async function saveRecognizedItems(
     date: string;
     category: string | null;
   }[],
+  source: "foto" | "chat" = "foto",
 ): Promise<void> {
   const supabase = await createClient();
   const {
@@ -332,7 +445,7 @@ export async function saveRecognizedItems(
         description: item.description,
         entry_date: item.date,
         category_id: categoryName ? (categoryByName.get(categoryName) ?? null) : null,
-        source: "foto" as const,
+        source,
       };
     }
     return {
@@ -342,7 +455,7 @@ export async function saveRecognizedItems(
       description: item.description,
       entry_date: item.date,
       income_type: item.isSalary ? ("salario" as const) : ("outra" as const),
-      source: "foto" as const,
+      source,
     };
   });
 

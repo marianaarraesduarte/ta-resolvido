@@ -70,6 +70,7 @@ export default async function NovoLancamentoPage({
           salaryPatterns={(salaryPatterns ?? []).map((p) => p.description_pattern)}
           fixedExpenses={fixedExpenses ?? []}
           photosRemaining={photosRemaining}
+          isCompleto={isCompleto(profile?.plan)}
         />
       </div>
     </div>

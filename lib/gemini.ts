@@ -56,6 +56,39 @@ export async function extractFromDocument<T>(
 }
 
 /**
+ * Manda um texto (sem imagem) pro Gemini com um prompt e um schema de saída,
+ * e devolve o resultado já parseado como JSON — usado pro lançamento por chat.
+ */
+export async function extractFromText<T>(
+  userText: string,
+  prompt: string,
+  schema: object,
+): Promise<T> {
+  const ai = getClient();
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }, { text: userText }],
+      },
+    ],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+    },
+  });
+
+  const text = response.text;
+  if (!text) {
+    throw new Error("Resposta vazia da IA.");
+  }
+
+  return JSON.parse(text) as T;
+}
+
+/**
  * Pede um texto curto em linguagem natural pro Gemini (sem imagem, sem
  * schema estruturado) — usado pra análise mensal.
  */

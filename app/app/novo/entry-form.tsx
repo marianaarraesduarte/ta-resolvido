@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Camera, Pencil, Plus, X } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Camera, MessageCircle, Pencil, Plus, X } from "lucide-react";
 import { createEntry, createCategory, deleteCategory } from "./actions";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { completeCents } from "@/lib/tokens";
 import { PhotoTab } from "./photo-tab";
+import { ChatTab } from "./chat-tab";
 
 type Category = { id: string; name: string };
 
@@ -104,6 +105,7 @@ export function EntryForm({
   salaryPatterns,
   fixedExpenses,
   photosRemaining,
+  isCompleto,
 }: {
   categories: Category[];
   defaultDate: string;
@@ -112,8 +114,9 @@ export function EntryForm({
   salaryPatterns: string[];
   fixedExpenses: { name: string; expected_amount: number }[];
   photosRemaining: number | null;
+  isCompleto: boolean;
 }) {
-  const [mode, setMode] = useState<"manual" | "foto">("manual");
+  const [mode, setMode] = useState<"manual" | "foto" | "chat">("manual");
   const [type, setType] = useState<"despesa" | "receita">("despesa");
   const [categories, setCategories] = useState(initialCategories);
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id ?? "");
@@ -192,6 +195,12 @@ export function EntryForm({
           icon={<Camera size={15} />}
           label="Foto"
         />
+        <TypeTab
+          active={mode === "chat"}
+          onClick={() => setMode("chat")}
+          icon={<MessageCircle size={15} />}
+          label="Chat"
+        />
       </div>
 
       {mode === "foto" ? (
@@ -201,6 +210,8 @@ export function EntryForm({
           categories={categories}
           photosRemaining={photosRemaining}
         />
+      ) : mode === "chat" ? (
+        <ChatTab fixedExpenses={fixedExpenses} categories={categories} isCompleto={isCompleto} />
       ) : (
         <form action={createEntry} className="rounded-[20px] bg-brand-card p-[18px]">
           <div className="mb-5 flex gap-1.5 rounded-2xl bg-brand-bg p-1.5">
