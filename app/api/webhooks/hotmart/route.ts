@@ -5,7 +5,10 @@ import { planForHotmartEvent } from "@/lib/hotmart-webhook";
 type HotmartPayload = {
   event: string;
   data?: {
+    // Eventos de compra (PURCHASE_*) trazem o e-mail em "buyer"; o evento
+    // de assinatura (SUBSCRIPTION_CANCELLATION) traz em "subscriber".
     buyer?: { email?: string };
+    subscriber?: { email?: string };
     subscription?: { status?: string };
   };
 };
@@ -18,7 +21,7 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as HotmartPayload;
   const targetPlan = planForHotmartEvent(payload.event, payload.data?.subscription?.status);
-  const email = payload.data?.buyer?.email;
+  const email = payload.data?.buyer?.email ?? payload.data?.subscriber?.email;
 
   if (!targetPlan || !email) {
     return NextResponse.json({ ignored: true });

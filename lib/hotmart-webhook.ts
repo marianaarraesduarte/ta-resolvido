@@ -7,6 +7,9 @@ const DOWNGRADE_EVENTS = new Set([
   "PURCHASE_REFUNDED",
   "PURCHASE_CHARGEBACK",
   "PURCHASE_EXPIRED",
+  // Evento próprio de assinatura — dispara quando a pessoa cancela pelo
+  // painel dela, mesmo sem nenhuma cobrança ter falhado.
+  "SUBSCRIPTION_CANCELLATION",
 ]);
 
 /**

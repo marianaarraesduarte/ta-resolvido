@@ -24,6 +24,10 @@ describe("planForHotmartEvent", () => {
     expect(planForHotmartEvent("PURCHASE_EXPIRED")).toBe("free");
   });
 
+  it("tira o Completo quando a pessoa cancela a assinatura direto (evento próprio, não é PURCHASE_*)", () => {
+    expect(planForHotmartEvent("SUBSCRIPTION_CANCELLATION")).toBe("free");
+  });
+
   it("ignora eventos que não decidem nada sozinhos (boleto impresso, atraso, contestação)", () => {
     expect(planForHotmartEvent("PURCHASE_BILLET_PRINTED")).toBeNull();
     expect(planForHotmartEvent("PURCHASE_DELAYED")).toBeNull();
