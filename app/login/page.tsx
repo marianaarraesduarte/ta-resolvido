@@ -9,10 +9,15 @@ type Status = "idle" | "sending" | "sent" | "error";
 const inputClass =
   "rounded-xl border border-brand-line bg-white px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
 
-function rateLimitAwareMessage(status: number | undefined, fallback: string): string {
-  return status === 429
-    ? "Muitos pedidos em pouco tempo. Espera alguns minutos e tenta de novo."
-    : fallback;
+function rateLimitAwareMessage(error: { status?: number; message?: string }, fallback: string): string {
+  if (error.status !== 429) return fallback;
+  // O Supabase já manda quantos segundos esperar dentro da própria mensagem
+  // (em inglês, ex: "you can only request this after 8 seconds") — extraímos
+  // só o número pra dar um aviso preciso e em português.
+  const seconds = error.message?.match(/after (\d+) seconds/)?.[1];
+  return seconds
+    ? `Calma, espera ${seconds} segundos e tenta de novo.`
+    : "Muitos pedidos em pouco tempo. Espera alguns segundos e tenta de novo.";
 }
 
 function SpamNotice() {
@@ -39,6 +44,16 @@ export default function LoginPage() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [accountExists, setAccountExists] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  // Evita que um clique impaciente (ou vários seguidos) esbarre no limite de
+  // segurança do Supabase de um pedido de redefinição por vez a cada poucos
+  // segundos — o que fazia o link do e-mail nem chegar a ser reenviado.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   function switchPasswordMode(mode: PasswordMode) {
     setPasswordMode(mode);
@@ -66,7 +81,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setErrorMessage(rateLimitAwareMessage(error.status, "E-mail ou senha incorretos."));
+      setErrorMessage(rateLimitAwareMessage(error, "E-mail ou senha incorretos."));
       setStatus("error");
     } else {
       window.location.href = "/app";
@@ -98,7 +113,7 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setErrorMessage(rateLimitAwareMessage(error.status, "Não deu pra criar a conta agora."));
+      setErrorMessage(rateLimitAwareMessage(error, "Não deu pra criar a conta agora."));
       setStatus("error");
     } else if (data.user && data.user.identities && data.user.identities.length === 0) {
       // Supabase finge sucesso quando o e-mail já tem conta confirmada (evita
@@ -120,8 +135,9 @@ export default function LoginPage() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
+    setCooldown(10);
     if (error) {
-      setErrorMessage(rateLimitAwareMessage(error.status, "Não deu pra enviar o e-mail agora."));
+      setErrorMessage(rateLimitAwareMessage(error, "Não deu pra enviar o e-mail agora."));
       setStatus("error");
     } else {
       setStatus("sent");
@@ -308,10 +324,14 @@ export default function LoginPage() {
             </button>
             <button
               type="submit"
-              disabled={status === "sending"}
+              disabled={status === "sending" || cooldown > 0}
               className="mt-2 rounded-xl bg-brand-ink px-4 py-3 font-display font-semibold text-brand-card disabled:opacity-60"
             >
-              {status === "sending" ? "Enviando..." : "Enviar link de redefinição"}
+              {status === "sending"
+                ? "Enviando..."
+                : cooldown > 0
+                  ? `Espera ${cooldown}s pra tentar de novo`
+                  : "Enviar link de redefinição"}
             </button>
             {status === "error" && <p className="text-sm text-brand-coral">{errorMessage}</p>}
           </form>
