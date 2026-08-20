@@ -347,10 +347,10 @@ export default async function RootPage() {
         <p className="text-[15px] text-brand-ink-soft">
           Manda um e-mail pra gente:{" "}
           <a
-            href="mailto:contato@taresolvido.app"
+            href="mailto:marianaarraesduarte@gmail.com"
             className="font-semibold text-brand-ink underline underline-offset-2"
           >
-            contato@taresolvido.app
+            marianaarraesduarte@gmail.com
           </a>
         </p>
       </section>
