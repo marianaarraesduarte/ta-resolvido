@@ -289,6 +289,9 @@ export default async function RootPage() {
             >
               Quero o plano completo
             </Link>
+            <div className="mt-2.5 text-center text-[11.5px] leading-snug text-brand-card/60">
+              Cria sua conta grátis primeiro — o upgrade pro Completo acontece de dentro do app.
+            </div>
           </div>
         </div>
 
