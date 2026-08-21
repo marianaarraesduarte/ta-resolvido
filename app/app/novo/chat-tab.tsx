@@ -1,24 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   AlertTriangle,
   ArrowDownCircle,
   ArrowUpCircle,
   Check,
+  CreditCard,
+  Lock,
   MessageCircle,
+  Repeat,
   Send,
   Trash2,
 } from "lucide-react";
 import { completeCents, parseCurrencyInput } from "@/lib/tokens";
+import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
-import { recognizeChatMessage, saveRecognizedItems, type ChatItem } from "./actions";
-import { Upsell } from "../upsell";
+import {
+  checkExistingInvoiceDate,
+  recognizeChatMessage,
+  saveRecognizedItems,
+  type ChatItem,
+} from "./actions";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
-type ReviewItem = ChatItem & { id: string; isSalary: boolean; amountText: string };
+type ReviewItem = ChatItem & { id: string; isSalary: boolean; amountText: string; dueDate: string };
 type ChatEntry =
   | { kind: "user"; id: string; text: string }
   | { kind: "batch"; id: string; items: ReviewItem[] }
@@ -29,11 +38,13 @@ export function ChatTab({
   fixedExpenses,
   categories,
   salaryPatterns,
+  recognitionsRemaining,
   isCompleto,
 }: {
   fixedExpenses: FixedExpense[];
   categories: Category[];
   salaryPatterns: string[];
+  recognitionsRemaining: number | null;
   isCompleto: boolean;
 }) {
   const router = useRouter();
@@ -42,10 +53,33 @@ export function ChatTab({
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
   const [savingBatch, setSavingBatch] = useState<string | null>(null);
+  const [duplicateDates, setDuplicateDates] = useState<Record<string, boolean>>({});
 
-  if (!isCompleto) {
-    return <Upsell feature="Lançar pelo chat" />;
-  }
+  const creditItems = isCompleto
+    ? entries.flatMap((e) => (e.kind === "batch" ? e.items : [])).filter(
+        (it) => it.isCreditCard && it.dueDate,
+      )
+    : [];
+  const creditItemsKey = creditItems.map((it) => `${it.id}:${it.dueDate}`).join("|");
+
+  useEffect(() => {
+    if (creditItems.length === 0) return;
+    let cancelled = false;
+    Promise.all(
+      creditItems.map(async (it) => ({ id: it.id, dup: await checkExistingInvoiceDate(it.dueDate) })),
+    ).then((results) => {
+      if (cancelled) return;
+      setDuplicateDates((prev) => {
+        const next = { ...prev };
+        for (const r of results) next[r.id] = r.dup;
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creditItemsKey]);
 
   function updateBatch(batchId: string, updater: (items: ReviewItem[]) => ReviewItem[]) {
     setEntries((prev) =>
@@ -72,6 +106,12 @@ export function ChatTab({
   function toggleSalary(batchId: string, itemId: string) {
     updateBatch(batchId, (items) =>
       items.map((it) => (it.id === itemId ? { ...it, isSalary: !it.isSalary } : it)),
+    );
+  }
+
+  function updateItemDueDate(batchId: string, itemId: string, dueDate: string) {
+    updateBatch(batchId, (items) =>
+      items.map((it) => (it.id === itemId ? { ...it, dueDate } : it)),
     );
   }
 
@@ -117,6 +157,7 @@ export function ChatTab({
         isSalary:
           item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
         amountText: item.amount !== null ? item.amount.toFixed(2).replace(".", ",") : "",
+        dueDate: item.isCreditCard ? toDateKey(new Date()) : "",
       }));
       setEntries((prev) => [...prev, { kind: "batch", id: `b-${Date.now()}`, items }]);
     } catch (err) {
@@ -133,17 +174,25 @@ export function ChatTab({
       return;
     }
 
+    const missingDueDate = isCompleto && items.some((it) => it.isCreditCard && !it.dueDate);
+    if (missingDueDate) {
+      setError("Completa a data de vencimento da fatura antes de salvar.");
+      return;
+    }
+
     setSavingBatch(batchId);
     setError("");
     try {
       await saveRecognizedItems(
-        items.map(({ description, amount, type, isSalary, date, category }) => ({
+        items.map(({ description, amount, type, isSalary, date, category, isCreditCard, dueDate }) => ({
           description,
           amount: amount as number,
           type,
           isSalary,
           date,
           category,
+          isCreditCard: isCompleto && isCreditCard,
+          dueDate: isCompleto && isCreditCard ? dueDate : null,
         })),
         "chat",
       );
@@ -162,6 +211,23 @@ export function ChatTab({
 
   return (
     <div className="flex flex-col">
+      {recognitionsRemaining !== null &&
+        (recognitionsRemaining > 0 ? (
+          <p className="mb-3.5 text-[12.5px] text-brand-ink-soft">
+            Você ainda tem {recognitionsRemaining}{" "}
+            {recognitionsRemaining === 1 ? "reconhecimento grátis" : "reconhecimentos grátis"} esse
+            mês (foto ou chat).
+          </p>
+        ) : (
+          <p className="mb-3.5 text-[12.5px] font-medium text-brand-coral">
+            Você já usou seus reconhecimentos grátis desse mês.{" "}
+            <Link href="/app/planos" className="underline underline-offset-2">
+              Assine o Completo
+            </Link>{" "}
+            pra reconhecer sem limite.
+          </p>
+        ))}
+
       {entries.length === 0 && (
         <div className="mb-3.5 rounded-2xl border-2 border-dashed border-brand-line bg-white py-9 text-center">
           <MessageCircle size={26} className="mx-auto mb-2 text-brand-ink" />
@@ -221,10 +287,10 @@ export function ChatTab({
                       key={item.id}
                       className={
                         missing
-                          ? "flex items-center gap-2.5 bg-brand-coral/10 px-3.5 py-3"
+                          ? "flex items-start gap-2.5 bg-brand-coral/10 px-3.5 py-3"
                           : item.possibleDuplicate
-                            ? "flex items-center gap-2.5 bg-brand-coral/10 px-3.5 py-3"
-                            : "flex items-center gap-2.5 bg-white px-3.5 py-3"
+                            ? "flex items-start gap-2.5 bg-brand-coral/10 px-3.5 py-3"
+                            : "flex items-start gap-2.5 bg-white px-3.5 py-3"
                       }
                     >
                       {item.type === "receita" ? (
@@ -251,10 +317,17 @@ export function ChatTab({
                             Pode ser repetido — já tem algo parecido nessa data
                           </div>
                         )}
+                        {item.isCreditCard && (
+                          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-plum px-2 py-0.5 text-[11px] font-semibold text-white">
+                            <CreditCard size={10} className="flex-shrink-0" />
+                            crédito
+                          </div>
+                        )}
                         {item.type === "despesa" &&
                           matchedFixedExpense(item.description, item.amount) && (
-                            <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
-                              Parece o gasto fixo &quot;
+                            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-amber px-2 py-0.5 text-[11px] font-semibold text-white">
+                              <Repeat size={10} className="flex-shrink-0" />
+                              Gasto fixo &quot;
                               {matchedFixedExpense(item.description, item.amount)}&quot;
                             </div>
                           )}
@@ -291,6 +364,42 @@ export function ChatTab({
                             </button>
                           )}
                         </div>
+                        {item.isCreditCard && isCompleto && (
+                          <div className="mt-2 border-t border-dashed border-brand-line pt-2">
+                            <label
+                              htmlFor={`due-date-${item.id}`}
+                              className="mb-1 block text-[10.5px] font-semibold uppercase tracking-wide text-brand-ink-soft"
+                            >
+                              Vencimento da fatura
+                            </label>
+                            <input
+                              id={`due-date-${item.id}`}
+                              type="date"
+                              value={item.dueDate}
+                              onChange={(e) => updateItemDueDate(entry.id, item.id, e.target.value)}
+                              className="w-full rounded-md border border-brand-line bg-white px-2 py-1 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                            />
+                            {duplicateDates[item.id] && (
+                              <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                                <AlertTriangle size={11} className="flex-shrink-0" />
+                                Você já tem uma fatura salva com essa data de vencimento
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {item.isCreditCard && !isCompleto && (
+                          <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-brand-plum/10 px-2.5 py-2 text-[11px] leading-snug text-brand-plum">
+                            <Lock size={11} className="mt-0.5 flex-shrink-0" />
+                            <span>
+                              Rastrear isso certinho na fatura (com data de vencimento) é um
+                              recurso do{" "}
+                              <Link href="/app/planos" className="font-semibold underline underline-offset-2">
+                                Completo
+                              </Link>
+                              . Por enquanto, vai entrar como um gasto normal, na data acima.
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-shrink-0 items-center gap-0.5 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
                         {item.type === "receita" ? "+" : "-"}

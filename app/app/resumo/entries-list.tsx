@@ -7,6 +7,7 @@ import { CreditCard, Pencil, Square, SquareCheck, Tag, Trash2, X } from "lucide-
 import { currency } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
+import { useConfirm } from "../confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./actions";
 
 type Category = { id: string; name: string };
@@ -33,6 +34,7 @@ export function EntriesList({
   const [pickingCategory, setPickingCategory] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const confirm = useConfirm();
 
   function exitSelection() {
     setSelecting(false);
@@ -56,7 +58,7 @@ export function EntriesList({
 
   async function handleBulkDelete() {
     const n = selectedIds.size;
-    const confirmed = window.confirm(
+    const confirmed = await confirm(
       `Excluir ${n} ${n === 1 ? "lançamento" : "lançamentos"}? Essa ação não pode ser desfeita.`,
     );
     if (!confirmed) return;

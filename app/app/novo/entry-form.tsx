@@ -5,6 +5,7 @@ import { ArrowDownCircle, ArrowUpCircle, Camera, MessageCircle, Pencil, Plus, X 
 import { createEntry, createCategory, deleteCategory } from "./actions";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { completeCents } from "@/lib/tokens";
+import { useConfirm } from "../confirm-dialog";
 import { PhotoTab } from "./photo-tab";
 import { ChatTab } from "./chat-tab";
 
@@ -104,7 +105,7 @@ export function EntryForm({
   separateByAccount,
   salaryPatterns,
   fixedExpenses,
-  photosRemaining,
+  recognitionsRemaining,
   isCompleto,
 }: {
   categories: Category[];
@@ -113,7 +114,7 @@ export function EntryForm({
   separateByAccount: boolean;
   salaryPatterns: string[];
   fixedExpenses: { name: string; expected_amount: number }[];
-  photosRemaining: number | null;
+  recognitionsRemaining: number | null;
   isCompleto: boolean;
 }) {
   const [mode, setMode] = useState<"manual" | "foto" | "chat">("manual");
@@ -127,6 +128,7 @@ export function EntryForm({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
+  const confirm = useConfirm();
 
   function selectCategory(id: string) {
     setCategoryId(id);
@@ -162,7 +164,7 @@ export function EntryForm({
   }
 
   async function handleDeleteCategory(id: string, name: string) {
-    const confirmed = window.confirm(
+    const confirmed = await confirm(
       `Excluir a categoria "${name}"? Gastos já marcados com ela ficam sem categoria.`,
     );
     if (!confirmed) return;
@@ -208,13 +210,14 @@ export function EntryForm({
           salaryPatterns={salaryPatterns}
           fixedExpenses={fixedExpenses}
           categories={categories}
-          photosRemaining={photosRemaining}
+          recognitionsRemaining={recognitionsRemaining}
         />
       ) : mode === "chat" ? (
         <ChatTab
           fixedExpenses={fixedExpenses}
           categories={categories}
           salaryPatterns={salaryPatterns}
+          recognitionsRemaining={recognitionsRemaining}
           isCompleto={isCompleto}
         />
       ) : (

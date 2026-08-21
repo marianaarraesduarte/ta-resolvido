@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { iconForCategory } from "@/lib/category-icons";
+import { useConfirm } from "../../confirm-dialog";
 import { createCategory, deleteCategory, renameCategory } from "../../novo/actions";
 
 type Category = { id: string; name: string; icon: string | null };
@@ -21,6 +22,7 @@ function CategoryRow({
   const [value, setValue] = useState(category.name);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const confirm = useConfirm();
 
   async function handleSave() {
     if (!value.trim() || value.trim() === category.name) {
@@ -42,7 +44,7 @@ function CategoryRow({
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm(
+    const confirmed = await confirm(
       `Excluir a categoria "${category.name}"? Gastos já marcados com ela ficam sem categoria.`,
     );
     if (!confirmed) return;

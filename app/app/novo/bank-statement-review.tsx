@@ -9,6 +9,7 @@ import {
   Check,
   FileText,
   ImagePlus,
+  Repeat,
   Trash2,
 } from "lucide-react";
 import { completeCents, parseCurrencyInput } from "@/lib/tokens";
@@ -205,8 +206,9 @@ export function BankStatementReview({
                         </div>
                       )}
                       {item.type === "despesa" && matchedFixedExpense(item.description, item.amount) && (
-                        <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
-                          Parece o gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
+                        <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-amber px-2 py-0.5 text-[11px] font-semibold text-white">
+                          <Repeat size={10} className="flex-shrink-0" />
+                          Gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
                         </div>
                       )}
                       <div className="mt-1 flex flex-wrap items-center gap-2.5">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Minus, Pencil, PiggyBank, Plus, X } from "lucide-react";
 import { completeCents, currency, parseCurrencyInput, TOKENS } from "@/lib/tokens";
+import { useConfirm } from "../confirm-dialog";
 import {
   confirmGoalInvestment,
   createReserve,
@@ -256,6 +257,8 @@ export function MetasBody({
   const [confirmingKind, setConfirmingKind] = useState<GoalKind | null>(null);
   const [confirmError, setConfirmError] = useState("");
   const [reserves, setReserves] = useState(initialReserves);
+  const [reserveActionError, setReserveActionError] = useState("");
+  const confirm = useConfirm();
 
   const [addingReserve, setAddingReserve] = useState(false);
   const [newReserveName, setNewReserveName] = useState("");
@@ -304,12 +307,14 @@ export function MetasBody({
   }
 
   async function handleDeleteReserve(id: string, name: string) {
-    if (!window.confirm(`Excluir a reserva "${name}"?`)) return;
+    const ok = await confirm(`Excluir a reserva "${name}"?`);
+    if (!ok) return;
+    setReserveActionError("");
     try {
       await deleteReserve(id);
       setReserves((prev) => prev.filter((r) => r.id !== id));
     } catch {
-      window.alert("Não deu pra excluir agora.");
+      setReserveActionError("Não deu pra excluir agora.");
     }
   }
 
@@ -386,17 +391,35 @@ export function MetasBody({
       {confirmError && (
         <p className="mb-3 text-center text-xs text-brand-coral">{confirmError}</p>
       )}
-      <div className="mb-6 text-center text-[11.5px] text-brand-ink-soft">
+      <div
+        className={
+          totalPct > 100
+            ? "mb-1 text-center text-[11.5px] font-medium text-brand-coral"
+            : "mb-6 text-center text-[11.5px] text-brand-ink-soft"
+        }
+      >
         No total, você está investindo{" "}
-        <strong className="text-brand-ink">{totalPct}%</strong> da sua receita (
-        {currency((receita * totalPct) / 100)}/mês)
+        <strong className={totalPct > 100 ? "text-brand-coral" : "text-brand-ink"}>
+          {totalPct}%
+        </strong>{" "}
+        da sua receita ({currency((receita * totalPct) / 100)}/mês)
       </div>
+      {totalPct > 100 && (
+        <div className="mb-6 text-center text-[11.5px] leading-snug text-brand-coral">
+          Isso é mais do que 100% da sua receita — confere as porcentagens, deve ter alguma
+          conta sobrando.
+        </div>
+      )}
 
       <div className="mb-2 text-[13px] font-semibold text-brand-ink">Reservas planejadas</div>
       <p className="mb-3 text-xs leading-snug text-brand-ink-soft">
         Dinheiro guardado aos poucos pra um gasto grande que já sabe que vai ter — tipo IPVA,
         seguro ou uma viagem.
       </p>
+
+      {reserveActionError && (
+        <p className="mb-3 text-xs text-brand-coral">{reserveActionError}</p>
+      )}
 
       {reserves.length > 0 && (
         <div className="mb-3.5 divide-y divide-brand-bg overflow-hidden rounded-2xl bg-brand-card">

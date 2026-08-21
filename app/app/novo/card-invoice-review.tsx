@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, FileText, ImagePlus, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, FileText, ImagePlus, Repeat, Trash2 } from "lucide-react";
 import { completeCents, currency, parseCurrencyInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
@@ -180,8 +180,9 @@ export function CardInvoiceReview({
                         className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-white"
                       />
                       {matchedFixedExpense(item.description, item.amount) && (
-                        <div className="mt-0.5 text-[11px] font-medium text-brand-amber">
-                          Parece o gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
+                        <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-amber px-2 py-0.5 text-[11px] font-semibold text-white">
+                          <Repeat size={10} className="flex-shrink-0" />
+                          Gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
                         </div>
                       )}
                       <select

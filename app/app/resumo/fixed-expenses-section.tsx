@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Pencil, Plus, X } from "lucide-react";
 import { completeCents, currency, parseCurrencyInput } from "@/lib/tokens";
+import { useConfirm } from "../confirm-dialog";
 import { createFixedExpense, deleteFixedExpense, updateFixedExpense } from "./actions";
 
 const SUGGESTIONS = ["Aluguel", "Conta de luz", "Água", "Internet", "Condomínio", "Plano de saúde"];
@@ -130,6 +131,8 @@ export function FixedExpensesSection({
   const [newAmount, setNewAmount] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const confirm = useConfirm();
 
   const availableSuggestions = SUGGESTIONS.filter(
     (s) => !expenses.some((e) => e.name.trim().toLowerCase() === s.toLowerCase()),
@@ -162,12 +165,14 @@ export function FixedExpensesSection({
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Excluir "${name}" dos gastos fixos?`)) return;
+    const ok = await confirm(`Excluir "${name}" dos gastos fixos?`);
+    if (!ok) return;
+    setDeleteError("");
     try {
       await deleteFixedExpense(id);
       setExpenses((prev) => prev.filter((e) => e.id !== id));
     } catch {
-      window.alert("Não deu pra excluir agora.");
+      setDeleteError("Não deu pra excluir agora.");
     }
   }
 
@@ -186,6 +191,8 @@ export function FixedExpensesSection({
             Todas as contas fixas desse mês já foram pagas.
           </p>
         ))}
+
+      {deleteError && <p className="mb-2.5 text-xs text-brand-coral">{deleteError}</p>}
 
       {expenses.length > 0 && (
         <div className="mb-3 divide-y divide-brand-bg overflow-hidden rounded-2xl bg-brand-card">

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
-import { isCompleto, FREE_PHOTO_LIMIT } from "@/lib/plan";
+import { isCompleto, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
 import { EntryForm } from "./entry-form";
 
 export default async function NovoLancamentoPage({
@@ -26,7 +26,7 @@ export default async function NovoLancamentoPage({
     { data: profile },
     { data: salaryPatterns },
     { data: fixedExpenses },
-    { count: photosUsed },
+    { count: recognitionsUsed },
   ] = await Promise.all([
     supabase
       .from("categories")
@@ -43,9 +43,9 @@ export default async function NovoLancamentoPage({
       .gte("created_at", firstDayOfMonth.toISOString()),
   ]);
 
-  const photosRemaining = isCompleto(profile?.plan)
+  const recognitionsRemaining = isCompleto(profile?.plan)
     ? null
-    : Math.max(0, FREE_PHOTO_LIMIT - (photosUsed ?? 0));
+    : Math.max(0, FREE_RECOGNITION_LIMIT - (recognitionsUsed ?? 0));
 
   const { error } = await searchParams;
 
@@ -69,7 +69,7 @@ export default async function NovoLancamentoPage({
           separateByAccount={profile?.separate_by_account ?? false}
           salaryPatterns={(salaryPatterns ?? []).map((p) => p.description_pattern)}
           fixedExpenses={fixedExpenses ?? []}
-          photosRemaining={photosRemaining}
+          recognitionsRemaining={recognitionsRemaining}
           isCompleto={isCompleto(profile?.plan)}
         />
       </div>

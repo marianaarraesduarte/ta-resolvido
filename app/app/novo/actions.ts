@@ -3,12 +3,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { suggestCategoryName } from "@/lib/category-keywords";
-import { isCompleto, isPhotoLimitReached, FREE_PHOTO_LIMIT } from "@/lib/plan";
+import { isCompleto, isRecognitionLimitReached, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
 import { matchCategoryPattern } from "@/lib/category-pattern-match";
 import { extractFromDocument, extractFromText, Type } from "@/lib/gemini";
 
-async function enforcePhotoLimit(
+async function enforceRecognitionLimit(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ): Promise<void> {
@@ -29,14 +29,14 @@ async function enforcePhotoLimit(
     .eq("user_id", userId)
     .gte("created_at", firstDay.toISOString());
 
-  if (isPhotoLimitReached(profile?.plan, count ?? 0)) {
+  if (isRecognitionLimitReached(profile?.plan, count ?? 0)) {
     throw new Error(
-      `Você já usou suas ${FREE_PHOTO_LIMIT} fotos grátis desse mês. Assine o Completo pra reconhecer sem limite.`,
+      `Você já usou seus ${FREE_RECOGNITION_LIMIT} reconhecimentos por IA grátis desse mês. Assine o Completo pra reconhecer sem limite.`,
     );
   }
 }
 
-async function logPhotoRecognition(
+async function logRecognition(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ): Promise<void> {
@@ -255,7 +255,7 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
-  await enforcePhotoLimit(supabase, user.id);
+  await enforceRecognitionLimit(supabase, user.id);
 
   const { data: categories } = await supabase
     .from("categories")
@@ -276,7 +276,7 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
       statementPrompt(categoryNames),
       statementSchema(categoryNames),
     );
-    await logPhotoRecognition(supabase, user.id);
+    await logRecognition(supabase, user.id);
 
     const dates = [...new Set(items.map((item) => item.date))];
     const { data: existing } = dates.length
@@ -312,6 +312,7 @@ export type ChatItem = {
   type: "despesa" | "receita";
   date: string;
   category: string | null;
+  isCreditCard: boolean;
   possibleDuplicate: boolean;
 };
 
@@ -326,8 +327,9 @@ function chatSchema(categoryNames: string[]) {
         type: { type: Type.STRING, enum: ["despesa", "receita"] },
         date: { type: Type.STRING },
         category: { type: Type.STRING, enum: [...categoryNames, NO_CATEGORY] },
+        isCreditCard: { type: Type.BOOLEAN },
       },
-      required: ["description", "type", "date", "category"],
+      required: ["description", "type", "date", "category", "isCreditCard"],
     },
   };
 }
@@ -341,6 +343,7 @@ Para cada lançamento que você identificar na mensagem, extraia:
 - type: "despesa" se foi um gasto, "receita" se foi dinheiro que entrou
 - date: data no formato YYYY-MM-DD. Resolva termos relativos ("hoje", "ontem", "anteontem") usando ${today} como referência. Se a mensagem não disser nada sobre quando, use ${today}.
 - category: só pra despesas, escolha a categoria que melhor combina entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Se for receita, ou se nenhuma categoria combinar bem, use "${NO_CATEGORY}".
+- isCreditCard: true somente se a mensagem disser claramente que esse gasto específico foi no crédito ou no cartão (ex: "no crédito", "no cartão"). Se for receita, ou se não houver menção a crédito/cartão, use false.
 
 Se a mensagem descrever mais de um lançamento, retorne todos, um por item. Se não conseguir identificar nenhum lançamento de dinheiro na mensagem, retorne uma lista vazia.`;
 }
@@ -354,18 +357,11 @@ export async function recognizeChatMessage(message: string): Promise<ChatItem[]>
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan")
-    .eq("id", user.id)
-    .single();
-  if (!isCompleto(profile?.plan)) {
-    throw new Error("Lançar pelo chat é um recurso do plano Completo.");
-  }
-
   if (!message.trim()) {
     throw new Error("Escreve alguma coisa antes de enviar.");
   }
+
+  await enforceRecognitionLimit(supabase, user.id);
 
   const { data: categories } = await supabase
     .from("categories")
@@ -388,6 +384,7 @@ export async function recognizeChatMessage(message: string): Promise<ChatItem[]>
       chatPrompt(categoryNames, today),
       chatSchema(categoryNames),
     );
+    await logRecognition(supabase, user.id);
 
     const dates = [...new Set(items.map((item) => item.date))];
     const { data: existing } = dates.length
@@ -426,6 +423,8 @@ export async function saveRecognizedItems(
     isSalary: boolean;
     date: string;
     category: string | null;
+    isCreditCard?: boolean;
+    dueDate?: string | null;
   }[],
   source: "foto" | "chat" = "foto",
 ): Promise<void> {
@@ -438,7 +437,10 @@ export async function saveRecognizedItems(
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
-  if (items.length === 0 || items.some((item) => !item.date)) {
+  if (
+    items.length === 0 ||
+    items.some((item) => !item.date || (item.isCreditCard && !item.dueDate))
+  ) {
     throw new Error("Confere as datas antes de salvar.");
   }
 
@@ -448,16 +450,59 @@ export async function saveRecognizedItems(
     .eq("user_id", user.id);
   const categoryByName = new Map((categories ?? []).map((c) => [c.name, c.id]));
 
+  const dueDates = [
+    ...new Set(items.filter((item) => item.isCreditCard).map((item) => item.dueDate as string)),
+  ];
+  const invoiceIdByDueDate = new Map<string, string>();
+  for (const dueDate of dueDates) {
+    const { data: existing } = await supabase
+      .from("card_invoices")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("invoice_date", dueDate)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      invoiceIdByDueDate.set(dueDate, existing.id);
+      continue;
+    }
+
+    const { data: created, error: invoiceError } = await supabase
+      .from("card_invoices")
+      .insert({ user_id: user.id, invoice_date: dueDate })
+      .select("id")
+      .single();
+    if (invoiceError || !created) {
+      throw new Error("Não deu pra salvar a fatura agora.");
+    }
+    invoiceIdByDueDate.set(dueDate, created.id);
+  }
+
   const rows = items.map((item) => {
     if (item.type === "despesa") {
       const categoryName = item.category ?? suggestCategoryName(item.description);
+      const categoryId = categoryName ? (categoryByName.get(categoryName) ?? null) : null;
+      if (item.isCreditCard) {
+        return {
+          user_id: user.id,
+          type: "despesa" as const,
+          amount: item.amount,
+          description: item.description,
+          entry_date: item.dueDate as string,
+          category_id: categoryId,
+          source,
+          payment_method: "cartao" as const,
+          card_invoice_id: invoiceIdByDueDate.get(item.dueDate as string) as string,
+        };
+      }
       return {
         user_id: user.id,
         type: "despesa" as const,
         amount: item.amount,
         description: item.description,
         entry_date: item.date,
-        category_id: categoryName ? (categoryByName.get(categoryName) ?? null) : null,
+        category_id: categoryId,
         source,
       };
     }
@@ -546,7 +591,7 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
-  await enforcePhotoLimit(supabase, user.id);
+  await enforceRecognitionLimit(supabase, user.id);
 
   const { data: categories } = await supabase
     .from("categories")
@@ -567,7 +612,7 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
       cardInvoicePrompt(categoryNames),
       cardInvoiceSchema(categoryNames),
     );
-    await logPhotoRecognition(supabase, user.id);
+    await logRecognition(supabase, user.id);
     return items.map((item) => {
       const baseCategory = item.category === NO_CATEGORY ? null : item.category;
       const learnedCategoryId = matchCategoryPattern(item.description, patterns);

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { CancelButton } from "./cancel-button";
 
 const FREE_FEATURES = [
   "Lançamento manual de gastos e receitas",
@@ -104,8 +105,20 @@ export default async function PlanosPage() {
                 Assinar o Plano Completo
               </a>
             )}
+            {plan === "completo" && <CancelButton />}
           </div>
         </div>
+
+        {plan !== "completo" && (
+          <div className="mt-4 rounded-2xl bg-brand-amber/12 px-5 py-4 text-center">
+            <div className="font-display text-[13.5px] font-bold text-brand-ink">
+              🎉 Preço fundador: R$19,90/mês nos primeiros 3 meses
+            </div>
+            <div className="mt-0.5 text-[12px] text-brand-ink-soft">
+              Depois, volta pro preço cheio (R$29,90/mês).
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

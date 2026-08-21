@@ -5,12 +5,17 @@ import { GoogleGenAI, Type } from "@google/genai";
 // específico (ex: gemini-2.5-flash) sai de disponibilidade pra chaves novas.
 const MODEL = "gemini-flash-latest";
 
+// Sem isso, uma chamada que trava (rede lenta, API sem responder) fica
+// esperando pra sempre — a tela de "Analisando..." nunca sai do lugar e
+// nenhum erro chega a aparecer pra usuária.
+const REQUEST_TIMEOUT_MS = 20_000;
+
 function getClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY não configurada no servidor.");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey, httpOptions: { timeout: REQUEST_TIMEOUT_MS } });
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; data: string } {

@@ -45,7 +45,7 @@ function ToastInner() {
   // efeito e cancelaria o timer antes dos 3s se estivesse junto.
   useEffect(() => {
     if (!message) return;
-    const timer = setTimeout(() => setMessage(null), 3000);
+    const timer = setTimeout(() => setMessage(null), 3500);
     return () => clearTimeout(timer);
   }, [message]);
 

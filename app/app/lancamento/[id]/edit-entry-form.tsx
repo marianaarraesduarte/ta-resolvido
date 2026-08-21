@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, ChevronLeft, CreditCard, Trash2 } from "lucide-react";
 import { completeCents, parseCurrencyInput } from "@/lib/tokens";
+import { useConfirm } from "../../confirm-dialog";
 import { updateEntry, deleteEntry } from "./actions";
 
 type Entry = {
@@ -45,6 +46,7 @@ export function EditEntryForm({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const confirm = useConfirm();
 
   async function handleSave() {
     setSaving(true);
@@ -67,7 +69,7 @@ export function EditEntryForm({
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm(
+    const confirmed = await confirm(
       `Excluir "${entry.description}"? Essa ação não pode ser desfeita.`,
     );
     if (!confirmed) return;
