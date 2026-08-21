@@ -211,7 +211,12 @@ export function EntryForm({
           photosRemaining={photosRemaining}
         />
       ) : mode === "chat" ? (
-        <ChatTab fixedExpenses={fixedExpenses} categories={categories} isCompleto={isCompleto} />
+        <ChatTab
+          fixedExpenses={fixedExpenses}
+          categories={categories}
+          salaryPatterns={salaryPatterns}
+          isCompleto={isCompleto}
+        />
       ) : (
         <form action={createEntry} className="rounded-[20px] bg-brand-card p-[18px]">
           <div className="mb-5 flex gap-1.5 rounded-2xl bg-brand-bg p-1.5">

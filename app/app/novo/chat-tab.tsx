@@ -28,10 +28,12 @@ type ChatEntry =
 export function ChatTab({
   fixedExpenses,
   categories,
+  salaryPatterns,
   isCompleto,
 }: {
   fixedExpenses: FixedExpense[];
   categories: Category[];
+  salaryPatterns: string[];
   isCompleto: boolean;
 }) {
   const router = useRouter();
@@ -112,7 +114,8 @@ export function ChatTab({
       const items: ReviewItem[] = recognized.map((item, i) => ({
         ...item,
         id: `${Date.now()}-${i}`,
-        isSalary: false,
+        isSalary:
+          item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
         amountText: item.amount !== null ? item.amount.toFixed(2).replace(".", ",") : "",
       }));
       setEntries((prev) => [...prev, { kind: "batch", id: `b-${Date.now()}`, items }]);
