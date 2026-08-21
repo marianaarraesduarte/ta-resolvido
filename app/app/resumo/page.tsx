@@ -60,6 +60,10 @@ export default async function ResumoPage() {
     paidById[fe.id] = match ? { description: match.description, amount: match.amount } : null;
   }
 
+  const pendingFixedExpenses = fixedExpenses.filter((fe) => !paidById[fe.id]);
+  const pendingTotal = pendingFixedExpenses.reduce((sum, fe) => sum + fe.expected_amount, 0);
+  const pendingCount = pendingFixedExpenses.length;
+
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
@@ -75,7 +79,12 @@ export default async function ResumoPage() {
           </div>
         </div>
 
-        <FixedExpensesSection fixedExpenses={fixedExpenses} paidById={paidById} />
+        <FixedExpensesSection
+          fixedExpenses={fixedExpenses}
+          paidById={paidById}
+          pendingTotal={pendingTotal}
+          pendingCount={pendingCount}
+        />
 
         <div className="mb-5 flex items-center justify-between rounded-2xl border border-brand-line bg-brand-card px-5 py-[18px]">
           <div>

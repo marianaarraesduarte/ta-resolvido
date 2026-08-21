@@ -116,9 +116,13 @@ function FixedExpenseRow({
 export function FixedExpensesSection({
   fixedExpenses: initialExpenses,
   paidById,
+  pendingTotal,
+  pendingCount,
 }: {
   fixedExpenses: FixedExpense[];
   paidById: Record<string, Paid>;
+  pendingTotal: number;
+  pendingCount: number;
 }) {
   const [expenses, setExpenses] = useState(initialExpenses);
   const [adding, setAdding] = useState(false);
@@ -170,6 +174,18 @@ export function FixedExpensesSection({
   return (
     <div className="mb-6">
       <div className="mb-2 text-[13px] font-semibold text-brand-ink">Gastos fixos do mês</div>
+
+      {expenses.length > 0 &&
+        (pendingTotal > 0 ? (
+          <p className="mb-2.5 text-[12.5px] leading-snug text-brand-ink-soft">
+            Ainda tem {currency(pendingTotal)} em {pendingCount}{" "}
+            {pendingCount === 1 ? "conta fixa" : "contas fixas"} pra pagar esse mês.
+          </p>
+        ) : (
+          <p className="mb-2.5 text-[12.5px] font-medium text-brand-sage">
+            Todas as contas fixas desse mês já foram pagas.
+          </p>
+        ))}
 
       {expenses.length > 0 && (
         <div className="mb-3 divide-y divide-brand-bg overflow-hidden rounded-2xl bg-brand-card">

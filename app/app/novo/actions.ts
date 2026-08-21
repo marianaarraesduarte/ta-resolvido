@@ -95,7 +95,20 @@ export async function createEntry(formData: FormData) {
     redirect("/app/novo?error=1");
   }
 
-  redirect("/app");
+  let categoryName = "";
+  if (payload.category_id) {
+    const { data: category } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("id", payload.category_id)
+      .eq("user_id", user.id)
+      .single();
+    categoryName = category?.name ?? "";
+  }
+
+  const toastParams = new URLSearchParams({ saved: description, amount: String(amount) });
+  if (categoryName) toastParams.set("category", categoryName);
+  redirect(`/app?${toastParams.toString()}`);
 }
 
 export async function createCategory(name: string): Promise<{ id: string; name: string }> {

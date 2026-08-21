@@ -6,6 +6,7 @@ import { ensureMonthlyInsight } from "@/lib/monthly-insight";
 import { calculateSaldo } from "@/lib/saldo";
 import { SaldoBadge } from "./saldo-badge";
 import { NavLinks } from "./nav-links";
+import { Toast } from "./toast";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -89,6 +90,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </header>
+      <Toast />
       <main>{children}</main>
       <NavLinks />
     </div>

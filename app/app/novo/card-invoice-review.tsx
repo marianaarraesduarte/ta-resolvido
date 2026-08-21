@@ -108,7 +108,7 @@ export function CardInvoiceReview({
         items.map(({ description, amount, category }) => ({ description, amount, category })),
         invoiceDate,
       );
-      router.push("/app");
+      router.push(`/app?saved=lote&count=${items.length}`);
       router.refresh();
     } catch {
       setError("Não deu pra salvar a fatura agora.");

@@ -43,12 +43,14 @@ export function MonthRuler({
   daysInMonth,
   entries,
   cardInvoices,
+  comparisonSentence,
 }: {
   monthName: string;
   today: number;
   daysInMonth: number;
   entries: Entry[];
   cardInvoices: CardInvoiceSummary[];
+  comparisonSentence?: string | null;
 }) {
   const [selected, setSelected] = useState<Selection | null>(null);
 
@@ -103,6 +105,11 @@ export function MonthRuler({
             Tá Resolvido
           </div>
           <div className="mt-0.5 font-display text-3xl font-bold text-brand-ink">{monthName}</div>
+          {hasEntries && comparisonSentence && (
+            <p className="mt-1.5 text-[12.5px] leading-snug text-brand-ink-soft">
+              {comparisonSentence}
+            </p>
+          )}
         </div>
 
         {hasEntries ? (

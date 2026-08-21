@@ -115,7 +115,7 @@ export function BankStatementReview({
           category,
         })),
       );
-      router.push("/app");
+      router.push(`/app?saved=lote&count=${items.length}`);
       router.refresh();
     } catch {
       setError("Não deu pra salvar os lançamentos agora.");
