@@ -14,7 +14,7 @@ const STEPS = [
   {
     icon: Camera,
     title: "2. Manda o print quando lembrar",
-    body: "Foto do extrato, do comprovante, ou da fatura do cartão — a gente separa sozinho o que é gasto e o que é receita, sem você precisar dizer.",
+    body: "Foto do extrato, do comprovante, da fatura do cartão, ou só escreve numa frase o que rolou — a gente entende sozinho o que é gasto e o que é receita, sem você precisar preencher nada.",
   },
   {
     icon: Ruler,
@@ -28,11 +28,12 @@ const FREE_FEATURES = [
   "Régua do mês",
   "Quanto gastei",
   "Categorias",
-  "3 fotos ou PDFs reconhecidos por mês",
+  "3 reconhecimentos de IA por mês (foto, PDF ou chat)",
 ];
 
 const PAID_FEATURES: { text: string; image?: string; imageHeight?: number }[] = [
   { text: "Fotos e PDFs sem limite — manda o extrato inteiro de uma vez, sem digitar gasto por gasto" },
+  { text: "Escreve numa frase o que gastou e a IA lança sozinho, categorizado" },
   { text: "Seu salário e as contas fixas já entram sozinhos, mês após mês" },
   { text: "Um resumo do seu mês pronto, sem precisar montar gráfico nenhum" },
   {
@@ -68,7 +69,7 @@ const FAQ = [
   },
   {
     q: "Posso cancelar quando quiser?",
-    a: "Sim, direto no app, sem precisar justificar nada.",
+    a: "Sim, direto no app, sem precisar justificar nada. E se cancelar nos primeiros 7 dias, devolvemos o valor pago.",
   },
 ];
 
@@ -301,7 +302,12 @@ export default async function RootPage() {
       {/* 8. Redução de risco */}
       <section className="px-5 pb-16 sm:px-10">
         <div className="mx-auto max-w-md text-center text-[14.5px] leading-relaxed text-brand-ink-soft">
-          <p>Sem letra miúda. Cancela quando quiser, direto no app, sem precisar justificar nada.</p>
+          <p className="font-semibold text-brand-ink">
+            7 dias de garantia. Se não gostar, é só pedir — devolvemos tudo, sem perguntas.
+          </p>
+          <p className="mt-2.5">
+            Sem letra miúda. Cancela quando quiser, direto no app, sem precisar justificar nada.
+          </p>
           <p className="mt-2.5">
             Seus dados bancários nunca ficam salvos aqui — a gente só lê o que está no print que
             você manda, e depois disso ele não fica guardado.
