@@ -116,9 +116,12 @@ export default async function RootPage() {
         <h1 className="mx-auto mt-5 max-w-xl text-balance font-display text-[32px] font-bold leading-tight text-brand-ink sm:text-[44px]">
           Você lembra de tudo. Até esquecer uma coisa.
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-[16px] leading-relaxed text-brand-ink-soft">
-          O Tá Resolvido é onde o que pesa na sua cabeça sobre dinheiro finalmente sai dela.
-          Marque o que gasta, tire foto do extrato, e veja seu mês inteiro numa régua simples.
+        <p className="mx-auto mt-4 max-w-md text-[18px] font-medium leading-relaxed text-brand-ink">
+          O que pesa na sua cabeça sobre dinheiro finalmente sai dela.
+        </p>
+        <p className="mx-auto mt-2.5 max-w-md text-[15px] leading-relaxed text-brand-ink-soft">
+          Marque o que gasta, tire foto do extrato ou escreve numa frase, e veja seu mês inteiro
+          numa régua simples.
         </p>
         <div className="mt-8 flex flex-col items-center gap-2.5">
           <Link
