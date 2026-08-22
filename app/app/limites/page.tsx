@@ -14,6 +14,7 @@ type CategoryRow = {
 };
 
 type DespesaRow = { amount: number; category_id: string | null };
+type ReceitaRow = { amount: number };
 
 export default async function LimitesPage() {
   const supabase = await createClient();
@@ -28,7 +29,7 @@ export default async function LimitesPage() {
   const header = (
     <div className="mb-5 flex items-center gap-2.5">
       <Link
-        href="/app"
+        href="/app/mais"
         className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
       >
         <ChevronLeft size={18} />
@@ -52,7 +53,7 @@ export default async function LimitesPage() {
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  const [{ data: categoriesData }, { data: despesasData }] = await Promise.all([
+  const [{ data: categoriesData }, { data: despesasData }, { data: receitasData }] = await Promise.all([
     supabase
       .from("categories")
       .select("id, name, icon, monthly_limit")
@@ -65,7 +66,16 @@ export default async function LimitesPage() {
       .eq("type", "despesa")
       .gte("entry_date", toDateKey(firstDay))
       .lte("entry_date", toDateKey(lastDay)),
+    supabase
+      .from("entries")
+      .select("amount")
+      .eq("user_id", user.id)
+      .eq("type", "receita")
+      .gte("entry_date", toDateKey(firstDay))
+      .lte("entry_date", toDateKey(lastDay)),
   ]);
+
+  const receita = ((receitasData as ReceitaRow[] | null) ?? []).reduce((sum, r) => sum + r.amount, 0);
 
   const spentByCategory = new Map<string, number>();
   for (const d of (despesasData as DespesaRow[] | null) ?? []) {
@@ -119,6 +129,7 @@ export default async function LimitesPage() {
                 icon={r.icon}
                 spent={r.spent}
                 limit={r.monthly_limit}
+                receita={receita}
               />
             ))}
           </div>

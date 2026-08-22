@@ -77,3 +77,31 @@ export async function deleteFixedExpense(id: string): Promise<void> {
     throw new Error("Não deu pra excluir agora.");
   }
 }
+
+// Marca um gasto fixo como pago na mão, pra quando a IA não reconhece
+// automaticamente — cria um lançamento de verdade (por isso abate do saldo),
+// datado do dia informado.
+export async function markFixedExpensePaid(
+  name: string,
+  amount: number,
+  entryDate: string,
+): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  if (!amount || amount <= 0) throw new Error("Valor inválido.");
+
+  const { error } = await supabase.from("entries").insert({
+    user_id: user.id,
+    type: "despesa",
+    description: name,
+    amount,
+    entry_date: entryDate,
+    source: "manual",
+  });
+
+  if (error) throw new Error("Não deu pra marcar como pago agora.");
+}

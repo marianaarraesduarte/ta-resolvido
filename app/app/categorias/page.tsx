@@ -5,21 +5,17 @@ import { monthLabel, toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { resolveViewedMonth } from "@/lib/viewed-month";
 import { currency } from "@/lib/tokens";
-import { iconForCategory } from "@/lib/category-icons";
 import { clearMonthSelection, goToMonth } from "../month-actions";
 import { MonthPicker } from "../month-picker";
+import { CategoryList, type CategoryTotal } from "./category-list";
 
 type DespesaRow = {
+  id: string;
+  description: string;
   amount: number;
+  entry_date: string;
   category_id: string | null;
   categories: { name: string; icon: string | null } | null;
-};
-
-type CategoryTotal = {
-  key: string;
-  name: string;
-  icon: string | null;
-  total: number;
 };
 
 export default async function CategoriasPage({
@@ -41,11 +37,12 @@ export default async function CategoriasPage({
 
   const { data } = await supabase
     .from("entries")
-    .select("amount, category_id, categories(name, icon)")
+    .select("id, description, amount, entry_date, category_id, categories(name, icon)")
     .eq("user_id", user.id)
     .eq("type", "despesa")
     .gte("entry_date", toDateKey(firstDay))
-    .lte("entry_date", toDateKey(lastDay));
+    .lte("entry_date", toDateKey(lastDay))
+    .order("entry_date", { ascending: false });
 
   const despesas = (data as unknown as DespesaRow[]) ?? [];
 
@@ -53,21 +50,23 @@ export default async function CategoriasPage({
   for (const d of despesas) {
     const key = d.category_id ?? "sem-categoria";
     const existing = totalsByCategory.get(key);
+    const item = { id: d.id, description: d.description, amount: d.amount };
     if (existing) {
       existing.total += d.amount;
+      existing.items.push(item);
     } else {
       totalsByCategory.set(key, {
         key,
         name: d.categories?.name ?? "Sem categoria",
         icon: d.categories?.icon ?? null,
         total: d.amount,
+        items: [item],
       });
     }
   }
 
   const ordered = Array.from(totalsByCategory.values()).sort((a, b) => b.total - a.total);
   const total = ordered.reduce((sum, c) => sum + c.total, 0);
-  const maior = ordered[0]?.total ?? 0;
 
   return (
     <div className="flex justify-center px-3 py-7">
@@ -134,46 +133,7 @@ export default async function CategoriasPage({
           </div>
         ) : (
           <>
-            <div className="overflow-hidden rounded-2xl border border-brand-line bg-brand-card">
-              {ordered.map((c, i) => {
-                const Icon = iconForCategory(c.icon);
-                const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
-                const barPct = maior > 0 ? Math.round((c.total / maior) * 100) : 0;
-                return (
-                  <div
-                    key={c.key}
-                    className={
-                      i === 0
-                        ? "px-4 py-3.5"
-                        : "border-t border-brand-bg px-4 py-3.5"
-                    }
-                  >
-                    <div className="mb-2 flex items-center gap-3">
-                      <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[11px] bg-brand-bg">
-                        <Icon size={15} className="text-brand-ink" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[14.5px] font-medium text-brand-ink">
-                          {c.name}
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 text-right">
-                        <div className="font-display text-[15px] font-bold text-brand-ink">
-                          {currency(c.total)}
-                        </div>
-                        <div className="text-[11px] text-brand-ink-soft">{pct}% do mês</div>
-                      </div>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-brand-bg">
-                      <div
-                        className="h-full rounded-full bg-brand-ink opacity-75"
-                        style={{ width: `${barPct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <CategoryList categories={ordered} total={total} />
 
             <div className="flex items-center justify-between px-1 pt-4">
               <span className="text-[13px] text-brand-ink-soft">Total do mês</span>

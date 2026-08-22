@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export async function setCategoryLimit(categoryId: string, amount: number): Promise<void> {
-  if (!amount || amount <= 0) {
+export async function setCategoryLimit(categoryId: string, amount: number | null): Promise<void> {
+  if (amount != null && amount < 0) {
     throw new Error("Digite um valor válido.");
   }
 
@@ -19,7 +19,7 @@ export async function setCategoryLimit(categoryId: string, amount: number): Prom
 
   const { error } = await supabase
     .from("categories")
-    .update({ monthly_limit: amount })
+    .update({ monthly_limit: amount && amount > 0 ? amount : null })
     .eq("id", categoryId)
     .eq("user_id", user.id);
 

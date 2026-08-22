@@ -1,10 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Pencil, Plus, X } from "lucide-react";
 import { completeCents, currency, parseCurrencyInput } from "@/lib/tokens";
+import { toDateKey } from "@/lib/date";
 import { useConfirm } from "../confirm-dialog";
-import { createFixedExpense, deleteFixedExpense, updateFixedExpense } from "./actions";
+import {
+  createFixedExpense,
+  deleteFixedExpense,
+  markFixedExpensePaid,
+  updateFixedExpense,
+} from "./actions";
 
 const SUGGESTIONS = ["Aluguel", "Conta de luz", "Água", "Internet", "Condomínio", "Plano de saúde"];
 
@@ -22,11 +29,30 @@ function FixedExpenseRow({
   onUpdate: (id: string, name: string, amount: number) => Promise<void>;
   onDelete: (id: string, name: string) => void;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(expense.name);
   const [amount, setAmount] = useState(String(expense.expected_amount).replace(".", ","));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [markingPaid, setMarkingPaid] = useState(false);
+  const [paidDate, setPaidDate] = useState(toDateKey(new Date()));
+  const [confirmingPaid, setConfirmingPaid] = useState(false);
+  const [paidError, setPaidError] = useState("");
+
+  async function handleConfirmPaid() {
+    setConfirmingPaid(true);
+    setPaidError("");
+    try {
+      await markFixedExpensePaid(expense.name, expense.expected_amount, paidDate);
+      setMarkingPaid(false);
+      router.refresh();
+    } catch {
+      setPaidError("Não deu pra marcar como pago agora.");
+    } finally {
+      setConfirmingPaid(false);
+    }
+  }
 
   async function handleSave() {
     const amountNum = parseCurrencyInput(amount);
@@ -86,11 +112,16 @@ function FixedExpenseRow({
               )}
             </div>
           </div>
-          <div
-            className={
-              paid ? "h-2.5 w-2.5 flex-shrink-0 rounded-full bg-brand-sage" : "h-2.5 w-2.5 flex-shrink-0 rounded-full bg-brand-line"
-            }
-          />
+          {paid ? (
+            <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-brand-sage" />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMarkingPaid((v) => !v)}
+              aria-label={`Marcar ${expense.name} como pago`}
+              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-brand-line"
+            />
+          )}
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -107,6 +138,34 @@ function FixedExpenseRow({
           >
             <X size={14} />
           </button>
+        </div>
+      )}
+      {markingPaid && !editing && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-xl bg-brand-bg px-3 py-2.5">
+          <span className="text-[12.5px] text-brand-ink-soft">Pago em</span>
+          <input
+            type="date"
+            value={paidDate}
+            onChange={(e) => setPaidDate(e.target.value)}
+            className="rounded-lg border border-brand-line bg-white px-2 py-1.5 text-[13px] text-brand-ink outline-none focus:border-brand-ink"
+          />
+          <button
+            type="button"
+            disabled={confirmingPaid}
+            onClick={handleConfirmPaid}
+            className="flex items-center gap-1 rounded-lg bg-brand-ink px-3 py-1.5 text-[12.5px] font-semibold text-brand-card disabled:opacity-60"
+          >
+            <Check size={13} />
+            {confirmingPaid ? "..." : "Confirmar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMarkingPaid(false)}
+            className="text-[12.5px] font-medium text-brand-ink-soft"
+          >
+            Cancelar
+          </button>
+          {paidError && <p className="w-full text-xs text-brand-coral">{paidError}</p>}
         </div>
       )}
       {error && <p className="mt-1.5 text-xs text-brand-coral">{error}</p>}

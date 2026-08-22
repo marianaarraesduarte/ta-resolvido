@@ -17,7 +17,7 @@ export default async function InsightsPage() {
   const header = (
     <div className="mb-5 flex items-center gap-2.5">
       <Link
-        href="/app"
+        href="/app/mais"
         className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
       >
         <ChevronLeft size={18} />
