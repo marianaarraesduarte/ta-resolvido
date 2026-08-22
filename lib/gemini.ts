@@ -7,15 +7,17 @@ const MODEL = "gemini-flash-latest";
 
 // Sem isso, uma chamada que trava (rede lenta, API sem responder) fica
 // esperando pra sempre — a tela de "Analisando..." nunca sai do lugar e
-// nenhum erro chega a aparecer pra usuária.
-const REQUEST_TIMEOUT_MS = 20_000;
+// nenhum erro chega a aparecer pra usuária. Foto/PDF demora bem mais que
+// texto pro Gemini processar, por isso tem um timeout maior próprio.
+const TEXT_TIMEOUT_MS = 20_000;
+const DOCUMENT_TIMEOUT_MS = 45_000;
 
 function getClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY não configurada no servidor.");
   }
-  return new GoogleGenAI({ apiKey, httpOptions: { timeout: REQUEST_TIMEOUT_MS } });
+  return new GoogleGenAI({ apiKey, httpOptions: { timeout: TEXT_TIMEOUT_MS } });
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; data: string } {
@@ -49,6 +51,7 @@ export async function extractFromDocument<T>(
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
+      httpOptions: { timeout: DOCUMENT_TIMEOUT_MS },
     },
   });
 

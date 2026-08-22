@@ -301,8 +301,7 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
         possibleDuplicate: isPossibleDuplicate(item, existing ?? []),
       };
     });
-  } catch (err) {
-    console.error("DEBUG recognizeStatement:", err);
+  } catch {
     throw new Error("Não deu pra analisar esse arquivo agora.");
   }
 }
@@ -622,8 +621,7 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
         : baseCategory;
       return { ...item, category };
     });
-  } catch (err) {
-    console.error("DEBUG recognizeCardInvoice:", err);
+  } catch {
     throw new Error("Não deu pra analisar esse arquivo agora.");
   }
 }
