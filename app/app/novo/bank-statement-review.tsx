@@ -272,8 +272,6 @@ export function BankStatementReview({
                 ))}
               </div>
 
-              {error && <p className="mb-3 text-sm text-brand-coral">{error}</p>}
-
               <button
                 type="button"
                 disabled={saving}
@@ -294,7 +292,7 @@ export function BankStatementReview({
         </div>
       )}
 
-      {!previewUrl && error && <p className="mt-3 text-sm text-brand-coral">{error}</p>}
+      {error && <p className="mt-3 text-sm text-brand-coral">{error}</p>}
     </div>
   );
 }
