@@ -106,12 +106,31 @@ export async function confirmGoalInvestment(
 
   if (!amount || amount <= 0) throw new Error("Defina uma % maior que zero antes de confirmar.");
 
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  // Evita duplicar o desconto se a pessoa confirmar duas vezes seguidas
+  // (clique duplo, ou clicar de novo achando que não funcionou) — só
+  // lança se ainda não existe uma confirmação pra essa meta esse mês.
+  const { data: existing } = await supabase
+    .from("entries")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("investment_goal_id", goalId)
+    .gte("entry_date", toDateKey(firstDay))
+    .lte("entry_date", toDateKey(lastDay))
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return;
+
   const { error } = await supabase.from("entries").insert({
     user_id: user.id,
     type: "despesa",
     amount,
     description: `Investimento — ${goalName}`,
-    entry_date: toDateKey(new Date()),
+    entry_date: toDateKey(today),
     source: "manual",
     investment_goal_id: goalId,
   });

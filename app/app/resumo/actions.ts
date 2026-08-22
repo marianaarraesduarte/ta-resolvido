@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { parseMonthKey, monthKey, toDateKey } from "@/lib/date";
 
 export async function createFixedExpense(
   name: string,
@@ -93,6 +94,23 @@ export async function markFixedExpensePaid(
   if (!user) throw new Error("Não autenticado.");
 
   if (!amount || amount <= 0) throw new Error("Valor inválido.");
+
+  const monthFirstDay = parseMonthKey(monthKey(new Date(entryDate)));
+  const monthLastDay = new Date(monthFirstDay.getFullYear(), monthFirstDay.getMonth() + 1, 0);
+
+  // Evita duplicar o desconto se a pessoa marcar como pago duas vezes
+  // seguidas (clique duplo, ou clicar de novo achando que não funcionou).
+  const { data: existing } = await supabase
+    .from("entries")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("description", name)
+    .gte("entry_date", toDateKey(monthFirstDay))
+    .lte("entry_date", toDateKey(monthLastDay))
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return;
 
   const { error } = await supabase.from("entries").insert({
     user_id: user.id,

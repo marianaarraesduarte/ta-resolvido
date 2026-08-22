@@ -356,13 +356,18 @@ export function MetasBody({
     setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, name: name.trim() } : g)));
   }
 
-  async function handleDeleteGoal(id: string, name: string) {
-    const ok = await confirm(`Excluir a meta "${name}"?`);
+  async function handleDeleteGoal(goal: Goal) {
+    const message = confirmed[goal.id]
+      ? `Excluir a meta "${goal.name}"? Você já confirmou um investimento nela esse mês (${currency(
+          (receita * goal.percent) / 100,
+        )}) — esse valor continua contando no seu saldo, mas vira um gasto avulso, sem ligação com nenhuma meta.`
+      : `Excluir a meta "${goal.name}"?`;
+    const ok = await confirm(message);
     if (!ok) return;
     setGoalActionError("");
     try {
-      await deleteInvestmentGoal(id);
-      setGoals((prev) => prev.filter((g) => g.id !== id));
+      await deleteInvestmentGoal(goal.id);
+      setGoals((prev) => prev.filter((g) => g.id !== goal.id));
       router.refresh();
     } catch {
       setGoalActionError("Não deu pra excluir agora.");
@@ -492,7 +497,7 @@ export function MetasBody({
               receita={receita}
               onChangePercent={(percent) => handleGoalPercentChange(g.id, percent)}
               onRename={(name) => handleRenameGoal(g.id, name)}
-              onDelete={() => handleDeleteGoal(g.id, g.name)}
+              onDelete={() => handleDeleteGoal(g)}
               confirmed={confirmed[g.id] ?? false}
               confirming={confirmingId === g.id}
               onToggleConfirm={() => handleToggleConfirm(g)}
