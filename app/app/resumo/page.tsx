@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { monthLabel, toDateKey } from "@/lib/date";
+import { monthKey, monthLabel, parseMonthKey, toDateKey } from "@/lib/date";
 import { currency } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
 import { FixedExpensesSection } from "./fixed-expenses-section";
@@ -19,7 +19,11 @@ type DespesaRow = {
 
 type FixedExpenseRow = { id: string; name: string; expected_amount: number };
 
-export default async function ResumoPage() {
+export default async function ResumoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,8 +32,16 @@ export default async function ResumoPage() {
   if (!user) return null;
 
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const { mes } = await searchParams;
+  const viewedFirstDay = mes ? parseMonthKey(mes) : new Date(today.getFullYear(), today.getMonth(), 1);
+  const isCurrentMonth =
+    viewedFirstDay.getFullYear() === today.getFullYear() &&
+    viewedFirstDay.getMonth() === today.getMonth();
+
+  const firstDay = viewedFirstDay;
+  const lastDay = new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 0);
+  const prevMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() - 1, 1));
+  const nextMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 1));
 
   const [{ data }, { data: fixedExpensesData }, { data: categoriesData }] = await Promise.all([
     supabase
@@ -67,17 +79,39 @@ export default async function ResumoPage() {
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
-        <div className="mb-5 flex items-center gap-2.5">
+        <div className={isCurrentMonth ? "mb-5 flex items-center gap-2.5" : "mb-1.5 flex items-center gap-2.5"}>
           <Link
             href="/app"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
           >
             <ChevronLeft size={18} />
           </Link>
-          <div className="font-display text-xl font-bold text-brand-ink">
-            {monthLabel(today)}
+          <div className="min-w-0 flex-1 truncate font-display text-xl font-bold text-brand-ink">
+            {isCurrentMonth ? monthLabel(viewedFirstDay) : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`}
           </div>
+          <Link
+            href={`/app/resumo?mes=${prevMonthKey}`}
+            aria-label="Mês anterior"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+          >
+            <ChevronLeft size={16} />
+          </Link>
+          <Link
+            href={`/app/resumo?mes=${nextMonthKey}`}
+            aria-label="Próximo mês"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+          >
+            <ChevronRight size={16} />
+          </Link>
         </div>
+        {!isCurrentMonth && (
+          <Link
+            href="/app/resumo"
+            className="mb-5 inline-block text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
+          >
+            Voltar pro mês atual
+          </Link>
+        )}
 
         <FixedExpensesSection
           fixedExpenses={fixedExpenses}

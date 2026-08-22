@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, CreditCard, Pencil, Plus } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronLeft, ChevronRight, CreditCard, Pencil, Plus } from "lucide-react";
 import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 
@@ -39,18 +39,24 @@ function tooltipLabel(items: Entry[], total: number): string {
 
 export function MonthRuler({
   monthName,
-  today,
+  todayDayOfMonth,
   daysInMonth,
   entries,
   cardInvoices,
   comparisonSentence,
+  prevMonthKey,
+  nextMonthKey,
+  isCurrentMonth,
 }: {
   monthName: string;
-  today: number;
+  todayDayOfMonth: number | null;
   daysInMonth: number;
   entries: Entry[];
   cardInvoices: CardInvoiceSummary[];
   comparisonSentence?: string | null;
+  prevMonthKey: string;
+  nextMonthKey: string;
+  isCurrentMonth: boolean;
 }) {
   const [selected, setSelected] = useState<Selection | null>(null);
 
@@ -84,10 +90,10 @@ export function MonthRuler({
   }
 
   const receitaSoFar = receitas
-    .filter((e) => dayOfMonth(e.entry_date) <= today)
+    .filter((e) => todayDayOfMonth === null || dayOfMonth(e.entry_date) <= todayDayOfMonth)
     .reduce((sum, e) => sum + e.amount, 0);
   const despesaSoFar = despesas
-    .filter((e) => dayOfMonth(e.entry_date) <= today)
+    .filter((e) => todayDayOfMonth === null || dayOfMonth(e.entry_date) <= todayDayOfMonth)
     .reduce((sum, e) => sum + e.amount, 0);
 
   const selectedDayItems =
@@ -104,7 +110,33 @@ export function MonthRuler({
           <div className="font-display text-xs font-bold uppercase tracking-wide text-brand-ink opacity-55">
             Tá Resolvido
           </div>
-          <div className="mt-0.5 font-display text-3xl font-bold text-brand-ink">{monthName}</div>
+          <div className="mt-0.5 flex items-center gap-2">
+            <Link
+              href={`/app?mes=${prevMonthKey}`}
+              aria-label="Mês anterior"
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            >
+              <ChevronLeft size={18} />
+            </Link>
+            <div className="min-w-0 flex-1 truncate font-display text-3xl font-bold text-brand-ink">
+              {monthName}
+            </div>
+            <Link
+              href={`/app?mes=${nextMonthKey}`}
+              aria-label="Próximo mês"
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            >
+              <ChevronRight size={18} />
+            </Link>
+          </div>
+          {!isCurrentMonth && (
+            <Link
+              href="/app"
+              className="mt-1 inline-block text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
+            >
+              Voltar pro mês atual
+            </Link>
+          )}
           {hasEntries && comparisonSentence && (
             <p className="mt-1.5 text-[12.5px] leading-snug text-brand-ink-soft">
               {comparisonSentence}
@@ -136,10 +168,12 @@ export function MonthRuler({
         ) : (
           <div className="mb-5 rounded-2xl bg-brand-card p-5">
             <div className="text-[15.5px] font-medium leading-snug text-brand-ink">
-              Mês novinho em folha.
+              {isCurrentMonth ? "Mês novinho em folha." : "Nada marcado nesse mês."}
             </div>
             <div className="mt-1.5 text-[13.5px] leading-snug text-brand-ink-soft">
-              Marque o primeiro gasto quando aparecer.
+              {isCurrentMonth
+                ? "Marque o primeiro gasto quando aparecer."
+                : "Nenhum lançamento ou fatura caiu por aqui."}
             </div>
           </div>
         )}
@@ -158,7 +192,7 @@ export function MonthRuler({
               style={{ top: hasEntries ? 65 : 26, height: 2 }}
             />
             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-              const isToday = day === today;
+              const isToday = day === todayDayOfMonth;
               const bucket = byDay.get(day);
               const dayInvoices = invoicesByDay.get(day) ?? [];
               const despesaTotal = bucket?.despesas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
