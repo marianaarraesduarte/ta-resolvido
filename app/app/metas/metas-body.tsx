@@ -1,94 +1,157 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Minus, Pencil, PiggyBank, Plus, X } from "lucide-react";
 import { completeCents, currency, parseCurrencyInput, TOKENS } from "@/lib/tokens";
 import { useConfirm } from "../confirm-dialog";
 import {
   confirmGoalInvestment,
+  createInvestmentGoal,
   createReserve,
+  deleteInvestmentGoal,
   deleteReserve,
+  renameInvestmentGoal,
   setGoalPercent,
   setIncomeBasis,
   unconfirmGoalInvestment,
   updateReserveProgress,
 } from "./actions";
 
-type GoalKind = "liberdade_financeira" | "longo_prazo" | "curto_prazo";
+type Goal = { id: string; name: string; percent: number };
 type Reserve = { id: string; name: string; target_amount: number; saved_amount: number };
 
-const GOAL_META: { kind: GoalKind; label: string; color: string }[] = [
-  { kind: "liberdade_financeira", label: "Liberdade financeira", color: TOKENS.sage },
-  { kind: "longo_prazo", label: "Longo prazo", color: TOKENS.amber },
-  { kind: "curto_prazo", label: "Curto prazo", color: TOKENS.coral },
-];
+const GOAL_COLORS = [TOKENS.sage, TOKENS.amber, TOKENS.coral];
 
 function GoalRow({
-  label,
+  goal,
   color,
-  percent,
   receita,
-  onChange,
+  onChangePercent,
+  onRename,
+  onDelete,
   confirmed,
   confirming,
   onToggleConfirm,
 }: {
-  label: string;
+  goal: Goal;
   color: string;
-  percent: number;
   receita: number;
-  onChange: (percent: number) => void;
+  onChangePercent: (percent: number) => void;
+  onRename: (name: string) => Promise<void>;
+  onDelete: () => void;
   confirmed: boolean;
   confirming: boolean;
   onToggleConfirm: () => void;
 }) {
-  const amount = (receita * percent) / 100;
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(goal.name);
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState("");
+  const amount = (receita * goal.percent) / 100;
+
+  async function handleSaveName() {
+    if (!name.trim()) {
+      setNameError("Digite um nome.");
+      return;
+    }
+    setSavingName(true);
+    setNameError("");
+    try {
+      await onRename(name);
+      setRenaming(false);
+    } catch {
+      setNameError("Não deu pra salvar agora.");
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   return (
     <div className="mb-5 last:mb-0">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-brand-ink">{label}</span>
-        <div className="flex items-center gap-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        {renaming ? (
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSaveName();
+                }
+              }}
+              className="min-w-0 flex-1 rounded-lg border border-brand-line bg-white px-2 py-1 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            />
+            <button
+              type="button"
+              disabled={savingName}
+              onClick={handleSaveName}
+              className="flex-shrink-0 text-brand-sage"
+              aria-label="Salvar nome"
+            >
+              <Check size={16} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-brand-ink">{goal.name}</span>
+            <button
+              type="button"
+              onClick={() => setRenaming(true)}
+              aria-label={`Renomear ${goal.name}`}
+              className="flex-shrink-0 text-brand-ink-soft"
+            >
+              <Pencil size={12} />
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              aria-label={`Excluir ${goal.name}`}
+              className="flex-shrink-0 text-brand-ink-soft"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
+        <div className="flex flex-shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={() => onChange(percent - 1)}
+            onClick={() => onChangePercent(goal.percent - 1)}
             className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-white text-brand-ink"
           >
             <Minus size={12} />
           </button>
-          <div className="flex w-11 items-baseline justify-center">
+          <div className="flex w-14 items-baseline justify-center rounded-lg border border-brand-line bg-white px-1.5 py-1">
             <input
               type="text"
               inputMode="numeric"
-              value={percent}
+              value={goal.percent}
               onChange={(e) => {
                 const digits = e.target.value.replace(/[^0-9]/g, "");
-                onChange(digits === "" ? 0 : Number(digits));
+                onChangePercent(digits === "" ? 0 : Number(digits));
               }}
               onFocus={(e) => e.target.select()}
-              aria-label={`${label} — porcentagem`}
+              aria-label={`${goal.name} — porcentagem`}
               className="w-7 bg-transparent text-right font-display text-[15px] font-bold text-brand-ink outline-none"
             />
             <span className="font-display text-[15px] font-bold text-brand-ink">%</span>
           </div>
           <button
             type="button"
-            onClick={() => onChange(percent + 1)}
+            onClick={() => onChangePercent(goal.percent + 1)}
             className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-white text-brand-ink"
           >
             <Plus size={12} />
           </button>
         </div>
       </div>
+      {nameError && <p className="mb-1 text-xs text-brand-coral">{nameError}</p>}
       <div className="mb-1 h-2 overflow-hidden rounded-full bg-brand-bg">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${percent}%`, background: color }}
-        />
+        <div className="h-full rounded-full" style={{ width: `${goal.percent}%`, background: color }} />
       </div>
-      <div className="mb-2 text-right text-xs text-brand-ink-soft">
-        = {currency(amount)} / mês
-      </div>
+      <div className="mb-2 text-right text-xs text-brand-ink-soft">= {currency(amount)} / mês</div>
       <button
         type="button"
         disabled={confirming || amount <= 0}
@@ -233,32 +296,36 @@ export function MetasBody({
   receitaAll,
   receitaSalaryOnly,
   goals: initialGoals,
-  confirmedKinds: initialConfirmedKinds,
+  confirmedGoalIds: initialConfirmedGoalIds,
   reserves: initialReserves,
+  saldo,
 }: {
   incomeBasis: "all" | "salary_only";
   receitaAll: number;
   receitaSalaryOnly: number;
-  goals: { kind: GoalKind; percent: number }[];
-  confirmedKinds: GoalKind[];
+  goals: Goal[];
+  confirmedGoalIds: string[];
   reserves: Reserve[];
+  saldo: number;
 }) {
+  const router = useRouter();
   const [incomeBasis, setIncomeBasisState] = useState(initialIncomeBasis);
-  const [goalPercents, setGoalPercents] = useState<Record<GoalKind, number>>(() => {
-    const map = {} as Record<GoalKind, number>;
-    for (const g of initialGoals) map[g.kind] = g.percent;
+  const [goals, setGoals] = useState(initialGoals);
+  const [confirmed, setConfirmed] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    for (const id of initialConfirmedGoalIds) map[id] = true;
     return map;
   });
-  const [confirmed, setConfirmed] = useState<Record<GoalKind, boolean>>(() => {
-    const map = {} as Record<GoalKind, boolean>;
-    for (const g of initialGoals) map[g.kind] = initialConfirmedKinds.includes(g.kind);
-    return map;
-  });
-  const [confirmingKind, setConfirmingKind] = useState<GoalKind | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState("");
   const [reserves, setReserves] = useState(initialReserves);
   const [reserveActionError, setReserveActionError] = useState("");
+  const [goalActionError, setGoalActionError] = useState("");
   const confirm = useConfirm();
+
+  const [addingGoal, setAddingGoal] = useState(false);
+  const [newGoalName, setNewGoalName] = useState("");
+  const [creatingGoal, setCreatingGoal] = useState(false);
 
   const [addingReserve, setAddingReserve] = useState(false);
   const [newReserveName, setNewReserveName] = useState("");
@@ -267,35 +334,77 @@ export function MetasBody({
   const [reserveError, setReserveError] = useState("");
 
   const receita = incomeBasis === "all" ? receitaAll : receitaSalaryOnly;
-  const totalPct = Object.values(goalPercents).reduce((sum, p) => sum + p, 0);
+  const totalPct = goals.reduce((sum, g) => sum + g.percent, 0);
+  const unconfirmedTotal = goals
+    .filter((g) => !confirmed[g.id])
+    .reduce((sum, g) => sum + (receita * g.percent) / 100, 0);
+  const simulatedSaldo = saldo - unconfirmedTotal;
 
   function handleBasisChange(basis: "all" | "salary_only") {
     setIncomeBasisState(basis);
     setIncomeBasis(basis).catch(() => {});
   }
 
-  function handleGoalChange(kind: GoalKind, percent: number) {
+  function handleGoalPercentChange(id: string, percent: number) {
     const clamped = Math.max(0, Math.min(100, percent));
-    setGoalPercents((prev) => ({ ...prev, [kind]: clamped }));
-    setGoalPercent(kind, clamped).catch(() => {});
+    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, percent: clamped } : g)));
+    setGoalPercent(id, clamped).catch(() => {});
   }
 
-  async function handleToggleConfirm(kind: GoalKind) {
-    setConfirmError("");
-    setConfirmingKind(kind);
+  async function handleRenameGoal(id: string, name: string) {
+    await renameInvestmentGoal(id, name);
+    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, name: name.trim() } : g)));
+  }
+
+  async function handleDeleteGoal(id: string, name: string) {
+    const ok = await confirm(`Excluir a meta "${name}"?`);
+    if (!ok) return;
+    setGoalActionError("");
     try {
-      if (confirmed[kind]) {
-        await unconfirmGoalInvestment(kind);
-        setConfirmed((prev) => ({ ...prev, [kind]: false }));
+      await deleteInvestmentGoal(id);
+      setGoals((prev) => prev.filter((g) => g.id !== id));
+      router.refresh();
+    } catch {
+      setGoalActionError("Não deu pra excluir agora.");
+    }
+  }
+
+  async function handleCreateGoal() {
+    if (!newGoalName.trim()) {
+      setGoalActionError("Digite um nome pra meta.");
+      return;
+    }
+    setCreatingGoal(true);
+    setGoalActionError("");
+    try {
+      const created = await createInvestmentGoal(newGoalName);
+      setGoals((prev) => [...prev, created]);
+      setNewGoalName("");
+      setAddingGoal(false);
+    } catch (e) {
+      setGoalActionError(e instanceof Error ? e.message : "Não deu pra criar agora.");
+    } finally {
+      setCreatingGoal(false);
+    }
+  }
+
+  async function handleToggleConfirm(goal: Goal) {
+    setConfirmError("");
+    setConfirmingId(goal.id);
+    try {
+      if (confirmed[goal.id]) {
+        await unconfirmGoalInvestment(goal.id);
+        setConfirmed((prev) => ({ ...prev, [goal.id]: false }));
       } else {
-        const amount = (receita * (goalPercents[kind] ?? 0)) / 100;
-        await confirmGoalInvestment(kind, amount);
-        setConfirmed((prev) => ({ ...prev, [kind]: true }));
+        const amount = (receita * goal.percent) / 100;
+        await confirmGoalInvestment(goal.id, goal.name, amount);
+        setConfirmed((prev) => ({ ...prev, [goal.id]: true }));
       }
+      router.refresh();
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : "Não deu pra atualizar agora.");
     } finally {
-      setConfirmingKind(null);
+      setConfirmingId(null);
     }
   }
 
@@ -373,29 +482,71 @@ export function MetasBody({
       </div>
 
       <div className="mb-2 text-[13px] font-semibold text-brand-ink">Metas de investimento</div>
-      <div className="mb-2 rounded-2xl bg-brand-card p-[18px]">
-        {GOAL_META.map((g) => (
-          <GoalRow
-            key={g.kind}
-            label={g.label}
-            color={g.color}
-            percent={goalPercents[g.kind] ?? 0}
-            receita={receita}
-            onChange={(percent) => handleGoalChange(g.kind, percent)}
-            confirmed={confirmed[g.kind] ?? false}
-            confirming={confirmingKind === g.kind}
-            onToggleConfirm={() => handleToggleConfirm(g.kind)}
-          />
-        ))}
-      </div>
+      {goals.length > 0 && (
+        <div className="mb-2 rounded-2xl bg-brand-card p-[18px]">
+          {goals.map((g, i) => (
+            <GoalRow
+              key={g.id}
+              goal={g}
+              color={GOAL_COLORS[i % GOAL_COLORS.length]}
+              receita={receita}
+              onChangePercent={(percent) => handleGoalPercentChange(g.id, percent)}
+              onRename={(name) => handleRenameGoal(g.id, name)}
+              onDelete={() => handleDeleteGoal(g.id, g.name)}
+              confirmed={confirmed[g.id] ?? false}
+              confirming={confirmingId === g.id}
+              onToggleConfirm={() => handleToggleConfirm(g)}
+            />
+          ))}
+        </div>
+      )}
+      {goalActionError && <p className="mb-3 text-center text-xs text-brand-coral">{goalActionError}</p>}
       {confirmError && (
         <p className="mb-3 text-center text-xs text-brand-coral">{confirmError}</p>
       )}
+
+      {addingGoal ? (
+        <div className="mb-3 rounded-2xl bg-brand-card p-[18px]">
+          <div className="flex gap-2">
+            <input
+              autoFocus
+              value={newGoalName}
+              onChange={(e) => setNewGoalName(e.target.value)}
+              placeholder="Nome da meta (ex: Aposentadoria)"
+              className="min-w-0 flex-1 rounded-xl border border-brand-line bg-white px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleCreateGoal();
+                }
+              }}
+            />
+            <button
+              type="button"
+              disabled={creatingGoal}
+              onClick={handleCreateGoal}
+              className="flex-shrink-0 rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+            >
+              {creatingGoal ? "..." : "Criar"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAddingGoal(true)}
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-brand-line py-3 font-display text-sm font-semibold text-brand-ink-soft"
+        >
+          <Plus size={15} />
+          Nova meta de investimento
+        </button>
+      )}
+
       <div
         className={
           totalPct > 100
             ? "mb-1 text-center text-[11.5px] font-medium text-brand-coral"
-            : "mb-6 text-center text-[11.5px] text-brand-ink-soft"
+            : "mb-2 text-center text-[11.5px] text-brand-ink-soft"
         }
       >
         No total, você está investindo{" "}
@@ -408,6 +559,20 @@ export function MetasBody({
         <div className="mb-6 text-center text-[11.5px] leading-snug text-brand-coral">
           Isso é mais do que 100% da sua receita — confere as porcentagens, deve ter alguma
           conta sobrando.
+        </div>
+      )}
+
+      {goals.some((g) => g.percent > 0) && (
+        <div className="mb-6 rounded-2xl border border-brand-line bg-brand-card px-[18px] py-3.5 text-center">
+          <div className="text-[11.5px] text-brand-ink-soft">
+            Se você guardar tudo isso esse mês, seu saldo fica em
+          </div>
+          <div
+            className="font-display text-lg font-bold"
+            style={{ color: simulatedSaldo >= 0 ? TOKENS.sage : TOKENS.coral }}
+          >
+            {currency(simulatedSaldo)}
+          </div>
         </div>
       )}
 

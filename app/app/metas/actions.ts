@@ -3,18 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
 
-type GoalKind = "liberdade_financeira" | "longo_prazo" | "curto_prazo";
-
-const GOAL_LABELS: Record<GoalKind, string> = {
-  liberdade_financeira: "Liberdade financeira",
-  longo_prazo: "Longo prazo",
-  curto_prazo: "Curto prazo",
-};
-
-function goalDescription(kind: GoalKind): string {
-  return `Investimento — ${GOAL_LABELS[kind]}`;
-}
-
 export async function setIncomeBasis(basis: "all" | "salary_only"): Promise<void> {
   const supabase = await createClient();
   const {
@@ -30,7 +18,64 @@ export async function setIncomeBasis(basis: "all" | "salary_only"): Promise<void
   if (error) throw new Error("Não deu pra salvar agora.");
 }
 
-export async function setGoalPercent(kind: GoalKind, percent: number): Promise<void> {
+export async function createInvestmentGoal(
+  name: string,
+): Promise<{ id: string; name: string; percent: number }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Digite um nome pra meta.");
+
+  const { data, error } = await supabase
+    .from("investment_goals")
+    .insert({ user_id: user.id, name: trimmed, percent: 0 })
+    .select("id, name, percent")
+    .single();
+
+  if (error) throw new Error("Não deu pra criar essa meta agora.");
+  return data;
+}
+
+export async function renameInvestmentGoal(id: string, name: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Digite um nome pra meta.");
+
+  const { error } = await supabase
+    .from("investment_goals")
+    .update({ name: trimmed })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) throw new Error("Não deu pra salvar agora.");
+}
+
+export async function deleteInvestmentGoal(id: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { error } = await supabase
+    .from("investment_goals")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) throw new Error("Não deu pra excluir essa meta agora.");
+}
+
+export async function setGoalPercent(goalId: string, percent: number): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -40,13 +85,19 @@ export async function setGoalPercent(kind: GoalKind, percent: number): Promise<v
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
 
   const { error } = await supabase
-    .from("goals")
-    .upsert({ user_id: user.id, kind, percent: clamped }, { onConflict: "user_id,kind" });
+    .from("investment_goals")
+    .update({ percent: clamped })
+    .eq("id", goalId)
+    .eq("user_id", user.id);
 
   if (error) throw new Error("Não deu pra salvar agora.");
 }
 
-export async function confirmGoalInvestment(kind: GoalKind, amount: number): Promise<string> {
+export async function confirmGoalInvestment(
+  goalId: string,
+  goalName: string,
+  amount: number,
+): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -55,24 +106,20 @@ export async function confirmGoalInvestment(kind: GoalKind, amount: number): Pro
 
   if (!amount || amount <= 0) throw new Error("Defina uma % maior que zero antes de confirmar.");
 
-  const { data, error } = await supabase
-    .from("entries")
-    .insert({
-      user_id: user.id,
-      type: "despesa",
-      amount,
-      description: goalDescription(kind),
-      entry_date: toDateKey(new Date()),
-      source: "manual",
-    })
-    .select("id")
-    .single();
+  const { error } = await supabase.from("entries").insert({
+    user_id: user.id,
+    type: "despesa",
+    amount,
+    description: `Investimento — ${goalName}`,
+    entry_date: toDateKey(new Date()),
+    source: "manual",
+    investment_goal_id: goalId,
+  });
 
   if (error) throw new Error("Não deu pra confirmar agora.");
-  return data.id;
 }
 
-export async function unconfirmGoalInvestment(kind: GoalKind): Promise<void> {
+export async function unconfirmGoalInvestment(goalId: string): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -87,8 +134,7 @@ export async function unconfirmGoalInvestment(kind: GoalKind): Promise<void> {
     .from("entries")
     .delete()
     .eq("user_id", user.id)
-    .eq("type", "despesa")
-    .eq("description", goalDescription(kind))
+    .eq("investment_goal_id", goalId)
     .gte("entry_date", toDateKey(firstDay))
     .lte("entry_date", toDateKey(lastDay));
 
