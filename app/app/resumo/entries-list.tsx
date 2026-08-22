@@ -8,7 +8,7 @@ import { currency } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
-import { bulkDeleteEntries, bulkSetCategory } from "./actions";
+import { bulkDeleteEntries, bulkSetCategory } from "../entries-actions";
 
 type Category = { id: string; name: string };
 type EntryRow = {
@@ -70,8 +70,15 @@ export function EntriesList({
     });
   }
 
+  const allSelectableIds = [
+    ...entries.map((e) => e.id),
+    ...cardInvoices.flatMap((inv) => inv.items.map((it) => it.id)),
+  ];
+
   function toggleAll() {
-    setSelectedIds((prev) => (prev.size === entries.length ? new Set() : new Set(entries.map((e) => e.id))));
+    setSelectedIds((prev) =>
+      prev.size === allSelectableIds.length ? new Set() : new Set(allSelectableIds),
+    );
   }
 
   async function handleBulkDelete() {
@@ -121,7 +128,7 @@ export function EntriesList({
     <div className="pb-24">
       <div className="mb-2 flex items-center justify-between">
         <div className="text-[13px] font-semibold text-brand-ink">Tudo que foi marcado</div>
-        {entries.length > 0 && (
+        {allSelectableIds.length > 0 && (
           <button
             type="button"
             onClick={() => (selecting ? exitSelection() : setSelecting(true))}
@@ -138,12 +145,12 @@ export function EntriesList({
           onClick={toggleAll}
           className="mb-2 flex items-center gap-2 text-[12.5px] font-medium text-brand-ink-soft"
         >
-          {selectedIds.size === entries.length ? (
+          {selectedIds.size === allSelectableIds.length ? (
             <SquareCheck size={16} style={{ color: "var(--accent)" }} />
           ) : (
             <Square size={16} />
           )}
-          {selectedIds.size === entries.length ? "Desmarcar tudo" : "Selecionar tudo"}
+          {selectedIds.size === allSelectableIds.length ? "Desmarcar tudo" : "Selecionar tudo"}
         </button>
       )}
 
@@ -199,20 +206,47 @@ export function EntriesList({
                   </button>
                   {expanded && (
                     <div className="bg-brand-bg/60 px-4 pb-2">
-                      {invoice.items.map((item) => (
-                        <Link
-                          key={item.id}
-                          href={`/app/lancamento/${item.id}`}
-                          className="flex items-center justify-between gap-3 py-2 pl-11"
-                        >
-                          <span className="min-w-0 flex-1 truncate text-[13.5px] text-brand-ink">
-                            {item.description}
-                          </span>
-                          <span className="flex-shrink-0 whitespace-nowrap text-[13.5px] font-semibold text-brand-ink">
-                            {currency(item.amount)}
-                          </span>
-                        </Link>
-                      ))}
+                      {invoice.items.map((item) => {
+                        const itemChecked = selectedIds.has(item.id);
+                        const itemContent = (
+                          <>
+                            {selecting &&
+                              (itemChecked ? (
+                                <SquareCheck
+                                  size={16}
+                                  className="flex-shrink-0"
+                                  style={{ color: "var(--accent)" }}
+                                />
+                              ) : (
+                                <Square size={16} className="flex-shrink-0 text-brand-ink-soft" />
+                              ))}
+                            <span className="min-w-0 flex-1 truncate text-[13.5px] text-brand-ink">
+                              {item.description}
+                            </span>
+                            <span className="flex-shrink-0 whitespace-nowrap text-[13.5px] font-semibold text-brand-ink">
+                              {currency(item.amount)}
+                            </span>
+                          </>
+                        );
+                        return selecting ? (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => toggleOne(item.id)}
+                            className="flex w-full items-center gap-2.5 py-2 pl-11 text-left"
+                          >
+                            {itemContent}
+                          </button>
+                        ) : (
+                          <Link
+                            key={item.id}
+                            href={`/app/lancamento/${item.id}`}
+                            className="flex items-center justify-between gap-3 py-2 pl-11"
+                          >
+                            {itemContent}
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

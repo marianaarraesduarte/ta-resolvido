@@ -2,8 +2,10 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { monthKey, monthLabel, parseMonthKey, toDateKey } from "@/lib/date";
+import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { currency } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
+import { clearMonthSelection, goToMonth } from "../month-actions";
 import { FixedExpensesSection } from "./fixed-expenses-section";
 import { EntriesList, type CardInvoiceRow } from "./entries-list";
 
@@ -35,7 +37,10 @@ export default async function ResumoPage({
 
   const today = new Date();
   const { mes } = await searchParams;
-  const viewedFirstDay = mes ? parseMonthKey(mes) : new Date(today.getFullYear(), today.getMonth(), 1);
+  const effectiveMes = mes ?? (await getSelectedMonthKey()) ?? undefined;
+  const viewedFirstDay = effectiveMes
+    ? parseMonthKey(effectiveMes)
+    : new Date(today.getFullYear(), today.getMonth(), 1);
   const isCurrentMonth =
     viewedFirstDay.getFullYear() === today.getFullYear() &&
     viewedFirstDay.getMonth() === today.getMonth();
@@ -115,28 +120,34 @@ export default async function ResumoPage({
           <div className="min-w-0 flex-1 truncate font-display text-xl font-bold text-brand-ink">
             {isCurrentMonth ? monthLabel(viewedFirstDay) : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`}
           </div>
-          <Link
-            href={`/app/resumo?mes=${prevMonthKey}`}
-            aria-label="Mês anterior"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-          >
-            <ChevronLeft size={16} />
-          </Link>
-          <Link
-            href={`/app/resumo?mes=${nextMonthKey}`}
-            aria-label="Próximo mês"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-          >
-            <ChevronRight size={16} />
-          </Link>
+          <form action={goToMonth.bind(null, "/app/resumo", prevMonthKey)}>
+            <button
+              type="submit"
+              aria-label="Mês anterior"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          </form>
+          <form action={goToMonth.bind(null, "/app/resumo", nextMonthKey)}>
+            <button
+              type="submit"
+              aria-label="Próximo mês"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </form>
         </div>
         {!isCurrentMonth && (
-          <Link
-            href="/app/resumo"
-            className="mb-5 inline-block text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
-          >
-            Voltar pro mês atual
-          </Link>
+          <form action={clearMonthSelection.bind(null, "/app/resumo")}>
+            <button
+              type="submit"
+              className="mb-5 text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
+            >
+              Voltar pro mês atual
+            </button>
+          </form>
         )}
 
         <FixedExpensesSection

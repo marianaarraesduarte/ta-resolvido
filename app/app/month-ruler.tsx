@@ -2,9 +2,26 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronLeft, ChevronRight, CreditCard, Pencil, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  Pencil,
+  Plus,
+  Square,
+  SquareCheck,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
 import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
+import { useConfirm } from "./confirm-dialog";
+import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
+import { clearMonthSelection, goToMonth } from "./month-actions";
 
 export type Entry = {
   id: string;
@@ -37,12 +54,15 @@ function tooltipLabel(items: Entry[], total: number): string {
   return `${items.length} lançamentos — ${currency(total)}`;
 }
 
+type Category = { id: string; name: string };
+
 export function MonthRuler({
   monthName,
   todayDayOfMonth,
   daysInMonth,
   entries,
   cardInvoices,
+  categories,
   comparisonSentence,
   prevMonthKey,
   nextMonthKey,
@@ -53,12 +73,75 @@ export function MonthRuler({
   daysInMonth: number;
   entries: Entry[];
   cardInvoices: CardInvoiceSummary[];
+  categories: Category[];
   comparisonSentence?: string | null;
   prevMonthKey: string;
   nextMonthKey: string;
   isCurrentMonth: boolean;
 }) {
+  const router = useRouter();
+  const confirm = useConfirm();
   const [selected, setSelected] = useState<Selection | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pickingCategory, setPickingCategory] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [bulkError, setBulkError] = useState("");
+
+  function exitSelection() {
+    setSelecting(false);
+    setSelectedIds(new Set());
+    setPickingCategory(false);
+    setBulkError("");
+  }
+
+  function selectAndReset(next: Selection) {
+    setSelected(next);
+    exitSelection();
+  }
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    const n = selectedIds.size;
+    const confirmed = await confirm(
+      `Excluir ${n} ${n === 1 ? "lançamento" : "lançamentos"}? Essa ação não pode ser desfeita.`,
+    );
+    if (!confirmed) return;
+
+    setProcessing(true);
+    setBulkError("");
+    try {
+      await bulkDeleteEntries([...selectedIds]);
+      exitSelection();
+      router.refresh();
+    } catch {
+      setBulkError("Não deu pra excluir agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleBulkCategory(categoryId: string | null) {
+    setProcessing(true);
+    setBulkError("");
+    try {
+      await bulkSetCategory([...selectedIds], categoryId);
+      exitSelection();
+      router.refresh();
+    } catch {
+      setBulkError("Não deu pra trocar a categoria agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
 
   const hasEntries = entries.length > 0;
   const despesas = entries.filter((e) => e.type === "despesa");
@@ -111,31 +194,37 @@ export function MonthRuler({
             Tá Resolvido
           </div>
           <div className="mt-0.5 flex items-center gap-2">
-            <Link
-              href={`/app?mes=${prevMonthKey}`}
-              aria-label="Mês anterior"
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-            >
-              <ChevronLeft size={18} />
-            </Link>
+            <form action={goToMonth.bind(null, "/app", prevMonthKey)}>
+              <button
+                type="submit"
+                aria-label="Mês anterior"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            </form>
             <div className="min-w-0 flex-1 truncate font-display text-3xl font-bold text-brand-ink">
               {monthName}
             </div>
-            <Link
-              href={`/app?mes=${nextMonthKey}`}
-              aria-label="Próximo mês"
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-            >
-              <ChevronRight size={18} />
-            </Link>
+            <form action={goToMonth.bind(null, "/app", nextMonthKey)}>
+              <button
+                type="submit"
+                aria-label="Próximo mês"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </form>
           </div>
           {!isCurrentMonth && (
-            <Link
-              href="/app"
-              className="mt-1 inline-block text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
-            >
-              Voltar pro mês atual
-            </Link>
+            <form action={clearMonthSelection.bind(null, "/app")}>
+              <button
+                type="submit"
+                className="mt-1 text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
+              >
+                Voltar pro mês atual
+              </button>
+            </form>
           )}
           {hasEntries && comparisonSentence && (
             <p className="mt-1.5 text-[12.5px] leading-snug text-brand-ink-soft">
@@ -215,7 +304,7 @@ export function MonthRuler({
                         <div className="group relative mb-1.5">
                           <button
                             type="button"
-                            onClick={() => setSelected({ kind: "day", day, type: "receita" })}
+                            onClick={() => selectAndReset({ kind: "day", day, type: "receita" })}
                             aria-label={`Entradas do dia ${day}`}
                             className={
                               isSelectedReceita
@@ -259,7 +348,7 @@ export function MonthRuler({
                           <div key={invoice.id} className="group relative">
                             <button
                               type="button"
-                              onClick={() => setSelected({ kind: "invoice", invoiceId: invoice.id })}
+                              onClick={() => selectAndReset({ kind: "invoice", invoiceId: invoice.id })}
                               aria-label={`Fatura do cartão do dia ${day}`}
                               className={
                                 isSelectedInvoice
@@ -282,7 +371,7 @@ export function MonthRuler({
                         <div className="group relative">
                           <button
                             type="button"
-                            onClick={() => setSelected({ kind: "day", day, type: "despesa" })}
+                            onClick={() => selectAndReset({ kind: "day", day, type: "despesa" })}
                             aria-label={`Gastos do dia ${day}`}
                             className={
                               isSelectedDespesa
@@ -311,7 +400,7 @@ export function MonthRuler({
           <button
             key={invoice.id}
             type="button"
-            onClick={() => setSelected({ kind: "invoice", invoiceId: invoice.id })}
+            onClick={() => selectAndReset({ kind: "invoice", invoiceId: invoice.id })}
             className="mb-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
             style={{ background: "color-mix(in srgb, var(--accent) 16%, #FBFAF6)" }}
           >
@@ -372,26 +461,133 @@ export function MonthRuler({
 
         {selectedInvoice && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
-            <div className="mb-2 text-xs text-brand-ink-soft">
-              Fatura do cartão · dia {dayOfMonth(selectedInvoice.invoiceDate)} ·{" "}
-              {selectedInvoice.items.length} {selectedInvoice.items.length === 1 ? "compra" : "compras"}
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-xs text-brand-ink-soft">
+                Fatura do cartão · dia {dayOfMonth(selectedInvoice.invoiceDate)} ·{" "}
+                {selectedInvoice.items.length}{" "}
+                {selectedInvoice.items.length === 1 ? "compra" : "compras"}
+              </div>
+              <button
+                type="button"
+                onClick={() => (selecting ? exitSelection() : setSelecting(true))}
+                className="flex-shrink-0 text-[12px] font-semibold text-brand-ink-soft underline underline-offset-2"
+              >
+                {selecting ? "Cancelar" : "Selecionar"}
+              </button>
             </div>
             <div className="flex flex-col gap-2">
-              {selectedInvoice.items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/app/lancamento/${item.id}`}
-                  className="flex items-center justify-between gap-3"
-                >
-                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-brand-ink">
-                    {item.description}
+              {selectedInvoice.items.map((item) => {
+                const checked = selectedIds.has(item.id);
+                const content = (
+                  <>
+                    {selecting &&
+                      (checked ? (
+                        <SquareCheck
+                          size={17}
+                          className="flex-shrink-0"
+                          style={{ color: "var(--accent)" }}
+                        />
+                      ) : (
+                        <Square size={17} className="flex-shrink-0 text-brand-ink-soft" />
+                      ))}
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-brand-ink">
+                      {item.description}
+                    </span>
+                    <span className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
+                      -{currency(item.amount)}
+                    </span>
+                    {!selecting && <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />}
+                  </>
+                );
+                return selecting ? (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleOne(item.id)}
+                    className="flex items-center gap-3 text-left"
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.id}
+                    href={`/app/lancamento/${item.id}`}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    {content}
+                  </Link>
+                );
+              })}
+            </div>
+            {bulkError && <p className="mt-2 text-xs text-brand-coral">{bulkError}</p>}
+          </div>
+        )}
+
+        {selecting && selectedIds.size > 0 && (
+          <div className="fixed inset-x-0 bottom-[68px] z-20 flex justify-center px-3">
+            <div className="w-full max-w-sm rounded-2xl bg-brand-ink px-4 py-3.5 shadow-lg">
+              {pickingCategory ? (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[12.5px] font-semibold text-brand-card">
+                      Trocar categoria de {selectedIds.size}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPickingCategory(false)}
+                      aria-label="Cancelar"
+                      className="text-brand-card/70"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleBulkCategory(null)}
+                      className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                    >
+                      Sem categoria
+                    </button>
+                    {categories.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => handleBulkCategory(c.id)}
+                        className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-semibold text-brand-card">
+                    {selectedIds.size} {selectedIds.size === 1 ? "selecionado" : "selecionados"}
                   </span>
-                  <span className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
-                    -{currency(item.amount)}
-                  </span>
-                  <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />
-                </Link>
-              ))}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={processing}
+                      onClick={() => setPickingCategory(true)}
+                      className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-brand-card disabled:opacity-60"
+                    >
+                      <Tag size={13} />
+                      Categoria
+                    </button>
+                    <button
+                      type="button"
+                      disabled={processing}
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-1.5 rounded-xl bg-brand-coral px-3 py-2 text-[12.5px] font-semibold text-white disabled:opacity-60"
+                    >
+                      <Trash2 size={13} />
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { daysInMonth, monthKey, monthLabel, parseMonthKey, toDateKey } from "@/lib/date";
+import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { comparePeriods, periodComparisonSentence, type SpendEntry } from "@/lib/period-comparison";
 import { MonthRuler, type CardInvoiceSummary, type Entry } from "./month-ruler";
 
@@ -19,7 +20,10 @@ export default async function AppHomePage({
 
   const today = new Date();
   const { mes } = await searchParams;
-  const viewedFirstDay = mes ? parseMonthKey(mes) : new Date(today.getFullYear(), today.getMonth(), 1);
+  const effectiveMes = mes ?? (await getSelectedMonthKey()) ?? undefined;
+  const viewedFirstDay = effectiveMes
+    ? parseMonthKey(effectiveMes)
+    : new Date(today.getFullYear(), today.getMonth(), 1);
   const isCurrentMonth =
     viewedFirstDay.getFullYear() === today.getFullYear() &&
     viewedFirstDay.getMonth() === today.getMonth();
@@ -37,7 +41,7 @@ export default async function AppHomePage({
   const lastPeriodEndDay = Math.min(today.getDate(), daysInMonth(lastMonthFirstDay));
   const lastPeriodEnd = new Date(today.getFullYear(), today.getMonth() - 1, lastPeriodEndDay);
 
-  const [{ data: entriesData }, { data: cardInvoicesData }, { data: lastPeriodData }] =
+  const [{ data: entriesData }, { data: cardInvoicesData }, { data: lastPeriodData }, { data: categoriesData }] =
     await Promise.all([
       supabase
         .from("entries")
@@ -63,6 +67,7 @@ export default async function AppHomePage({
             .gte("entry_date", toDateKey(lastMonthFirstDay))
             .lte("entry_date", toDateKey(lastPeriodEnd))
         : Promise.resolve({ data: [] }),
+      supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
     ]);
 
   const entriesWithCategory = (entriesData as unknown as EntryWithCategory[]) ?? [];
@@ -105,6 +110,7 @@ export default async function AppHomePage({
       daysInMonth={daysInMonth(viewedFirstDay)}
       entries={entries}
       cardInvoices={cardInvoices}
+      categories={categoriesData ?? []}
       comparisonSentence={comparisonSentence}
       prevMonthKey={prevMonthKey}
       nextMonthKey={nextMonthKey}
