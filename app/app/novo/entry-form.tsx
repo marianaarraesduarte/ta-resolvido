@@ -123,6 +123,7 @@ export function EntryForm({
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id ?? "");
   const [categoryTouched, setCategoryTouched] = useState(false);
   const [incomeType, setIncomeType] = useState<"salario" | "outra">("salario");
+  const [submitting, setSubmitting] = useState(false);
 
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -221,7 +222,11 @@ export function EntryForm({
           isCompleto={isCompleto}
         />
       ) : (
-        <form action={createEntry} className="rounded-[20px] bg-brand-card p-[18px]">
+        <form
+          action={createEntry}
+          onSubmit={() => setSubmitting(true)}
+          className="rounded-[20px] bg-brand-card p-[18px]"
+        >
           <div className="mb-5 flex gap-1.5 rounded-2xl bg-brand-bg p-1.5">
             <TypeTab
               active={type === "despesa"}
@@ -399,9 +404,10 @@ export function EntryForm({
 
           <button
             type="submit"
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-sage py-3.5 font-display text-[15px] font-semibold text-white"
+            disabled={submitting}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-sage py-3.5 font-display text-[15px] font-semibold text-white disabled:opacity-60"
           >
-            Salvar
+            {submitting ? "..." : "Salvar"}
           </button>
         </form>
       )}

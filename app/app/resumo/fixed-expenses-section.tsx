@@ -184,6 +184,7 @@ export function FixedExpensesSection({
   pendingTotal: number;
   pendingCount: number;
 }) {
+  const router = useRouter();
   const [expenses, setExpenses] = useState(initialExpenses);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -211,6 +212,7 @@ export function FixedExpensesSection({
       setNewName("");
       setNewAmount("");
       setAdding(false);
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não deu pra criar agora.");
     } finally {
@@ -221,6 +223,7 @@ export function FixedExpensesSection({
   async function handleUpdate(id: string, name: string, amount: number) {
     await updateFixedExpense(id, name, amount);
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, name, expected_amount: amount } : e)));
+    router.refresh();
   }
 
   async function handleDelete(id: string, name: string) {
@@ -230,6 +233,7 @@ export function FixedExpensesSection({
     try {
       await deleteFixedExpense(id);
       setExpenses((prev) => prev.filter((e) => e.id !== id));
+      router.refresh();
     } catch {
       setDeleteError("Não deu pra excluir agora.");
     }
