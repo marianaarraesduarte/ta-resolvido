@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { monthKey, monthLabel, parseMonthKey, toDateKey } from "@/lib/date";
+import { monthLabel, toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
+import { resolveViewedMonth } from "@/lib/viewed-month";
 import { currency } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
 import { clearMonthSelection, goToMonth } from "../month-actions";
@@ -36,20 +37,10 @@ export default async function ResumoPage({
 
   if (!user) return null;
 
-  const today = new Date();
   const { mes } = await searchParams;
-  const effectiveMes = mes ?? (await getSelectedMonthKey()) ?? undefined;
-  const viewedFirstDay = effectiveMes
-    ? parseMonthKey(effectiveMes)
-    : new Date(today.getFullYear(), today.getMonth(), 1);
-  const isCurrentMonth =
-    viewedFirstDay.getFullYear() === today.getFullYear() &&
-    viewedFirstDay.getMonth() === today.getMonth();
-
-  const firstDay = viewedFirstDay;
-  const lastDay = new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 0);
-  const prevMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() - 1, 1));
-  const nextMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 1));
+  const viewed = resolveViewedMonth(mes, await getSelectedMonthKey());
+  const { firstDay, lastDay, isCurrentMonth, prevMonthKey, nextMonthKey } = viewed;
+  const viewedFirstDay = firstDay;
 
   const [{ data }, { data: fixedExpensesData }, { data: categoriesData }, { data: invoicesData }] =
     await Promise.all([

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { daysInMonth, monthKey, monthLabel, parseMonthKey, toDateKey } from "@/lib/date";
+import { daysInMonth, monthLabel, toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
+import { resolveViewedMonth } from "@/lib/viewed-month";
 import { comparePeriods, periodComparisonSentence, type SpendEntry } from "@/lib/period-comparison";
 import { MonthRuler, type CardInvoiceSummary, type Entry } from "./month-ruler";
 
@@ -20,18 +21,9 @@ export default async function AppHomePage({
 
   const today = new Date();
   const { mes } = await searchParams;
-  const effectiveMes = mes ?? (await getSelectedMonthKey()) ?? undefined;
-  const viewedFirstDay = effectiveMes
-    ? parseMonthKey(effectiveMes)
-    : new Date(today.getFullYear(), today.getMonth(), 1);
-  const isCurrentMonth =
-    viewedFirstDay.getFullYear() === today.getFullYear() &&
-    viewedFirstDay.getMonth() === today.getMonth();
-
-  const firstDay = viewedFirstDay;
-  const lastDay = new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 0);
-  const prevMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() - 1, 1));
-  const nextMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 1));
+  const viewed = resolveViewedMonth(mes, await getSelectedMonthKey(), today);
+  const { firstDay, lastDay, isCurrentMonth, prevMonthKey, nextMonthKey } = viewed;
+  const viewedFirstDay = firstDay;
 
   // Mesmo intervalo de dias (1 até hoje), mas no mês passado — pra comparar
   // "quanto eu já gastei" com "quanto eu já tinha gastado nessa altura do mês

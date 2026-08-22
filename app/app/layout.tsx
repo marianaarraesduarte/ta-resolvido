@@ -5,8 +5,9 @@ import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureMonthlyInsight } from "@/lib/monthly-insight";
 import { calculateSaldo } from "@/lib/saldo";
-import { parseMonthKey, toDateKey } from "@/lib/date";
+import { toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
+import { resolveViewedMonth, saldoEndDate as computeSaldoEndDate } from "@/lib/viewed-month";
 import { SaldoBadge } from "./saldo-badge";
 import { NavLinks } from "./nav-links";
 import { Toast } from "./toast";
@@ -47,17 +48,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // futuro, ele mostra quanto ficaria de saldo até o fim daquele mês (usando
   // o que já foi lançado). No mês atual, o limite é hoje — não o mês inteiro
   // — pra não contar como já gasto/recebido algo que ainda não aconteceu.
-  const today = new Date();
   const selectedMonthKey = await getSelectedMonthKey();
-  const viewedFirstDay = selectedMonthKey
-    ? parseMonthKey(selectedMonthKey)
-    : new Date(today.getFullYear(), today.getMonth(), 1);
-  const isViewingCurrentMonth =
-    viewedFirstDay.getFullYear() === today.getFullYear() &&
-    viewedFirstDay.getMonth() === today.getMonth();
-  const saldoEndDate = isViewingCurrentMonth
-    ? today
-    : new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 0);
+  const viewed = resolveViewedMonth(undefined, selectedMonthKey);
+  const saldoEndDate = computeSaldoEndDate(viewed);
 
   const [{ count: unreadInsights }, { data: entriesData }] = await Promise.all([
     supabase
@@ -85,7 +78,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         style={{ "--accent": profile?.accent_color ?? "#D9A441" } as React.CSSProperties}
       >
         <header className="flex items-center justify-between gap-3.5 px-4 py-4">
-          <SaldoBadge saldo={saldo} />
+          <SaldoBadge saldo={saldo} previsto={viewed.isFutureMonth} />
           <div className="flex flex-shrink-0 items-center gap-3.5">
             <Link href="/app/insights" aria-label="Análises" className="relative text-brand-ink-soft">
               <Bell size={20} />
