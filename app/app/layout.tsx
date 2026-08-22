@@ -5,7 +5,8 @@ import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureMonthlyInsight } from "@/lib/monthly-insight";
 import { calculateSaldo } from "@/lib/saldo";
-import { toDateKey } from "@/lib/date";
+import { parseMonthKey, toDateKey } from "@/lib/date";
+import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { SaldoBadge } from "./saldo-badge";
 import { NavLinks } from "./nav-links";
 import { Toast } from "./toast";
@@ -42,6 +43,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     );
   }
 
+  // O saldo acompanha o mês selecionado: navegando pra um mês passado ou
+  // futuro, ele mostra quanto ficaria de saldo até o fim daquele mês (usando
+  // o que já foi lançado). No mês atual, o limite é hoje — não o mês inteiro
+  // — pra não contar como já gasto/recebido algo que ainda não aconteceu.
+  const today = new Date();
+  const selectedMonthKey = await getSelectedMonthKey();
+  const viewedFirstDay = selectedMonthKey
+    ? parseMonthKey(selectedMonthKey)
+    : new Date(today.getFullYear(), today.getMonth(), 1);
+  const isViewingCurrentMonth =
+    viewedFirstDay.getFullYear() === today.getFullYear() &&
+    viewedFirstDay.getMonth() === today.getMonth();
+  const saldoEndDate = isViewingCurrentMonth
+    ? today
+    : new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 0);
+
   const [{ count: unreadInsights }, { data: entriesData }] = await Promise.all([
     supabase
       .from("monthly_insights")
@@ -53,7 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .select("type, amount, income_type")
       .eq("user_id", user.id)
       .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01")
-      .lte("entry_date", toDateKey(new Date())),
+      .lte("entry_date", toDateKey(saldoEndDate)),
   ]);
 
   const saldo = calculateSaldo(entriesData ?? [], {

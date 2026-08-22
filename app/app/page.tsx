@@ -99,9 +99,7 @@ export default async function AppHomePage({
     };
   });
 
-  const monthName = isCurrentMonth
-    ? monthLabel(viewedFirstDay)
-    : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`;
+  const monthName = monthLabel(viewedFirstDay);
 
   return (
     <MonthRuler

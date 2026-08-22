@@ -90,11 +90,7 @@ export default async function CategoriasPage({
           </Link>
           <MonthPicker
             path="/app/categorias"
-            monthName={
-              isCurrentMonth
-                ? monthLabel(viewedFirstDay)
-                : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`
-            }
+            monthName={monthLabel(viewedFirstDay)}
             viewedYear={viewedFirstDay.getFullYear()}
             viewedMonth={viewedFirstDay.getMonth()}
             size="sm"

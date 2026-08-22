@@ -47,7 +47,7 @@ export function MonthPicker({
       <button
         type="button"
         onClick={openPicker}
-        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+        className="flex min-w-0 flex-1 items-center gap-1.5 rounded-xl border border-brand-line bg-brand-card py-1 pl-2.5 pr-2 text-left"
       >
         <span
           className={
@@ -58,7 +58,7 @@ export function MonthPicker({
         >
           {monthName}
         </span>
-        <ChevronDown size={20} className="flex-shrink-0 text-brand-ink-soft" />
+        <ChevronDown size={18} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "var(--accent)" }} />
       </button>
 
       {open && (

@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  ListChecks,
   Pencil,
   Plus,
   Square,
@@ -478,8 +479,13 @@ export function MonthRuler({
               <button
                 type="button"
                 onClick={() => (selecting ? exitSelection() : setSelecting(true))}
-                className="flex-shrink-0 text-[12px] font-semibold text-brand-ink-soft underline underline-offset-2"
+                className={
+                  selecting
+                    ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink px-3 py-1.5 text-[12px] font-semibold text-brand-card"
+                    : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
+                }
               >
+                {selecting ? <X size={12} /> : <ListChecks size={12} />}
                 {selecting ? "Cancelar" : "Selecionar"}
               </button>
             </div>

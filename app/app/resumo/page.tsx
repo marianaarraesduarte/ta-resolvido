@@ -120,11 +120,7 @@ export default async function ResumoPage({
           </Link>
           <MonthPicker
             path="/app/resumo"
-            monthName={
-              isCurrentMonth
-                ? monthLabel(viewedFirstDay)
-                : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`
-            }
+            monthName={monthLabel(viewedFirstDay)}
             viewedYear={viewedFirstDay.getFullYear()}
             viewedMonth={viewedFirstDay.getMonth()}
             size="sm"

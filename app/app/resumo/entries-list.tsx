@@ -3,7 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, CreditCard, Pencil, Square, SquareCheck, Tag, Trash2, X } from "lucide-react";
+import {
+  ChevronDown,
+  CreditCard,
+  ListChecks,
+  Pencil,
+  Square,
+  SquareCheck,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
 import { currency } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
@@ -132,8 +142,13 @@ export function EntriesList({
           <button
             type="button"
             onClick={() => (selecting ? exitSelection() : setSelecting(true))}
-            className="text-[12.5px] font-semibold text-brand-ink-soft underline underline-offset-2"
+            className={
+              selecting
+                ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink px-3 py-1.5 text-[12.5px] font-semibold text-brand-card"
+                : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[12.5px] font-semibold text-brand-ink"
+            }
           >
+            {selecting ? <X size={13} /> : <ListChecks size={13} />}
             {selecting ? "Cancelar" : "Selecionar"}
           </button>
         )}
