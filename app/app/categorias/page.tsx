@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { monthLabel, toDateKey } from "@/lib/date";
+import { monthKey, monthLabel, parseMonthKey, toDateKey } from "@/lib/date";
+import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { currency } from "@/lib/tokens";
 import { iconForCategory } from "@/lib/category-icons";
+import { clearMonthSelection, goToMonth } from "../month-actions";
+import { MonthPicker } from "../month-picker";
 
 type DespesaRow = {
   amount: number;
@@ -18,7 +21,11 @@ type CategoryTotal = {
   total: number;
 };
 
-export default async function CategoriasPage() {
+export default async function CategoriasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,8 +34,19 @@ export default async function CategoriasPage() {
   if (!user) return null;
 
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const { mes } = await searchParams;
+  const effectiveMes = mes ?? (await getSelectedMonthKey()) ?? undefined;
+  const viewedFirstDay = effectiveMes
+    ? parseMonthKey(effectiveMes)
+    : new Date(today.getFullYear(), today.getMonth(), 1);
+  const isCurrentMonth =
+    viewedFirstDay.getFullYear() === today.getFullYear() &&
+    viewedFirstDay.getMonth() === today.getMonth();
+
+  const firstDay = viewedFirstDay;
+  const lastDay = new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 0);
+  const prevMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() - 1, 1));
+  const nextMonthKey = monthKey(new Date(viewedFirstDay.getFullYear(), viewedFirstDay.getMonth() + 1, 1));
 
   const { data } = await supabase
     .from("entries")
@@ -63,22 +81,60 @@ export default async function CategoriasPage() {
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
-        <div className="mb-5 flex items-center gap-2.5">
+        <div className={isCurrentMonth ? "mb-5 flex items-center gap-2.5" : "mb-1.5 flex items-center gap-2.5"}>
           <Link
             href="/app"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
           >
             <ChevronLeft size={18} />
           </Link>
-          <div className="flex-1 font-display text-xl font-bold text-brand-ink">Onde gastei</div>
+          <MonthPicker
+            path="/app/categorias"
+            monthName={
+              isCurrentMonth
+                ? monthLabel(viewedFirstDay)
+                : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`
+            }
+            viewedYear={viewedFirstDay.getFullYear()}
+            viewedMonth={viewedFirstDay.getMonth()}
+            size="sm"
+          />
+          <form action={goToMonth.bind(null, "/app/categorias", prevMonthKey)}>
+            <button
+              type="submit"
+              aria-label="Mês anterior"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          </form>
+          <form action={goToMonth.bind(null, "/app/categorias", nextMonthKey)}>
+            <button
+              type="submit"
+              aria-label="Próximo mês"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </form>
           <Link
             href="/app/config/categorias"
             aria-label="Editar categorias"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink-soft"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink-soft"
           >
             <Pencil size={16} />
           </Link>
         </div>
+        {!isCurrentMonth && (
+          <form action={clearMonthSelection.bind(null, "/app/categorias")}>
+            <button
+              type="submit"
+              className="mb-5 text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
+            >
+              Voltar pro mês atual
+            </button>
+          </form>
+        )}
 
         {ordered.length === 0 ? (
           <div className="rounded-2xl border border-brand-line bg-brand-card p-5">

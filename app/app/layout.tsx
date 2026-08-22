@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureMonthlyInsight } from "@/lib/monthly-insight";
 import { calculateSaldo } from "@/lib/saldo";
+import { toDateKey } from "@/lib/date";
 import { SaldoBadge } from "./saldo-badge";
 import { NavLinks } from "./nav-links";
 import { Toast } from "./toast";
@@ -51,7 +52,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .from("entries")
       .select("type, amount, income_type")
       .eq("user_id", user.id)
-      .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01"),
+      .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01")
+      .lte("entry_date", toDateKey(new Date())),
   ]);
 
   const saldo = calculateSaldo(entriesData ?? [], {

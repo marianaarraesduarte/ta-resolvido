@@ -106,6 +106,8 @@ export default async function AppHomePage({
   return (
     <MonthRuler
       monthName={monthName}
+      viewedYear={viewedFirstDay.getFullYear()}
+      viewedMonth={viewedFirstDay.getMonth()}
       todayDayOfMonth={isCurrentMonth ? today.getDate() : null}
       daysInMonth={daysInMonth(viewedFirstDay)}
       entries={entries}

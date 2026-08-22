@@ -6,6 +6,7 @@ import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { currency } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
 import { clearMonthSelection, goToMonth } from "../month-actions";
+import { MonthPicker } from "../month-picker";
 import { FixedExpensesSection } from "./fixed-expenses-section";
 import { EntriesList, type CardInvoiceRow } from "./entries-list";
 
@@ -117,9 +118,17 @@ export default async function ResumoPage({
           >
             <ChevronLeft size={18} />
           </Link>
-          <div className="min-w-0 flex-1 truncate font-display text-xl font-bold text-brand-ink">
-            {isCurrentMonth ? monthLabel(viewedFirstDay) : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`}
-          </div>
+          <MonthPicker
+            path="/app/resumo"
+            monthName={
+              isCurrentMonth
+                ? monthLabel(viewedFirstDay)
+                : `${monthLabel(viewedFirstDay)} de ${viewedFirstDay.getFullYear()}`
+            }
+            viewedYear={viewedFirstDay.getFullYear()}
+            viewedMonth={viewedFirstDay.getMonth()}
+            size="sm"
+          />
           <form action={goToMonth.bind(null, "/app/resumo", prevMonthKey)}>
             <button
               type="submit"

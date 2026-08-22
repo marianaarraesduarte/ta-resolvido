@@ -22,6 +22,7 @@ import { dayOfMonth } from "@/lib/date";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
+import { MonthPicker } from "./month-picker";
 
 export type Entry = {
   id: string;
@@ -58,6 +59,8 @@ type Category = { id: string; name: string };
 
 export function MonthRuler({
   monthName,
+  viewedYear,
+  viewedMonth,
   todayDayOfMonth,
   daysInMonth,
   entries,
@@ -69,6 +72,8 @@ export function MonthRuler({
   isCurrentMonth,
 }: {
   monthName: string;
+  viewedYear: number;
+  viewedMonth: number;
   todayDayOfMonth: number | null;
   daysInMonth: number;
   entries: Entry[];
@@ -203,9 +208,12 @@ export function MonthRuler({
                 <ChevronLeft size={18} />
               </button>
             </form>
-            <div className="min-w-0 flex-1 truncate font-display text-3xl font-bold text-brand-ink">
-              {monthName}
-            </div>
+            <MonthPicker
+              path="/app"
+              monthName={monthName}
+              viewedYear={viewedYear}
+              viewedMonth={viewedMonth}
+            />
             <form action={goToMonth.bind(null, "/app", nextMonthKey)}>
               <button
                 type="submit"
