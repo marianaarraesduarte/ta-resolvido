@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CreditCard, Pencil, Square, SquareCheck, Tag, Trash2, X } from "lucide-react";
+import { ChevronDown, CreditCard, Pencil, Square, SquareCheck, Tag, Trash2, X } from "lucide-react";
 import { currency } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
@@ -20,13 +20,21 @@ type EntryRow = {
   category_id: string | null;
   categories: { name: string; icon: string | null } | null;
 };
+export type CardInvoiceRow = {
+  id: string;
+  invoiceDate: string;
+  total: number;
+  items: { id: string; description: string; amount: number }[];
+};
 
 export function EntriesList({
   entries,
   categories,
+  cardInvoices,
 }: {
   entries: EntryRow[];
   categories: Category[];
+  cardInvoices: CardInvoiceRow[];
 }) {
   const router = useRouter();
   const [selecting, setSelecting] = useState(false);
@@ -34,7 +42,17 @@ export function EntriesList({
   const [pickingCategory, setPickingCategory] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<Set<string>>(new Set());
   const confirm = useConfirm();
+
+  function toggleInvoiceExpanded(id: string) {
+    setExpandedInvoiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function exitSelection() {
     setSelecting(false);
@@ -90,6 +108,15 @@ export function EntriesList({
     }
   }
 
+  const isEmpty = entries.length === 0 && cardInvoices.length === 0;
+  type ListRow =
+    | { kind: "entry"; entry: EntryRow; date: string }
+    | { kind: "invoice"; invoice: CardInvoiceRow; date: string };
+  const rows: ListRow[] = [
+    ...entries.map((entry): ListRow => ({ kind: "entry", entry, date: entry.entry_date })),
+    ...cardInvoices.map((invoice): ListRow => ({ kind: "invoice", invoice, date: invoice.invoiceDate })),
+  ].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
   return (
     <div className="pb-24">
       <div className="mb-2 flex items-center justify-between">
@@ -120,7 +147,7 @@ export function EntriesList({
         </button>
       )}
 
-      {entries.length === 0 ? (
+      {isEmpty ? (
         <div className="rounded-2xl border border-brand-line bg-brand-card p-5">
           <div className="text-[15.5px] font-medium leading-snug text-brand-ink">
             Nada marcado ainda esse mês.
@@ -131,7 +158,68 @@ export function EntriesList({
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-brand-line bg-brand-card">
-          {entries.map((d, i) => {
+          {rows.map((row, i) => {
+            const borderClass = i === 0 ? "" : "border-t border-brand-bg";
+
+            if (row.kind === "invoice") {
+              const invoice = row.invoice;
+              const expanded = expandedInvoiceIds.has(invoice.id);
+              return (
+                <div key={`invoice-${invoice.id}`} className={borderClass}>
+                  <button
+                    type="button"
+                    onClick={() => toggleInvoiceExpanded(invoice.id)}
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                  >
+                    <div
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+                      style={{ background: "var(--accent)" }}
+                    >
+                      <CreditCard size={16} className="text-brand-card" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[14.5px] font-medium text-brand-ink">
+                        Fatura do cartão · dia {dayOfMonth(invoice.invoiceDate)}
+                      </div>
+                      <div className="text-xs text-brand-ink-soft">
+                        {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
+                      {currency(invoice.total)}
+                    </div>
+                    <ChevronDown
+                      size={14}
+                      className={
+                        expanded
+                          ? "flex-shrink-0 rotate-180 text-brand-ink-soft transition-transform"
+                          : "flex-shrink-0 text-brand-ink-soft transition-transform"
+                      }
+                    />
+                  </button>
+                  {expanded && (
+                    <div className="bg-brand-bg/60 px-4 pb-2">
+                      {invoice.items.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={`/app/lancamento/${item.id}`}
+                          className="flex items-center justify-between gap-3 py-2 pl-11"
+                        >
+                          <span className="min-w-0 flex-1 truncate text-[13.5px] text-brand-ink">
+                            {item.description}
+                          </span>
+                          <span className="flex-shrink-0 whitespace-nowrap text-[13.5px] font-semibold text-brand-ink">
+                            {currency(item.amount)}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const d = row.entry;
             const Icon = iconForCategory(d.categories?.icon);
             const checked = selectedIds.has(d.id);
             const rowClass =
@@ -150,18 +238,8 @@ export function EntriesList({
                   <Icon size={16} className="text-brand-ink" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="truncate text-[14.5px] font-medium text-brand-ink">
-                      {d.description}
-                    </div>
-                    {d.payment_method === "cartao" && (
-                      <CreditCard
-                        size={12}
-                        className="flex-shrink-0"
-                        style={{ color: "var(--accent)" }}
-                        aria-label="Gasto no cartão"
-                      />
-                    )}
+                  <div className="truncate text-[14.5px] font-medium text-brand-ink">
+                    {d.description}
                   </div>
                   <div className="text-xs text-brand-ink-soft">Dia {dayOfMonth(d.entry_date)}</div>
                 </div>

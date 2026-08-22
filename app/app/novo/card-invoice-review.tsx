@@ -2,7 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, FileText, ImagePlus, Repeat, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  FileText,
+  ImagePlus,
+  Repeat,
+  Square,
+  SquareCheck,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
 import { completeCents, currency, parseCurrencyInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
@@ -49,6 +60,37 @@ export function CardInvoiceReview({
   const [invoiceDate, setInvoiceDate] = useState(() => toDateKey(new Date()));
   const [saving, setSaving] = useState(false);
   const [duplicateDate, setDuplicateDate] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pickingCategory, setPickingCategory] = useState(false);
+
+  function exitSelection() {
+    setSelecting(false);
+    setSelectedIds(new Set());
+    setPickingCategory(false);
+  }
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelectedIds((prev) =>
+      prev.size === (items?.length ?? 0) ? new Set() : new Set((items ?? []).map((it) => it.id)),
+    );
+  }
+
+  function applyBulkCategory(category: string | null) {
+    setItems((prev) =>
+      prev ? prev.map((it) => (selectedIds.has(it.id) ? { ...it, category } : it)) : prev,
+    );
+    exitSelection();
+  }
 
   useEffect(() => {
     if (!items || items.length === 0) return;
@@ -165,13 +207,52 @@ export function CardInvoiceReview({
 
           {items && items.length > 0 && (
             <>
-              <p className="mb-2 text-xs text-brand-ink-soft">
-                {items.length} {items.length === 1 ? "compra identificada" : "compras identificadas"}{" "}
-                — confere se está tudo certo antes de salvar
-              </p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs text-brand-ink-soft">
+                  {items.length} {items.length === 1 ? "compra identificada" : "compras identificadas"}{" "}
+                  — confere se está tudo certo antes de salvar
+                </p>
+                <button
+                  type="button"
+                  onClick={() => (selecting ? exitSelection() : setSelecting(true))}
+                  className="flex-shrink-0 text-[12px] font-semibold text-brand-ink-soft underline underline-offset-2"
+                >
+                  {selecting ? "Cancelar" : "Selecionar"}
+                </button>
+              </div>
+
+              {selecting && (
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="mb-2 flex items-center gap-2 text-[12px] font-medium text-brand-ink-soft"
+                >
+                  {selectedIds.size === items.length ? (
+                    <SquareCheck size={15} style={{ color: "var(--accent)" }} />
+                  ) : (
+                    <Square size={15} />
+                  )}
+                  {selectedIds.size === items.length ? "Desmarcar tudo" : "Selecionar tudo"}
+                </button>
+              )}
+
               <div className="mb-3.5 divide-y divide-brand-bg overflow-hidden rounded-2xl border border-brand-line">
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-2.5 px-3.5 py-3">
+                    {selecting && (
+                      <button
+                        type="button"
+                        onClick={() => toggleOne(item.id)}
+                        aria-label={`Selecionar ${item.description}`}
+                        className="flex-shrink-0"
+                      >
+                        {selectedIds.has(item.id) ? (
+                          <SquareCheck size={18} style={{ color: "var(--accent)" }} />
+                        ) : (
+                          <Square size={18} className="text-brand-ink-soft" />
+                        )}
+                      </button>
+                    )}
                     <div className="min-w-0 flex-1">
                       <input
                         value={item.description}
@@ -221,6 +302,63 @@ export function CardInvoiceReview({
                   </div>
                 ))}
               </div>
+
+              {selecting && selectedIds.size > 0 && (
+                <div className="fixed inset-x-0 bottom-[68px] z-20 flex justify-center px-3">
+                  <div className="w-full max-w-sm rounded-2xl bg-brand-ink px-4 py-3.5 shadow-lg">
+                    {pickingCategory ? (
+                      <div>
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-[12.5px] font-semibold text-brand-card">
+                            Trocar categoria de {selectedIds.size}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPickingCategory(false)}
+                            aria-label="Cancelar"
+                            className="text-brand-card/70"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => applyBulkCategory(null)}
+                            className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                          >
+                            Sem categoria
+                          </button>
+                          {categories.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => applyBulkCategory(c.name)}
+                              className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                            >
+                              {c.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] font-semibold text-brand-card">
+                          {selectedIds.size} {selectedIds.size === 1 ? "selecionada" : "selecionadas"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPickingCategory(true)}
+                          className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-brand-card"
+                        >
+                          <Tag size={13} />
+                          Categoria
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="mb-4 flex items-center justify-between rounded-2xl bg-brand-bg px-4 py-3">
                 <span className="text-[13px] text-brand-ink-soft">Total da fatura</span>

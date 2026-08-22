@@ -10,7 +10,11 @@ import {
   FileText,
   ImagePlus,
   Repeat,
+  Square,
+  SquareCheck,
+  Tag,
   Trash2,
+  X,
 } from "lucide-react";
 import { completeCents, parseCurrencyInput } from "@/lib/tokens";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
@@ -54,6 +58,39 @@ export function BankStatementReview({
 
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pickingCategory, setPickingCategory] = useState(false);
+
+  const despesaItems = (items ?? []).filter((it) => it.type === "despesa");
+
+  function exitSelection() {
+    setSelecting(false);
+    setSelectedIds(new Set());
+    setPickingCategory(false);
+  }
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelectedIds((prev) =>
+      prev.size === despesaItems.length ? new Set() : new Set(despesaItems.map((it) => it.id)),
+    );
+  }
+
+  function applyBulkCategory(category: string | null) {
+    setItems((prev) =>
+      prev ? prev.map((it) => (selectedIds.has(it.id) ? { ...it, category } : it)) : prev,
+    );
+    exitSelection();
+  }
 
   function toggleSalary(id: string) {
     setItems((prev) =>
@@ -173,10 +210,37 @@ export function BankStatementReview({
 
           {items && items.length > 0 && (
             <>
-              <p className="mb-2 text-xs text-brand-ink-soft">
-                {items.length} {items.length === 1 ? "item identificado" : "itens identificados"}{" "}
-                — confere se está tudo certo antes de salvar
-              </p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs text-brand-ink-soft">
+                  {items.length} {items.length === 1 ? "item identificado" : "itens identificados"}{" "}
+                  — confere se está tudo certo antes de salvar
+                </p>
+                {despesaItems.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => (selecting ? exitSelection() : setSelecting(true))}
+                    className="flex-shrink-0 text-[12px] font-semibold text-brand-ink-soft underline underline-offset-2"
+                  >
+                    {selecting ? "Cancelar" : "Selecionar"}
+                  </button>
+                )}
+              </div>
+
+              {selecting && (
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="mb-2 flex items-center gap-2 text-[12px] font-medium text-brand-ink-soft"
+                >
+                  {selectedIds.size === despesaItems.length ? (
+                    <SquareCheck size={15} style={{ color: "var(--accent)" }} />
+                  ) : (
+                    <Square size={15} />
+                  )}
+                  {selectedIds.size === despesaItems.length ? "Desmarcar tudo" : "Selecionar tudo"}
+                </button>
+              )}
+
               <div className="mb-3.5 divide-y divide-brand-bg overflow-hidden rounded-2xl border border-brand-line">
                 {items.map((item) => (
                   <div
@@ -187,6 +251,20 @@ export function BankStatementReview({
                         : "flex items-center gap-2.5 px-3.5 py-3"
                     }
                   >
+                    {selecting && item.type === "despesa" && (
+                      <button
+                        type="button"
+                        onClick={() => toggleOne(item.id)}
+                        aria-label={`Selecionar ${item.description}`}
+                        className="flex-shrink-0"
+                      >
+                        {selectedIds.has(item.id) ? (
+                          <SquareCheck size={18} style={{ color: "var(--accent)" }} />
+                        ) : (
+                          <Square size={18} className="text-brand-ink-soft" />
+                        )}
+                      </button>
+                    )}
                     {item.type === "receita" ? (
                       <ArrowUpCircle size={15} className="flex-shrink-0 text-brand-sage" />
                     ) : (
@@ -271,6 +349,63 @@ export function BankStatementReview({
                   </div>
                 ))}
               </div>
+
+              {selecting && selectedIds.size > 0 && (
+                <div className="fixed inset-x-0 bottom-[68px] z-20 flex justify-center px-3">
+                  <div className="w-full max-w-sm rounded-2xl bg-brand-ink px-4 py-3.5 shadow-lg">
+                    {pickingCategory ? (
+                      <div>
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-[12.5px] font-semibold text-brand-card">
+                            Trocar categoria de {selectedIds.size}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPickingCategory(false)}
+                            aria-label="Cancelar"
+                            className="text-brand-card/70"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => applyBulkCategory(null)}
+                            className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                          >
+                            Sem categoria
+                          </button>
+                          {categories.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => applyBulkCategory(c.name)}
+                              className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                            >
+                              {c.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] font-semibold text-brand-card">
+                          {selectedIds.size} {selectedIds.size === 1 ? "selecionado" : "selecionados"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPickingCategory(true)}
+                          className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-brand-card"
+                        >
+                          <Tag size={13} />
+                          Categoria
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <button
                 type="button"
