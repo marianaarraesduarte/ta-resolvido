@@ -7,14 +7,14 @@ import { Quiz } from "./quiz";
 
 const STEPS = [
   {
-    icon: PenLine,
-    title: "1. Marca o que já sabe",
-    body: "Digite um gasto ou uma entrada de dinheiro na mão, quando quiser.",
+    icon: Camera,
+    title: "1. Manda o print, ou escreve numa frase",
+    body: "Foto do extrato, do comprovante, da fatura do cartão — ou só escreve \"gastei 45 no mercado hoje\" no chat. A IA lê, separa gasto de receita e já categoriza sozinha. Você não preenche nada.",
   },
   {
-    icon: Camera,
-    title: "2. Manda o print quando lembrar",
-    body: "Foto do extrato, do comprovante, da fatura do cartão, ou só escreve numa frase o que rolou — a gente entende sozinho o que é gasto e o que é receita, sem você precisar preencher nada.",
+    icon: PenLine,
+    title: "2. Prefere fazer na mão? Também dá",
+    body: "Digite um gasto ou uma entrada de dinheiro quando quiser, do jeito mais tradicional.",
   },
   {
     icon: Ruler,
@@ -223,6 +223,10 @@ export default async function RootPage() {
           <p className="mt-3 text-[15px] font-medium leading-relaxed text-brand-ink">
             O Tá Resolvido foi feito ao contrário: pra funcionar mesmo quando você esquece,
             atrasa, ou só consegue olhar uma vez por semana.
+          </p>
+          <p className="mt-3 text-[15px] leading-relaxed text-brand-ink-soft">
+            Na prática: você manda um print ou escreve uma frase, e a IA cuida do resto —
+            categoriza, separa gasto de receita e monta seu mês sozinha.
           </p>
         </div>
       </section>
