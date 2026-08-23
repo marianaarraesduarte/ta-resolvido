@@ -1,23 +1,54 @@
 import type { createClient } from "@/lib/supabase/server";
-import { generateText } from "@/lib/gemini";
+import { extractFromText, Type } from "@/lib/gemini";
 import { toDateKey, monthLabel } from "@/lib/date";
-import { currency } from "@/lib/tokens";
+import { comparePeriods, type SpendEntry } from "@/lib/period-comparison";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 type EntryRow = {
   type: "despesa" | "receita";
   amount: number;
-  payment_method: "conta" | "cartao";
   categories: { name: string } | null;
+  investment_goal_id: string | null;
+};
+
+export type CategoriaStat = { nome: string; valor: number; pct: number };
+export type MetaStat = { nome: string; done: boolean };
+
+export type MonthlyInsightSections = {
+  resumo: { text: string; entrou: number; saiu: number; sobrou: number };
+  categorias: { text: string; top: CategoriaStat[] };
+  metas: { text: string; items: MetaStat[] } | null;
+  comparacao: { text: string; pct: number; direction: "up" | "down" | "flat" } | null;
+  sugestao: { text: string };
+};
+
+const sectionsSchema = {
+  type: Type.OBJECT,
+  properties: {
+    resumo: { type: Type.STRING },
+    categorias: { type: Type.STRING },
+    metas: { type: Type.STRING },
+    comparacao: { type: Type.STRING },
+    sugestao: { type: Type.STRING },
+  },
+  required: ["resumo", "categorias", "metas", "comparacao", "sugestao"],
+};
+
+type AiSections = {
+  resumo: string;
+  categorias: string;
+  metas: string;
+  comparacao: string;
+  sugestao: string;
 };
 
 /**
  * Se ainda não existe uma análise gerada pro mês anterior e ele teve algum
- * lançamento, pede pro Gemini escrever um comentário curto e amigável e
- * salva. Roda ao abrir o app — não depende de cron nem de e-mail. Se a
- * geração falhar, simplesmente não salva nada e tenta de novo na próxima
- * visita (nunca trava o carregamento do app por causa disso).
+ * lançamento, calcula os números reais (sem IA) e pede pro Gemini escrever
+ * só o comentário de cada bloco — nunca os valores. Roda ao abrir o app, sem
+ * depender de cron nem de e-mail. Se a geração falhar, não salva nada e
+ * tenta de novo na próxima visita.
  */
 export async function ensureMonthlyInsight(
   supabase: SupabaseClient,
@@ -41,47 +72,149 @@ export async function ensureMonthlyInsight(
 
   if (existing) return;
 
-  const { data } = await supabase
-    .from("entries")
-    .select("type, amount, payment_method, categories(name)")
-    .eq("user_id", userId)
-    .gte("entry_date", monthStartKey)
-    .lte("entry_date", monthEndKey);
+  const prevMonthEnd = new Date(lastMonthStart.getFullYear(), lastMonthStart.getMonth(), 0);
+  const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
 
-  const rows = (data as unknown as EntryRow[]) ?? [];
+  const [
+    { data: entriesData },
+    { data: prevEntriesData },
+    { data: profile },
+    { data: goalsData },
+    { data: confirmedData },
+  ] = await Promise.all([
+    supabase
+      .from("entries")
+      .select("type, amount, categories(name), investment_goal_id")
+      .eq("user_id", userId)
+      .gte("entry_date", monthStartKey)
+      .lte("entry_date", monthEndKey),
+    supabase
+      .from("entries")
+      .select("type, amount, categories(name), investment_goal_id")
+      .eq("user_id", userId)
+      .eq("type", "despesa")
+      .gte("entry_date", toDateKey(prevMonthStart))
+      .lte("entry_date", toDateKey(prevMonthEnd)),
+    supabase.from("profiles").select("income_basis").eq("id", userId).single(),
+    supabase.from("investment_goals").select("id, name, percent").eq("user_id", userId),
+    supabase
+      .from("entries")
+      .select("investment_goal_id")
+      .eq("user_id", userId)
+      .not("investment_goal_id", "is", null)
+      .gte("entry_date", monthStartKey)
+      .lte("entry_date", monthEndKey),
+  ]);
+
+  const rows = (entriesData as unknown as EntryRow[]) ?? [];
   if (rows.length === 0) return;
 
   const despesas = rows.filter((r) => r.type === "despesa");
   const receitas = rows.filter((r) => r.type === "receita");
-  const totalDespesa = despesas.reduce((sum, r) => sum + r.amount, 0);
-  const totalReceita = receitas.reduce((sum, r) => sum + r.amount, 0);
-  const cardCount = despesas.filter((r) => r.payment_method === "cartao").length;
+  const entrou = receitas.reduce((sum, r) => sum + r.amount, 0);
+  const saiu = despesas.reduce((sum, r) => sum + r.amount, 0);
+  const sobrou = entrou - saiu;
+
+  // Investimento confirmado é despesa de verdade (conta no saldo), mas não é
+  // "gasto" no sentido de categoria — sem isso, ele aparecia misturado como
+  // "Sem categoria" ao lado de Mercado, Lazer etc.
+  const despesasSemInvestimento = despesas.filter((d) => !d.investment_goal_id);
+  const totalSemInvestimento = despesasSemInvestimento.reduce((sum, d) => sum + d.amount, 0);
 
   const byCategory = new Map<string, number>();
-  for (const d of despesas) {
+  for (const d of despesasSemInvestimento) {
     const name = d.categories?.name ?? "Sem categoria";
     byCategory.set(name, (byCategory.get(name) ?? 0) + d.amount);
   }
-  const topCategories = Array.from(byCategory.entries())
+  const top: CategoriaStat[] = Array.from(byCategory.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);
+    .slice(0, 3)
+    .map(([nome, valor]) => ({
+      nome,
+      valor,
+      pct: totalSemInvestimento > 0 ? Math.round((valor / totalSemInvestimento) * 100) : 0,
+    }));
 
-  const prompt = `Você é um amigo prestativo comentando os gastos do mês passado (${monthLabel(lastMonthStart)}) de alguém, dentro de um app de controle financeiro pessoal chamado "Tá Resolvido". O tom é leve, caloroso e nunca de julgamento ou bronca — como um amigo comentando gentilmente, não um banco ou contador. Fale em português do Brasil, em no máximo 3 frases curtas, sem markdown, sem emojis.
+  const goals = goalsData ?? [];
+  let metas: MonthlyInsightSections["metas"] = null;
+  let unconfirmedGap = 0;
+  if (goals.length > 0) {
+    const receitaBasis = entrou; // renda real lançada nesse mês
+    const confirmedGoalIds = new Set(
+      ((confirmedData as { investment_goal_id: string | null }[] | null) ?? [])
+        .map((e) => e.investment_goal_id)
+        .filter((id): id is string => id != null),
+    );
+    const items: MetaStat[] = goals.map((g) => ({
+      nome: g.name,
+      done: confirmedGoalIds.has(g.id),
+    }));
+    unconfirmedGap = goals
+      .filter((g) => !confirmedGoalIds.has(g.id))
+      .reduce((sum, g) => sum + (receitaBasis * g.percent) / 100, 0);
+    metas = { text: "", items };
+  }
 
-Dados do mês:
-- Total gasto: ${currency(totalDespesa)}
-- Total recebido: ${currency(totalReceita)}
-- ${despesas.length} gastos marcados no total, sendo ${cardCount} no cartão de crédito
-- Categorias que mais pesaram: ${topCategories.map(([name, value]) => `${name} (${currency(value)})`).join(", ") || "nenhuma categoria destacada"}
+  const thisPeriod: SpendEntry[] = despesasSemInvestimento.map((d) => ({
+    amount: d.amount,
+    categoryName: d.categories?.name ?? null,
+  }));
+  const lastPeriod: SpendEntry[] = ((prevEntriesData as unknown as EntryRow[]) ?? [])
+    .filter((d) => !d.investment_goal_id)
+    .map((d) => ({
+      amount: d.amount,
+      categoryName: d.categories?.name ?? null,
+    }));
+  const comparison = comparePeriods(thisPeriod, lastPeriod);
+  const comparacao: MonthlyInsightSections["comparacao"] = comparison
+    ? { text: "", pct: Math.abs(comparison.deltaPercent), direction: comparison.direction }
+    : null;
 
-Escreva um comentário curto sobre como foi o mês — pode elogiar algo bom (ex: gastou pouco, guardou dinheiro) ou apontar com leveza algo pra ficar de olho no próximo mês (ex: muitas compras parceladas, categoria que pesou mais que o normal). Nunca soe como alerta grave ou cobrança.`;
+  const prompt = `Você é uma amiga próxima comentando casualmente como foi o mês passado (${monthLabel(lastMonthStart)}) de alguém, dentro de um app de controle financeiro pessoal chamado "Tá Resolvido". Fale em português do Brasil, tom caloroso e natural, como uma amiga mandando uma mensagem — nunca formal, nunca de banco ou contador, nunca de julgamento ou bronca, e sem gírias forçadas.
+
+Escreva 5 comentários curtos (1 frase cada, no máximo 2 quando fizer sentido), um por bloco:
+
+- resumo: um comentário geral sobre como foi o mês (bom, corrido, tranquilo...). NÃO cite valores em R$ — esses já aparecem visualmente em outro lugar da tela.
+- categorias: um comentário sobre quais categorias mais pesaram ou chamaram atenção. Pode citar os NOMES das categorias, mas não repita os valores em R$.
+- metas: um comentário sobre quais metas de investimento a pessoa conseguiu guardar e quais ficou de fora. Pode citar os NOMES das metas, mas não repita valores.
+- comparacao: um comentário reagindo a ter gastado mais, menos ou igual ao mês anterior. NÃO cite a porcentagem exata — ela já aparece visualmente.
+- sugestao: a única frase que PODE citar um valor em R$ específico, e só se esse valor estiver nos dados abaixo — dê um conselho prático e específico pro próximo mês, escolhendo o ângulo mais relevante dentre os dados (categoria que mais mudou, meta quase batida, etc.)
+
+Se não houver metas de investimento cadastradas, escreva em "metas" algo curto convidando a pessoa a experimentar a tela de metas — sem soar como propaganda.
+Se não houver mês anterior pra comparar, escreva em "comparacao" algo neutro tipo "ainda não dá pra comparar com o mês anterior".
+
+Nunca invente um número que não esteja nos dados abaixo.`;
+
+  const dataText = `Dados do mês (já calculados, não recalcule):
+- Entrou: ${entrou.toFixed(2)}, Saiu: ${saiu.toFixed(2)}, Sobrou: ${sobrou.toFixed(2)}
+- Categorias que mais pesaram: ${top.map((c) => `${c.nome} (${c.pct}% do mês)`).join(", ") || "nenhuma"}
+- Metas de investimento: ${
+    metas
+      ? metas.items.map((m) => `${m.nome}: ${m.done ? "guardou" : "não guardou"}`).join(", ")
+      : "a pessoa ainda não cadastrou nenhuma meta"
+  }
+- Falta guardar pra bater todas as metas esse mês: ${unconfirmedGap > 0 ? unconfirmedGap.toFixed(2) : "já bateu todas, ou não tem metas"}
+- Comparado ao mês anterior: ${
+    comparison
+      ? `${comparison.direction === "up" ? "gastou mais" : comparison.direction === "down" ? "gastou menos" : "gastou quase igual"} (${Math.abs(comparison.deltaPercent)}%)${comparison.topCategory ? `, puxado por ${comparison.topCategory}` : ""}`
+      : "sem mês anterior pra comparar"
+  }`;
 
   try {
-    const content = await generateText(prompt);
+    const ai = await extractFromText<AiSections>(dataText, prompt, sectionsSchema);
+
+    const sections: MonthlyInsightSections = {
+      resumo: { text: ai.resumo, entrou, saiu, sobrou },
+      categorias: { text: ai.categorias, top },
+      metas: metas ? { text: ai.metas, items: metas.items } : null,
+      comparacao: comparacao ? { text: ai.comparacao, pct: comparacao.pct, direction: comparacao.direction } : null,
+      sugestao: { text: ai.sugestao },
+    };
+
     await supabase.from("monthly_insights").insert({
       user_id: userId,
       month_start: monthStartKey,
-      content,
+      sections,
     });
   } catch {
     // Ignora — tenta de novo na próxima visita.

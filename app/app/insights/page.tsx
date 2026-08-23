@@ -1,10 +1,17 @@
 import Link from "next/link";
-import { ChevronLeft, Sparkles } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { monthLabel } from "@/lib/date";
+import type { MonthlyInsightSections } from "@/lib/monthly-insight";
+import { InsightThread } from "./insight-thread";
 import { Upsell } from "../upsell";
 
-type InsightRow = { id: string; month_start: string; content: string; read_at: string | null };
+type InsightRow = {
+  id: string;
+  month_start: string;
+  sections: MonthlyInsightSections;
+  read_at: string | null;
+};
 
 export default async function InsightsPage() {
   const supabase = await createClient();
@@ -40,7 +47,7 @@ export default async function InsightsPage() {
 
   const { data } = await supabase
     .from("monthly_insights")
-    .select("id, month_start, content, read_at")
+    .select("id, month_start, sections, read_at")
     .eq("user_id", user.id)
     .order("month_start", { ascending: false });
 
@@ -70,18 +77,15 @@ export default async function InsightsPage() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-6">
             {insights.map((insight) => {
               const date = new Date(`${insight.month_start}T00:00:00`);
               return (
-                <div key={insight.id} className="rounded-2xl bg-brand-card p-5">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Sparkles size={14} style={{ color: "var(--accent)" }} />
-                    <span className="text-[13px] font-semibold text-brand-ink">
-                      {monthLabel(date)}
-                    </span>
+                <div key={insight.id}>
+                  <div className="mb-2.5 text-[13px] font-bold text-brand-ink-soft">
+                    {monthLabel(date)}
                   </div>
-                  <p className="text-[14px] leading-relaxed text-brand-ink">{insight.content}</p>
+                  <InsightThread sections={insight.sections} />
                 </div>
               );
             })}
