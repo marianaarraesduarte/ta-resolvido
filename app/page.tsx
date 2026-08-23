@@ -1,23 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Camera, Check, PenLine, Ruler } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Quiz } from "./quiz";
 
 const STEPS = [
   {
-    icon: Camera,
+    image: "/step-ia.png",
     title: "1. Manda o print, ou escreve numa frase",
     body: "Foto do extrato, do comprovante, da fatura do cartão — ou só escreve \"gastei 45 no mercado hoje\" no chat. A IA lê, separa gasto de receita e já categoriza sozinha. Você não preenche nada.",
   },
   {
-    icon: PenLine,
+    image: "/step-manual.png",
     title: "2. Prefere fazer na mão? Também dá",
     body: "Digite um gasto ou uma entrada de dinheiro quando quiser, do jeito mais tradicional.",
   },
   {
-    icon: Ruler,
+    image: "/step-regua.png",
     title: "3. Olha sua régua quando quiser",
     body: "Sem precisar lançar nada todo dia. O mês fica ali, esperando por você.",
   },
@@ -185,14 +185,16 @@ export default async function RootPage() {
         </h2>
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-3.5 sm:grid-cols-3">
           {STEPS.map((s) => (
-            <div key={s.title} className="rounded-[22px] bg-brand-card p-6">
-              <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-bg">
-                <s.icon size={19} className="text-brand-ink" />
+            <div key={s.title} className="overflow-hidden rounded-[22px] bg-brand-card">
+              <div className="relative h-[190px] w-full bg-brand-bg">
+                <Image src={s.image} alt={s.title} fill className="object-cover object-top" />
               </div>
-              <div className="mb-1.5 font-display text-[16px] font-bold text-brand-ink">
-                {s.title}
+              <div className="p-6">
+                <div className="mb-1.5 font-display text-[16px] font-bold text-brand-ink">
+                  {s.title}
+                </div>
+                <p className="text-[14px] leading-relaxed text-brand-ink-soft">{s.body}</p>
               </div>
-              <p className="text-[14px] leading-relaxed text-brand-ink-soft">{s.body}</p>
             </div>
           ))}
         </div>
