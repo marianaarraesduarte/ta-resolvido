@@ -14,7 +14,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { currency } from "@/lib/tokens";
+import { currency, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
@@ -34,8 +34,22 @@ export type CardInvoiceRow = {
   id: string;
   invoiceDate: string;
   total: number;
-  items: { id: string; description: string; amount: number }[];
+  items: { id: string; description: string; amount: number; categoryName: string | null }[];
 };
+
+function CategoryTag({ name, leading = true }: { name: string | null; leading?: boolean }) {
+  const separator = leading ? " · " : "";
+  return name ? (
+    <span>
+      {separator}
+      {name}
+    </span>
+  ) : (
+    <span className="font-medium" style={{ color: TOKENS.amber }}>
+      {separator}Sem categoria
+    </span>
+  );
+}
 
 export function EntriesList({
   entries,
@@ -235,8 +249,13 @@ export function EntriesList({
                               ) : (
                                 <Square size={16} className="flex-shrink-0 text-brand-ink-soft" />
                               ))}
-                            <span className="min-w-0 flex-1 truncate text-[13.5px] text-brand-ink">
-                              {item.description}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[13.5px] text-brand-ink">
+                                {item.description}
+                              </span>
+                              <span className="block text-[11px] text-brand-ink-soft">
+                                <CategoryTag name={item.categoryName} leading={false} />
+                              </span>
                             </span>
                             <span className="flex-shrink-0 whitespace-nowrap text-[13.5px] font-semibold text-brand-ink">
                               {currency(item.amount)}
@@ -290,7 +309,10 @@ export function EntriesList({
                   <div className="truncate text-[14.5px] font-medium text-brand-ink">
                     {d.description}
                   </div>
-                  <div className="text-xs text-brand-ink-soft">Dia {dayOfMonth(d.entry_date)}</div>
+                  <div className="text-xs text-brand-ink-soft">
+                    Dia {dayOfMonth(d.entry_date)}
+                    <CategoryTag name={d.categories?.name ?? null} />
+                  </div>
                 </div>
                 <div className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
                   {currency(d.amount)}

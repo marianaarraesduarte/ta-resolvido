@@ -89,7 +89,12 @@ export default async function ResumoPage({
     (invoice) => {
       const items = allDespesas
         .filter((d) => d.card_invoice_id === invoice.id)
-        .map((d) => ({ id: d.id, description: d.description, amount: d.amount }));
+        .map((d) => ({
+          id: d.id,
+          description: d.description,
+          amount: d.amount,
+          categoryName: d.categories?.name ?? null,
+        }));
       return {
         id: invoice.id,
         invoiceDate: invoice.invoice_date,
