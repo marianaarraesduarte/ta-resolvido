@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { monthLabel } from "@/lib/date";
 import type { MonthlyInsightSections } from "@/lib/monthly-insight";
 import { InsightThread } from "./insight-thread";
+import { PartialInsightButton } from "./partial-insight-button";
 import { Upsell } from "../upsell";
 
 type InsightRow = {
@@ -65,6 +66,8 @@ export default async function InsightsPage() {
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
         {header}
+
+        <PartialInsightButton />
 
         {insights.length === 0 ? (
           <div className="rounded-2xl bg-brand-card p-5">
