@@ -33,7 +33,11 @@ const FREE_FEATURES = [
 
 const PAID_FEATURES: { text: string; image?: string; imageHeight?: number }[] = [
   { text: "Fotos e PDFs sem limite — manda o extrato inteiro de uma vez, sem digitar gasto por gasto" },
-  { text: "Escreve numa frase o que gastou e a IA lança sozinho, categorizado" },
+  {
+    text: "Escreve numa frase o que gastou e a IA lança sozinho, categorizado — até identifica quando foi no cartão",
+    image: "/chat-preview.png",
+    imageHeight: 829,
+  },
   { text: "Seu salário e as contas fixas já entram sozinhos, mês após mês" },
   { text: "Um resumo do seu mês pronto, sem precisar montar gráfico nenhum" },
   {
@@ -167,8 +171,8 @@ export default async function RootPage() {
           <Image
             src="/regua-preview.png"
             alt="Tela da régua do mês no Tá Resolvido, mostrando o total que entrou e saiu no mês e cada gasto marcado dia a dia"
-            width={650}
-            height={1408}
+            width={628}
+            height={1380}
             className="w-full"
           />
         </div>
