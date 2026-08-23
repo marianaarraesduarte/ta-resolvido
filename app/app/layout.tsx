@@ -40,7 +40,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // after()) pra não travar o carregamento da tela esperando o Gemini.
   if (profile?.plan === "completo") {
     after(() =>
-      ensureMonthlyInsight(supabase, user.id, profile?.monthly_insights_enabled ?? true),
+      ensureMonthlyInsight(
+        supabase,
+        user.id,
+        profile?.monthly_insights_enabled ?? true,
+        profile?.income_basis === "salary_only",
+      ),
     );
   }
 

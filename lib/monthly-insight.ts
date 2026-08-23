@@ -11,6 +11,7 @@ type EntryRow = {
   amount: number;
   categories: { name: string } | null;
   investment_goal_id: string | null;
+  income_type: string | null;
 };
 
 export type CategoriaStat = { nome: string; valor: number; pct: number };
@@ -57,7 +58,7 @@ async function computeInsightSections(
   userId: string,
   current: Period,
   previous: Period,
-  opts: { periodLabel: string; partial: boolean },
+  opts: { periodLabel: string; partial: boolean; salaryOnly: boolean },
 ): Promise<MonthlyInsightSections | null> {
   const currentStartKey = toDateKey(current.firstDay);
   const currentEndKey = toDateKey(current.lastDay);
@@ -66,13 +67,13 @@ async function computeInsightSections(
     await Promise.all([
       supabase
         .from("entries")
-        .select("type, amount, categories(name), investment_goal_id")
+        .select("type, amount, categories(name), investment_goal_id, income_type")
         .eq("user_id", userId)
         .gte("entry_date", currentStartKey)
         .lte("entry_date", currentEndKey),
       supabase
         .from("entries")
-        .select("type, amount, categories(name), investment_goal_id")
+        .select("type, amount, categories(name), investment_goal_id, income_type")
         .eq("user_id", userId)
         .eq("type", "despesa")
         .gte("entry_date", toDateKey(previous.firstDay))
@@ -91,7 +92,9 @@ async function computeInsightSections(
   if (rows.length === 0) return null;
 
   const despesas = rows.filter((r) => r.type === "despesa");
-  const receitas = rows.filter((r) => r.type === "receita");
+  const receitas = rows.filter(
+    (r) => r.type === "receita" && (!opts.salaryOnly || r.income_type === "salario"),
+  );
   const entrou = receitas.reduce((sum, r) => sum + r.amount, 0);
   const saiu = despesas.reduce((sum, r) => sum + r.amount, 0);
   const sobrou = entrou - saiu;
@@ -210,6 +213,7 @@ export async function ensureMonthlyInsight(
   supabase: SupabaseClient,
   userId: string,
   enabled: boolean,
+  salaryOnly: boolean,
 ): Promise<void> {
   if (!enabled) return;
 
@@ -236,7 +240,7 @@ export async function ensureMonthlyInsight(
       userId,
       { firstDay: lastMonthStart, lastDay: lastMonthEnd },
       { firstDay: prevMonthStart, lastDay: prevMonthEnd },
-      { periodLabel: monthLabel(lastMonthStart), partial: false },
+      { periodLabel: monthLabel(lastMonthStart), partial: false, salaryOnly },
     );
     if (!sections) return;
 
@@ -259,6 +263,7 @@ export async function ensureMonthlyInsight(
 export async function generatePartialInsight(
   supabase: SupabaseClient,
   userId: string,
+  salaryOnly: boolean,
 ): Promise<MonthlyInsightSections | null> {
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -272,6 +277,6 @@ export async function generatePartialInsight(
     userId,
     { firstDay, lastDay: today },
     { firstDay: lastMonthFirstDay, lastDay: prevLastDay },
-    { periodLabel: monthLabel(firstDay), partial: true },
+    { periodLabel: monthLabel(firstDay), partial: true, salaryOnly },
   );
 }
