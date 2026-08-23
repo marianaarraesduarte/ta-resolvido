@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Minus, Pencil, PiggyBank, Plus, X } from "lucide-react";
-import { completeCents, currency, parseCurrencyInput, TOKENS } from "@/lib/tokens";
+import { amountToInputValue, currency, formatCentsInput, parseCentsInput, TOKENS } from "@/lib/tokens";
 import { useConfirm } from "../confirm-dialog";
 import {
   confirmGoalInvestment,
@@ -187,8 +187,8 @@ function ReserveRow({
   onDelete: (id: string, name: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(String(reserve.saved_amount).replace(".", ","));
-  const [target, setTarget] = useState(String(reserve.target_amount).replace(".", ","));
+  const [saved, setSaved] = useState(amountToInputValue(reserve.saved_amount));
+  const [target, setTarget] = useState(amountToInputValue(reserve.target_amount));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -198,8 +198,8 @@ function ReserveRow({
       : 0;
 
   async function handleSave() {
-    const savedNum = parseCurrencyInput(saved);
-    const targetNum = parseCurrencyInput(target);
+    const savedNum = parseCentsInput(saved);
+    const targetNum = parseCentsInput(target);
     if (!targetNum || targetNum <= 0 || savedNum < 0) {
       setError("Confere os valores.");
       return;
@@ -255,16 +255,14 @@ function ReserveRow({
         <div className="flex flex-wrap gap-2">
           <input
             value={saved}
-            onChange={(e) => setSaved(e.target.value)}
-            onBlur={(e) => setSaved(completeCents(e.target.value))}
+            onChange={(e) => setSaved(formatCentsInput(e.target.value))}
             placeholder="Guardado"
             inputMode="decimal"
             className="w-24 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
           <input
             value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            onBlur={(e) => setTarget(completeCents(e.target.value))}
+            onChange={(e) => setTarget(formatCentsInput(e.target.value))}
             placeholder="Meta"
             inputMode="decimal"
             className="w-24 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
@@ -433,7 +431,7 @@ export function MetasBody({
   }
 
   async function handleCreateReserve() {
-    const targetNum = parseCurrencyInput(newReserveTarget);
+    const targetNum = parseCentsInput(newReserveTarget);
     if (!newReserveName.trim() || !targetNum || targetNum <= 0) {
       setReserveError("Preenche nome e valor alvo.");
       return;
@@ -618,8 +616,7 @@ export function MetasBody({
           <div className="flex gap-2">
             <input
               value={newReserveTarget}
-              onChange={(e) => setNewReserveTarget(e.target.value)}
-              onBlur={(e) => setNewReserveTarget(completeCents(e.target.value))}
+              onChange={(e) => setNewReserveTarget(formatCentsInput(e.target.value))}
               placeholder="Valor alvo (0,00)"
               inputMode="decimal"
               className="flex-1 rounded-xl border border-brand-line bg-white px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { completeCents, currency, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
+import { amountToInputValue, currency, formatCentsInput, LEVEL_COLOR, parseCentsInput, TOKENS } from "@/lib/tokens";
 import { iconForCategory } from "@/lib/category-icons";
 import { setCategoryLimit } from "./actions";
 
@@ -22,7 +22,7 @@ export function CategoryLimitRow({
 }) {
   const Icon = iconForCategory(icon);
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(limit != null ? String(limit).replace(".", ",") : "");
+  const [value, setValue] = useState(limit != null ? amountToInputValue(limit) : "");
   const [pctValue, setPctValue] = useState(
     limit != null && receita > 0 ? String(Math.round((limit / receita) * 100)) : "",
   );
@@ -35,49 +35,28 @@ export function CategoryLimitRow({
   const over = hasLimit && spent > limit;
   const barColor = over ? LEVEL_COLOR.coral : pct > 75 ? LEVEL_COLOR.amber : LEVEL_COLOR.sage;
 
-  function handleValueChange(next: string) {
-    setValue(next);
-    const amount = Number(next.replace(",", "."));
-    if (receita > 0 && !Number.isNaN(amount)) {
-      setPctValue(next === "" ? "" : String(Math.round((amount / receita) * 100)));
+  function handleValueChange(raw: string) {
+    const formatted = formatCentsInput(raw);
+    setValue(formatted);
+    if (receita > 0) {
+      const amount = parseCentsInput(formatted);
+      setPctValue(String(Math.round((amount / receita) * 100)));
     }
   }
 
   function handlePctChange(next: string) {
     const digits = next.replace(/[^0-9]/g, "");
     setPctValue(digits);
-    if (digits === "") {
-      setValue("");
-      return;
-    }
-    const amount = (receita * Number(digits)) / 100;
-    setValue(String(amount.toFixed(2)).replace(".", ","));
+    const amount = digits === "" ? 0 : (receita * Number(digits)) / 100;
+    setValue(amountToInputValue(amount));
   }
 
   async function handleSave() {
-    const trimmed = value.trim();
-    if (trimmed === "" || trimmed === "0" || trimmed === "0,00") {
-      setSaving(true);
-      setError("");
-      try {
-        await setCategoryLimit(id, null);
-        setEditing(false);
-      } catch {
-        setError("Não deu pra salvar agora.");
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    const normalized = Number(completeCents(value).replace(",", "."));
-    if (Number.isNaN(normalized) || normalized < 0) {
-      setError("Digite um valor válido.");
-      return;
-    }
+    const normalized = parseCentsInput(value);
     setSaving(true);
     setError("");
     try {
-      await setCategoryLimit(id, normalized);
+      await setCategoryLimit(id, normalized > 0 ? normalized : null);
       setEditing(false);
     } catch {
       setError("Não deu pra salvar agora.");
@@ -122,8 +101,7 @@ export function CategoryLimitRow({
               autoFocus
               value={value}
               onChange={(e) => handleValueChange(e.target.value)}
-              onBlur={(e) => e.target.value && setValue(completeCents(e.target.value))}
-              placeholder="0,00 (deixe vazio pra remover)"
+              placeholder="0,00 (zero remove o limite)"
               inputMode="decimal"
               className="min-w-0 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               onKeyDown={(e) => {

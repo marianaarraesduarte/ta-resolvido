@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Camera, MessageCircle, Pencil, Plus, X } from "lucide-react";
 import { createEntry, createCategory, deleteCategory } from "./actions";
 import { suggestCategoryName } from "@/lib/category-keywords";
-import { completeCents } from "@/lib/tokens";
+import { formatCentsInput } from "@/lib/tokens";
 import { useConfirm } from "../confirm-dialog";
 import { PhotoTab } from "./photo-tab";
 import { ChatTab } from "./chat-tab";
@@ -264,8 +264,8 @@ export function EntryForm({
             inputMode="decimal"
             placeholder="0,00"
             className={`${inputClass} pl-9`}
-            onBlur={(e) => {
-              e.target.value = completeCents(e.target.value);
+            onChange={(e) => {
+              e.target.value = formatCentsInput(e.target.value);
             }}
           />
         </div>

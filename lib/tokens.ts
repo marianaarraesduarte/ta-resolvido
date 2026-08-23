@@ -19,19 +19,29 @@ export function currency(value: number): string {
 }
 
 /**
- * Completa um valor digitado sem centavos com ",00" (ou preenche o segundo
- * dígito decimal quando só um foi digitado). Usado nos campos de valor em R$.
+ * Formata um valor em R$ enquanto a pessoa digita, tipo caixa eletrônico:
+ * cada dígito entra pela direita (nos centavos) e empurra o resto — sem
+ * precisar digitar vírgula nem ponto. Aceita qualquer texto (já formatado
+ * ou não), sempre reconstruindo a partir só dos dígitos.
  */
-export function completeCents(raw: string): string {
-  if (!raw.trim()) return raw;
-  const [intPart, decPart = ""] = raw.replace(".", ",").split(",");
-  const cleanInt = intPart.replace(/[^0-9]/g, "") || "0";
-  const cleanDec = (decPart.replace(/[^0-9]/g, "") + "00").slice(0, 2);
-  return `${cleanInt},${cleanDec}`;
+export function formatCentsInput(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "");
+  const cents = digits === "" ? 0 : parseInt(digits, 10);
+  return (cents / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-export function parseCurrencyInput(raw: string): number {
-  return Number(completeCents(raw).replace(",", "."));
+/** Inverso de formatCentsInput — de volta pra número, robusto a ponto de milhar. */
+export function parseCentsInput(raw: string): number {
+  const digits = raw.replace(/[^0-9]/g, "");
+  return digits === "" ? 0 : parseInt(digits, 10) / 100;
+}
+
+/** Valor inicial pra um campo que usa formatCentsInput (edição de um valor já existente). */
+export function amountToInputValue(amount: number): string {
+  return amount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export type IntensityLevel = "sage" | "amber" | "coral";

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Pencil, Plus, X } from "lucide-react";
-import { completeCents, currency, parseCurrencyInput } from "@/lib/tokens";
+import { amountToInputValue, currency, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { useConfirm } from "../confirm-dialog";
 import {
@@ -32,7 +32,7 @@ function FixedExpenseRow({
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(expense.name);
-  const [amount, setAmount] = useState(String(expense.expected_amount).replace(".", ","));
+  const [amount, setAmount] = useState(amountToInputValue(expense.expected_amount));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [markingPaid, setMarkingPaid] = useState(false);
@@ -55,7 +55,7 @@ function FixedExpenseRow({
   }
 
   async function handleSave() {
-    const amountNum = parseCurrencyInput(amount);
+    const amountNum = parseCentsInput(amount);
     if (!name.trim() || !amountNum || amountNum <= 0) {
       setError("Confere o nome e o valor.");
       return;
@@ -83,8 +83,7 @@ function FixedExpenseRow({
           />
           <input
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            onBlur={(e) => setAmount(completeCents(e.target.value))}
+            onChange={(e) => setAmount(formatCentsInput(e.target.value))}
             inputMode="decimal"
             placeholder="0,00"
             className="w-24 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
@@ -199,7 +198,7 @@ export function FixedExpensesSection({
   );
 
   async function handleCreate() {
-    const amountNum = parseCurrencyInput(newAmount);
+    const amountNum = parseCentsInput(newAmount);
     if (!newName.trim() || !amountNum || amountNum <= 0) {
       setError("Preenche nome e valor esperado.");
       return;
@@ -297,8 +296,7 @@ export function FixedExpensesSection({
             />
             <input
               value={newAmount}
-              onChange={(e) => setNewAmount(e.target.value)}
-              onBlur={(e) => setNewAmount(completeCents(e.target.value))}
+              onChange={(e) => setNewAmount(formatCentsInput(e.target.value))}
               inputMode="decimal"
               placeholder="Valor esperado (0,00)"
               className="w-32 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { parseCentsInput } from "@/lib/tokens";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { isCompleto, isRecognitionLimitReached, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
@@ -54,8 +55,7 @@ export async function createEntry(formData: FormData) {
   }
 
   const type = formData.get("type") === "receita" ? "receita" : "despesa";
-  const rawAmount = String(formData.get("amount") ?? "").replace(",", ".");
-  const amount = Number(rawAmount);
+  const amount = parseCentsInput(String(formData.get("amount") ?? ""));
   const description = String(formData.get("description") ?? "").trim();
   const entryDate = String(formData.get("entry_date") ?? "");
 

@@ -101,9 +101,14 @@ export function MonthRuler({
     setBulkError("");
   }
 
-  function selectAndReset(next: Selection) {
+  function selectAndReset(next: Selection | null) {
     setSelected(next);
     exitSelection();
+  }
+
+  function toggleInvoice(invoiceId: string) {
+    const isSame = selected?.kind === "invoice" && selected.invoiceId === invoiceId;
+    selectAndReset(isSame ? null : { kind: "invoice", invoiceId });
   }
 
   function toggleOne(id: string) {
@@ -357,7 +362,7 @@ export function MonthRuler({
                           <div key={invoice.id} className="group relative">
                             <button
                               type="button"
-                              onClick={() => selectAndReset({ kind: "invoice", invoiceId: invoice.id })}
+                              onClick={() => toggleInvoice(invoice.id)}
                               aria-label={`Fatura do cartão do dia ${day}`}
                               className={
                                 isSelectedInvoice
@@ -409,7 +414,7 @@ export function MonthRuler({
           <button
             key={invoice.id}
             type="button"
-            onClick={() => selectAndReset({ kind: "invoice", invoiceId: invoice.id })}
+            onClick={() => toggleInvoice(invoice.id)}
             className="mb-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
             style={{ background: "color-mix(in srgb, var(--accent) 16%, #FBFAF6)" }}
           >

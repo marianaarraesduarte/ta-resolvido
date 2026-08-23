@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, ChevronLeft, CreditCard, Trash2 } from "lucide-react";
-import { completeCents, parseCurrencyInput } from "@/lib/tokens";
+import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { useConfirm } from "../../confirm-dialog";
 import { updateEntry, deleteEntry } from "./actions";
 
@@ -35,7 +35,7 @@ export function EditEntryForm({
   separateByAccount: boolean;
 }) {
   const router = useRouter();
-  const [amount, setAmount] = useState(entry.amount.toFixed(2).replace(".", ","));
+  const [amount, setAmount] = useState(amountToInputValue(entry.amount));
   const [description, setDescription] = useState(entry.description);
   const [entryDate, setEntryDate] = useState(entry.entry_date);
   const [categoryId, setCategoryId] = useState(entry.category_id ?? "");
@@ -53,7 +53,7 @@ export function EditEntryForm({
     setError("");
     try {
       await updateEntry(entry.id, {
-        amount: parseCurrencyInput(amount),
+        amount: parseCentsInput(amount),
         description,
         entry_date: entryDate,
         category_id: entry.type === "despesa" ? categoryId || null : null,
@@ -128,8 +128,7 @@ export function EditEntryForm({
               id="amount"
               value={amount}
               inputMode="decimal"
-              onChange={(e) => setAmount(e.target.value)}
-              onBlur={(e) => setAmount(completeCents(e.target.value))}
+              onChange={(e) => setAmount(formatCentsInput(e.target.value))}
               className={`${inputClass} pl-9`}
             />
           </div>

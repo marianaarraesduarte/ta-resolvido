@@ -15,7 +15,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import { completeCents, parseCurrencyInput } from "@/lib/tokens";
+import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import {
@@ -115,19 +115,10 @@ export function ChatTab({
     );
   }
 
-  function updateItemAmountText(batchId: string, itemId: string, amountText: string) {
+  function updateItemAmountText(batchId: string, itemId: string, raw: string) {
+    const amountText = formatCentsInput(raw);
     updateBatch(batchId, (items) =>
-      items.map((it) => (it.id === itemId ? { ...it, amountText } : it)),
-    );
-  }
-
-  function commitItemAmount(batchId: string, itemId: string) {
-    updateBatch(batchId, (items) =>
-      items.map((it) => {
-        if (it.id !== itemId) return it;
-        const amountText = completeCents(it.amountText);
-        return { ...it, amountText, amount: parseCurrencyInput(amountText) };
-      }),
+      items.map((it) => (it.id === itemId ? { ...it, amountText, amount: parseCentsInput(amountText) } : it)),
     );
   }
 
@@ -156,7 +147,7 @@ export function ChatTab({
         id: `${Date.now()}-${i}`,
         isSalary:
           item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
-        amountText: item.amount !== null ? item.amount.toFixed(2).replace(".", ",") : "",
+        amountText: item.amount !== null ? amountToInputValue(item.amount) : "",
         dueDate: item.isCreditCard ? toDateKey(new Date()) : "",
       }));
       setEntries((prev) => [...prev, { kind: "batch", id: `b-${Date.now()}`, items }]);
@@ -406,7 +397,6 @@ export function ChatTab({
                         <input
                           value={item.amountText}
                           onChange={(e) => updateItemAmountText(entry.id, item.id, e.target.value)}
-                          onBlur={() => commitItemAmount(entry.id, item.id)}
                           placeholder="0,00"
                           inputMode="decimal"
                           aria-label="Valor"

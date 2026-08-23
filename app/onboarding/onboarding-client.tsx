@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight, Camera, PenLine, Ruler, Wallet } from "lucide-react";
-import { TOKENS, completeCents, parseCurrencyInput } from "@/lib/tokens";
+import { TOKENS, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { completeOnboarding } from "./actions";
 
 const SLIDES = [
@@ -66,7 +66,7 @@ export function OnboardingClient() {
   async function handleFinish() {
     setFinishing(true);
     try {
-      await completeOnboarding(balance ? parseCurrencyInput(balance) : 0);
+      await completeOnboarding(balance ? parseCentsInput(balance) : 0);
     } catch {
       setFinishing(false);
     }
@@ -110,8 +110,7 @@ export function OnboardingClient() {
                 <input
                   autoFocus
                   value={balance}
-                  onChange={(e) => setBalance(e.target.value)}
-                  onBlur={(e) => setBalance(completeCents(e.target.value))}
+                  onChange={(e) => setBalance(formatCentsInput(e.target.value))}
                   inputMode="decimal"
                   placeholder="0,00"
                   className="w-full rounded-2xl border border-brand-line bg-white py-3 pl-9 pr-3.5 text-center text-[16px] text-brand-ink outline-none focus:border-brand-ink"

@@ -17,7 +17,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { completeCents, parseCurrencyInput } from "@/lib/tokens";
+import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import { recognizeStatement, saveRecognizedItems, type RecognizedItem } from "./actions";
@@ -53,7 +53,7 @@ export function BankStatementReview({
       id: `${i}-${item.description}`,
       isSalary:
         item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
-      amountText: item.amount.toFixed(2).replace(".", ","),
+      amountText: amountToInputValue(item.amount),
     }));
   });
 
@@ -117,20 +117,11 @@ export function BankStatementReview({
     );
   }
 
-  function updateItemAmountText(id: string, amountText: string) {
-    setItems((prev) =>
-      prev ? prev.map((it) => (it.id === id ? { ...it, amountText } : it)) : prev,
-    );
-  }
-
-  function commitItemAmount(id: string) {
+  function updateItemAmountText(id: string, raw: string) {
+    const amountText = formatCentsInput(raw);
     setItems((prev) =>
       prev
-        ? prev.map((it) => {
-            if (it.id !== id) return it;
-            const amountText = completeCents(it.amountText);
-            return { ...it, amountText, amount: parseCurrencyInput(amountText) };
-          })
+        ? prev.map((it) => (it.id === id ? { ...it, amountText, amount: parseCentsInput(amountText) } : it))
         : prev,
     );
   }
@@ -338,7 +329,6 @@ export function BankStatementReview({
                       <input
                         value={item.amountText}
                         onChange={(e) => updateItemAmountText(item.id, e.target.value)}
-                        onBlur={() => commitItemAmount(item.id)}
                         inputMode="decimal"
                         aria-label="Valor"
                         className="w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-white"

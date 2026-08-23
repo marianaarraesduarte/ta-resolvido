@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { completeCents, parseCurrencyInput } from "@/lib/tokens";
+import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { setInitialBalance } from "../actions";
 
 const inputClass =
@@ -16,7 +16,7 @@ export function SaldoInicialBody({
   initialDate: string;
 }) {
   const router = useRouter();
-  const [amount, setAmount] = useState(initialAmount.toFixed(2).replace(".", ","));
+  const [amount, setAmount] = useState(amountToInputValue(initialAmount));
   const [date, setDate] = useState(initialDate);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +27,7 @@ export function SaldoInicialBody({
     setError("");
     setSaved(false);
     try {
-      await setInitialBalance(parseCurrencyInput(amount), date);
+      await setInitialBalance(parseCentsInput(amount), date);
       setSaved(true);
       router.refresh();
     } catch {
@@ -51,8 +51,7 @@ export function SaldoInicialBody({
             id="amount"
             value={amount}
             inputMode="decimal"
-            onChange={(e) => setAmount(e.target.value)}
-            onBlur={(e) => setAmount(completeCents(e.target.value))}
+            onChange={(e) => setAmount(formatCentsInput(e.target.value))}
             className={`${inputClass} pl-9`}
           />
         </div>

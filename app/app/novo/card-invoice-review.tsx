@@ -15,7 +15,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { completeCents, currency, parseCurrencyInput } from "@/lib/tokens";
+import { amountToInputValue, currency, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
@@ -53,7 +53,7 @@ export function CardInvoiceReview({
     return recognized.map((item, i) => ({
       ...item,
       id: `${i}-${item.description}`,
-      amountText: item.amount.toFixed(2).replace(".", ","),
+      amountText: amountToInputValue(item.amount),
     }));
   });
 
@@ -118,20 +118,11 @@ export function CardInvoiceReview({
     );
   }
 
-  function updateItemAmountText(id: string, amountText: string) {
-    setItems((prev) =>
-      prev ? prev.map((it) => (it.id === id ? { ...it, amountText } : it)) : prev,
-    );
-  }
-
-  function commitItemAmount(id: string) {
+  function updateItemAmountText(id: string, raw: string) {
+    const amountText = formatCentsInput(raw);
     setItems((prev) =>
       prev
-        ? prev.map((it) => {
-            if (it.id !== id) return it;
-            const amountText = completeCents(it.amountText);
-            return { ...it, amountText, amount: parseCurrencyInput(amountText) };
-          })
+        ? prev.map((it) => (it.id === id ? { ...it, amountText, amount: parseCentsInput(amountText) } : it))
         : prev,
     );
   }
@@ -291,7 +282,6 @@ export function CardInvoiceReview({
                       <input
                         value={item.amountText}
                         onChange={(e) => updateItemAmountText(item.id, e.target.value)}
-                        onBlur={() => commitItemAmount(item.id)}
                         inputMode="decimal"
                         aria-label="Valor"
                         className="w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-white"
