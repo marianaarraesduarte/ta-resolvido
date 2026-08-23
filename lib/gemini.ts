@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { ApiError, GoogleGenAI, Type } from "@google/genai";
 
 // Alias que a Google mantém apontando pro modelo Flash recomendado do
 // momento — evita ter que trocar o nome do modelo manualmente quando um
@@ -29,6 +29,26 @@ function parseDataUrl(dataUrl: string): { mimeType: string; data: string } {
 }
 
 /**
+ * O Gemini às vezes devolve 503 (sobrecarga momentânea do modelo, segundo a
+ * própria Google) — um problema passageiro, não um erro de verdade. Em vez
+ * de já desistir e mostrar erro pra usuária, tenta de novo mais duas vezes
+ * com uma pausa curta antes. Qualquer outro tipo de erro (chave inválida,
+ * schema errado etc.) continua falhando na hora, sem retry.
+ */
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  const maxAttempts = 3;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isOverloaded = err instanceof ApiError && err.status === 503;
+      if (!isOverloaded || attempt >= maxAttempts) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 700 * attempt));
+    }
+  }
+}
+
+/**
  * Manda uma foto ou PDF (em data URL) pro Gemini com um prompt e um schema
  * de saída, e devolve o resultado já parseado como JSON.
  */
@@ -40,20 +60,22 @@ export async function extractFromDocument<T>(
   const ai = getClient();
   const { mimeType, data } = parseDataUrl(fileDataUrl);
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: prompt }, { inlineData: { mimeType, data } }],
+  const response = await withRetry(() =>
+    ai.models.generateContent({
+      model: MODEL,
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }, { inlineData: { mimeType, data } }],
+        },
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        httpOptions: { timeout: DOCUMENT_TIMEOUT_MS },
       },
-    ],
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      httpOptions: { timeout: DOCUMENT_TIMEOUT_MS },
-    },
-  });
+    }),
+  );
 
   const text = response.text;
   if (!text) {
@@ -74,19 +96,21 @@ export async function extractFromText<T>(
 ): Promise<T> {
   const ai = getClient();
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: prompt }, { text: userText }],
+  const response = await withRetry(() =>
+    ai.models.generateContent({
+      model: MODEL,
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }, { text: userText }],
+        },
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
       },
-    ],
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-    },
-  });
+    }),
+  );
 
   const text = response.text;
   if (!text) {
@@ -103,10 +127,12 @@ export async function extractFromText<T>(
 export async function generateText(prompt: string): Promise<string> {
   const ai = getClient();
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-  });
+  const response = await withRetry(() =>
+    ai.models.generateContent({
+      model: MODEL,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    }),
+  );
 
   const text = response.text;
   if (!text) {
