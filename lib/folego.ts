@@ -1,5 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
-import { calculateSaldo } from "@/lib/saldo";
+import { computeSaldoAtDate } from "@/lib/saldo";
 import { namesMatch } from "@/lib/text-match";
 import { daysBetween, shortDateLabel, toDateKey } from "@/lib/date";
 
@@ -34,45 +34,25 @@ export async function computeFolego(
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  const [
-    { data: profile },
-    { data: fixedExpensesData },
-    { data: monthDespesasData },
-    { data: nextInvoiceData },
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("income_basis, initial_balance, initial_balance_date")
-      .eq("id", userId)
-      .single(),
-    supabase.from("fixed_expenses").select("id, name, expected_amount").eq("user_id", userId),
-    supabase
-      .from("entries")
-      .select("description, amount")
-      .eq("user_id", userId)
-      .eq("type", "despesa")
-      .gte("entry_date", toDateKey(monthStart))
-      .lte("entry_date", toDateKey(monthEnd)),
-    supabase
-      .from("card_invoices")
-      .select("id, invoice_date")
-      .eq("user_id", userId)
-      .gte("invoice_date", todayKey)
-      .order("invoice_date", { ascending: true })
-      .limit(1),
-  ]);
-
-  const { data: saldoEntriesData } = await supabase
-    .from("entries")
-    .select("type, amount, income_type")
-    .eq("user_id", userId)
-    .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01")
-    .lte("entry_date", todayKey);
-
-  const saldoAtual = calculateSaldo(saldoEntriesData ?? [], {
-    initialBalance: profile?.initial_balance ?? 0,
-    salaryOnly: profile?.income_basis === "salary_only",
-  });
+  const [saldoAtual, { data: fixedExpensesData }, { data: monthDespesasData }, { data: nextInvoiceData }] =
+    await Promise.all([
+      computeSaldoAtDate(supabase, userId, today),
+      supabase.from("fixed_expenses").select("id, name, expected_amount").eq("user_id", userId),
+      supabase
+        .from("entries")
+        .select("description, amount")
+        .eq("user_id", userId)
+        .eq("type", "despesa")
+        .gte("entry_date", toDateKey(monthStart))
+        .lte("entry_date", toDateKey(monthEnd)),
+      supabase
+        .from("card_invoices")
+        .select("id, invoice_date")
+        .eq("user_id", userId)
+        .gte("invoice_date", todayKey)
+        .order("invoice_date", { ascending: true })
+        .limit(1),
+    ]);
 
   const fixedExpenses = (fixedExpensesData as { id: string; name: string; expected_amount: number }[] | null) ?? [];
   const monthDespesas = (monthDespesasData as { description: string; amount: number }[] | null) ?? [];

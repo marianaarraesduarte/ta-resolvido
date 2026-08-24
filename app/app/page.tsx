@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { daysInMonth, monthLabel, toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
-import { resolveViewedMonth } from "@/lib/viewed-month";
+import { resolveViewedMonth, saldoEndDate } from "@/lib/viewed-month";
 import { comparePeriods, periodComparisonSentence, type SpendEntry } from "@/lib/period-comparison";
 import { computeFolego, type FolegoData } from "@/lib/folego";
+import { computeSaldoAtDate } from "@/lib/saldo";
 import { MonthRuler, type CardInvoiceSummary, type Entry } from "./month-ruler";
 
 type EntryWithCategory = Entry & { categories: { name: string } | null };
@@ -23,7 +24,7 @@ export default async function AppHomePage({
   const today = new Date();
   const { mes } = await searchParams;
   const viewed = resolveViewedMonth(mes, await getSelectedMonthKey(), today);
-  const { firstDay, lastDay, isCurrentMonth, prevMonthKey, nextMonthKey } = viewed;
+  const { firstDay, lastDay, isCurrentMonth, isFutureMonth, prevMonthKey, nextMonthKey } = viewed;
   const viewedFirstDay = firstDay;
 
   // Mesmo intervalo de dias (1 até hoje), mas no mês passado — pra comparar
@@ -94,6 +95,9 @@ export default async function AppHomePage({
 
   const monthName = monthLabel(viewedFirstDay);
   const folego: FolegoData | null = isCurrentMonth ? await computeFolego(supabase, user.id, today) : null;
+  const saldoAtual = folego
+    ? folego.saldoAtual
+    : await computeSaldoAtDate(supabase, user.id, saldoEndDate(viewed, today));
 
   return (
     <MonthRuler
@@ -109,6 +113,8 @@ export default async function AppHomePage({
       prevMonthKey={prevMonthKey}
       nextMonthKey={nextMonthKey}
       isCurrentMonth={isCurrentMonth}
+      isFutureMonth={isFutureMonth}
+      saldoAtual={saldoAtual}
       folego={folego}
     />
   );

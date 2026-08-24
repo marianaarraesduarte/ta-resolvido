@@ -12,36 +12,56 @@ export function FolegoCard({ saldoAtual, fixedPendingTotal, fixedPendingCount, f
   const [hypothetical, setHypothetical] = useState(0);
 
   const comprometidoBase = fixedPendingTotal + (invoice?.amount ?? 0);
-  const sobraLivre = saldoAtual - comprometidoBase - hypothetical;
+  const sobraLivreReal = saldoAtual - comprometidoBase;
+  const sobraLivre = sobraLivreReal - hypothetical;
   const tranquilo = sobraLivre >= 0;
+  const jaApertado = sobraLivreReal < 0;
   const color = tranquilo ? TOKENS.sage : TOKENS.coral;
+  const extra =
+    fixedPendingCount > 1 ? `, e mais ${fixedPendingCount - 1} conta${fixedPendingCount > 2 ? "s" : ""}` : "";
 
-  const headline = !tranquilo
-    ? "Essa compra deixa uma conta sem cobrir."
-    : invoice
+  let headline: string;
+  let sub: string;
+
+  if (tranquilo) {
+    headline = invoice
       ? `Tá resolvido até ${invoice.dayLabel}.`
       : fixedPendingTop
         ? `Tá resolvido — falta só ${fixedPendingTop.name}.`
         : "Tá tudo resolvido.";
-
-  let sub: string;
-  if (invoice) {
-    sub = tranquilo
-      ? `Sua fatura do cartão de ${currency(invoice.amount)} (dia ${invoice.dayLabel}) já cabe. Sobram ${currency(sobraLivre)}.`
-      : `Com essa compra, sua fatura do cartão de ${currency(invoice.amount)} (dia ${invoice.dayLabel}) não cabe mais — faltariam ${currency(Math.abs(sobraLivre))}.`;
-  } else if (fixedPendingTop) {
-    const extra = fixedPendingCount > 1 ? `, e mais ${fixedPendingCount - 1} conta${fixedPendingCount > 2 ? "s" : ""}` : "";
-    sub = tranquilo
-      ? `${capitalize(fixedPendingTop.name)}${extra}: ${currency(fixedPendingTotal)} já cabe. Sobram ${currency(sobraLivre)}.`
-      : `Com essa compra, ${fixedPendingTop.name}${extra}: ${currency(fixedPendingTotal)} não cabe mais — faltariam ${currency(Math.abs(sobraLivre))}.`;
+    if (invoice) {
+      sub = `Sua fatura do cartão de ${currency(invoice.amount)} (dia ${invoice.dayLabel}) já cabe. Sobram ${currency(sobraLivre)}.`;
+    } else if (fixedPendingTop) {
+      sub = `${capitalize(fixedPendingTop.name)}${extra}: ${currency(fixedPendingTotal)} já cabe. Sobram ${currency(sobraLivre)}.`;
+    } else {
+      sub = "Seu saldo tá livre pra usar.";
+    }
+  } else if (jaApertado) {
+    // Já não fecha mesmo sem nenhuma compra hipotética — problema real, não
+    // causado pelo controle (que pode estar parado em zero).
+    if (invoice) {
+      headline = `Não fecha até ${invoice.dayLabel}.`;
+      sub = `Sua fatura do cartão de ${currency(invoice.amount)} (dia ${invoice.dayLabel}) já não cabe no saldo — faltam ${currency(Math.abs(sobraLivre))}.`;
+    } else if (fixedPendingTop) {
+      headline = "Suas contas não cabem no saldo.";
+      sub = `${capitalize(fixedPendingTop.name)}${extra}: ${currency(fixedPendingTotal)} já não cabe no saldo — faltam ${currency(Math.abs(sobraLivre))}.`;
+    } else {
+      headline = "Seu saldo já está negativo.";
+      sub = `Faltam ${currency(Math.abs(sobraLivre))} pra fechar as contas.`;
+    }
   } else {
-    sub = tranquilo
-      ? "Seu saldo tá livre pra usar."
-      : `Com essa compra, seu saldo fica negativo em ${currency(Math.abs(sobraLivre))}.`;
+    // Só fica assim por causa da compra hipotética simulada no controle.
+    headline = "Essa compra deixa uma conta sem cobrir.";
+    if (invoice) {
+      sub = `Com essa compra, sua fatura do cartão de ${currency(invoice.amount)} (dia ${invoice.dayLabel}) não cabe mais — faltariam ${currency(Math.abs(sobraLivre))}.`;
+    } else if (fixedPendingTop) {
+      sub = `Com essa compra, ${fixedPendingTop.name}${extra}: ${currency(fixedPendingTotal)} não cabe mais — faltariam ${currency(Math.abs(sobraLivre))}.`;
+    } else {
+      sub = `Com essa compra, seu saldo fica negativo em ${currency(Math.abs(sobraLivre))}.`;
+    }
   }
 
-  const sobraLivreBase = saldoAtual - comprometidoBase;
-  const sliderMax = Math.max(300, Math.round((Math.max(sobraLivreBase, 0) * 1.6 + 300) / 10) * 10);
+  const sliderMax = Math.max(300, Math.round((Math.max(sobraLivreReal, 0) * 1.6 + 300) / 10) * 10);
 
   return (
     <div className="mb-5 rounded-[20px] bg-brand-card p-4">

@@ -4,8 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowDownCircle,
-  ArrowUpCircle,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -73,6 +71,8 @@ export function MonthRuler({
   prevMonthKey,
   nextMonthKey,
   isCurrentMonth,
+  isFutureMonth,
+  saldoAtual,
   folego,
 }: {
   monthName: string;
@@ -87,6 +87,8 @@ export function MonthRuler({
   prevMonthKey: string;
   nextMonthKey: string;
   isCurrentMonth: boolean;
+  isFutureMonth: boolean;
+  saldoAtual: number;
   folego: FolegoData | null;
 }) {
   const router = useRouter();
@@ -160,7 +162,6 @@ export function MonthRuler({
 
   const hasEntries = entries.length > 0;
   const despesas = entries.filter((e) => e.type === "despesa");
-  const receitas = entries.filter((e) => e.type === "receita");
   // Itens de fatura de cartão viram um marcador consolidado só, não uma
   // bolinha por compra — por isso ficam de fora da régua "bolinha a bolinha"
   // e da média usada pra colorir as bolinhas (mas continuam contando no
@@ -186,13 +187,6 @@ export function MonthRuler({
     const day = dayOfMonth(invoice.invoiceDate);
     invoicesByDay.set(day, [...(invoicesByDay.get(day) ?? []), invoice]);
   }
-
-  const receitaSoFar = receitas
-    .filter((e) => todayDayOfMonth === null || dayOfMonth(e.entry_date) <= todayDayOfMonth)
-    .reduce((sum, e) => sum + e.amount, 0);
-  const despesaSoFar = despesas
-    .filter((e) => todayDayOfMonth === null || dayOfMonth(e.entry_date) <= todayDayOfMonth)
-    .reduce((sum, e) => sum + e.amount, 0);
 
   const selectedDayItems =
     selected?.kind === "day"
@@ -251,28 +245,17 @@ export function MonthRuler({
           )}
         </div>
 
-        {hasEntries ? (
-          <div className="mb-5 flex gap-2.5">
-            <div className="flex-1 rounded-2xl bg-brand-card px-4 py-3.5">
-              <div className="mb-0.5 flex items-center gap-1.5">
-                <ArrowUpCircle size={13} className="text-brand-sage" />
-                <span className="text-[11.5px] text-brand-ink-soft">Entrou</span>
-              </div>
-              <div className="font-display text-xl font-bold text-brand-ink">
-                {currency(receitaSoFar)}
-              </div>
-            </div>
-            <div className="flex-1 rounded-2xl bg-brand-card px-4 py-3.5">
-              <div className="mb-0.5 flex items-center gap-1.5">
-                <ArrowDownCircle size={13} className="text-brand-coral" />
-                <span className="text-[11.5px] text-brand-ink-soft">Saiu</span>
-              </div>
-              <div className="font-display text-xl font-bold text-brand-ink">
-                {currency(despesaSoFar)}
-              </div>
-            </div>
+        <div className="mb-5 rounded-2xl bg-brand-card px-5 py-4">
+          <div className="text-[13px] text-brand-ink-soft">{isFutureMonth ? "Saldo previsto" : "Saldo"}</div>
+          <div
+            className="font-display text-[28px] font-bold"
+            style={{ color: saldoAtual >= 0 ? TOKENS.sage : TOKENS.coral }}
+          >
+            {currency(saldoAtual)}
           </div>
-        ) : (
+        </div>
+
+        {!hasEntries && (
           <div className="mb-5 rounded-2xl bg-brand-card p-5">
             <div className="text-[15.5px] font-medium leading-snug text-brand-ink">
               {isCurrentMonth ? "Mês novinho em folha." : "Nada marcado nesse mês."}
