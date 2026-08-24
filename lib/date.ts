@@ -13,8 +13,36 @@ const MONTHS_PT = [
   "Dezembro",
 ];
 
+const MONTHS_PT_SHORT = [
+  "jan",
+  "fev",
+  "mar",
+  "abr",
+  "mai",
+  "jun",
+  "jul",
+  "ago",
+  "set",
+  "out",
+  "nov",
+  "dez",
+];
+
 export function monthLabel(date: Date): string {
   return MONTHS_PT[date.getMonth()];
+}
+
+/** "5 set" — usado em rótulos curtos de data (ex: próximo compromisso). */
+export function shortDateLabel(dateKey: string): string {
+  const [, month, day] = dateKey.split("-").map(Number);
+  return `${day} ${MONTHS_PT_SHORT[month - 1]}`;
+}
+
+/** Diferença em dias inteiros entre duas chaves "YYYY-MM-DD" (toKey - fromKey). */
+export function daysBetween(fromKey: string, toKey: string): number {
+  const from = new Date(`${fromKey}T00:00:00`);
+  const to = new Date(`${toKey}T00:00:00`);
+  return Math.round((to.getTime() - from.getTime()) / 86400000);
 }
 
 export function toDateKey(date: Date): string {

@@ -20,10 +20,12 @@ import {
 } from "lucide-react";
 import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
+import type { FolegoData } from "@/lib/folego";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
+import { FolegoCard } from "./folego-card";
 
 export type Entry = {
   id: string;
@@ -71,6 +73,7 @@ export function MonthRuler({
   prevMonthKey,
   nextMonthKey,
   isCurrentMonth,
+  folego,
 }: {
   monthName: string;
   viewedYear: number;
@@ -84,6 +87,7 @@ export function MonthRuler({
   prevMonthKey: string;
   nextMonthKey: string;
   isCurrentMonth: boolean;
+  folego: FolegoData | null;
 }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -281,134 +285,140 @@ export function MonthRuler({
           </div>
         )}
 
-        <div className="mb-1.5 text-[13px] font-semibold text-brand-ink">Régua do mês</div>
-        <div className="mb-4 overflow-x-auto rounded-[20px] bg-brand-card p-3.5">
-          {hasEntries && (
-            <div className="mb-0.5 text-[10px] font-semibold text-brand-sage">↑ entrou</div>
-          )}
-          <div
-            className="relative"
-            style={{ minWidth: daysInMonth * DAY_WIDTH, height: hasEntries ? 130 : 76 }}
-          >
+        {folego ? (
+          <FolegoCard {...folego} />
+        ) : (
+          <>
+          <div className="mb-1.5 text-[13px] font-semibold text-brand-ink">Régua do mês</div>
+          <div className="mb-4 overflow-x-auto rounded-[20px] bg-brand-card p-3.5">
+            {hasEntries && (
+              <div className="mb-0.5 text-[10px] font-semibold text-brand-sage">↑ entrou</div>
+            )}
             <div
-              className="absolute left-0 right-0 bg-brand-line"
-              style={{ top: hasEntries ? 65 : 26, height: 2 }}
-            />
-            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-              const isToday = day === todayDayOfMonth;
-              const bucket = byDay.get(day);
-              const dayInvoices = invoicesByDay.get(day) ?? [];
-              const despesaTotal = bucket?.despesas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
-              const receitaTotal = bucket?.receitas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
-              const level = bucket?.despesas.length ? levelFor(despesaTotal, despesaAvg) : null;
-              const isSelectedDespesa =
-                selected?.kind === "day" && selected.day === day && selected.type === "despesa";
-              const isSelectedReceita =
-                selected?.kind === "day" && selected.day === day && selected.type === "receita";
+              className="relative"
+              style={{ minWidth: daysInMonth * DAY_WIDTH, height: hasEntries ? 130 : 76 }}
+            >
+              <div
+                className="absolute left-0 right-0 bg-brand-line"
+                style={{ top: hasEntries ? 65 : 26, height: 2 }}
+              />
+              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                const isToday = day === todayDayOfMonth;
+                const bucket = byDay.get(day);
+                const dayInvoices = invoicesByDay.get(day) ?? [];
+                const despesaTotal = bucket?.despesas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
+                const receitaTotal = bucket?.receitas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
+                const level = bucket?.despesas.length ? levelFor(despesaTotal, despesaAvg) : null;
+                const isSelectedDespesa =
+                  selected?.kind === "day" && selected.day === day && selected.type === "despesa";
+                const isSelectedReceita =
+                  selected?.kind === "day" && selected.day === day && selected.type === "receita";
 
-              return (
-                <div
-                  key={day}
-                  className="absolute top-0 flex h-full flex-col items-center"
-                  style={{ left: (day - 1) * DAY_WIDTH, width: DAY_WIDTH }}
-                >
-                  {hasEntries && (
-                    <div className="flex flex-1 items-end justify-center">
-                      {bucket?.receitas.length ? (
-                        <div className="group relative mb-1.5">
-                          <button
-                            type="button"
-                            onClick={() => selectAndReset({ kind: "day", day, type: "receita" })}
-                            aria-label={`Entradas do dia ${day}`}
-                            className={
-                              isSelectedReceita
-                                ? "h-3.5 w-3.5 rounded-full bg-brand-sage ring-2 ring-brand-ink"
-                                : "h-2.5 w-2.5 rounded-full bg-brand-sage"
-                            }
-                          />
-                          <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
-                            {tooltipLabel(bucket.receitas, receitaTotal)}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-
+                return (
                   <div
-                    className={isToday ? "w-px bg-[var(--accent)]" : "w-px bg-brand-line"}
-                    style={{ height: isToday ? 14 : 8 }}
-                  />
-                  <div
-                    className={
-                      isToday
-                        ? "mt-0.5 text-[10px] font-bold text-brand-ink"
-                        : "mt-0.5 text-[10px] text-brand-ink-soft"
-                    }
+                    key={day}
+                    className="absolute top-0 flex h-full flex-col items-center"
+                    style={{ left: (day - 1) * DAY_WIDTH, width: DAY_WIDTH }}
                   >
-                    {day}
-                  </div>
-                  {!hasEntries && isToday && (
-                    <div className="mt-0.5 whitespace-nowrap text-[8.5px] font-bold text-[var(--accent)]">
-                      HOJE
-                    </div>
-                  )}
-
-                  {hasEntries && (
-                    <div className="mt-1 flex flex-1 flex-col items-center gap-1">
-                      {dayInvoices.map((invoice) => {
-                        const isSelectedInvoice =
-                          selected?.kind === "invoice" && selected.invoiceId === invoice.id;
-                        return (
-                          <div key={invoice.id} className="group relative">
+                    {hasEntries && (
+                      <div className="flex flex-1 items-end justify-center">
+                        {bucket?.receitas.length ? (
+                          <div className="group relative mb-1.5">
                             <button
                               type="button"
-                              onClick={() => toggleInvoice(invoice.id)}
-                              aria-label={`Fatura do cartão do dia ${day}`}
+                              onClick={() => selectAndReset({ kind: "day", day, type: "receita" })}
+                              aria-label={`Entradas do dia ${day}`}
                               className={
-                                isSelectedInvoice
-                                  ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
-                                  : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
+                                isSelectedReceita
+                                  ? "h-3.5 w-3.5 rounded-full bg-brand-sage ring-2 ring-brand-ink"
+                                  : "h-2.5 w-2.5 rounded-full bg-brand-sage"
                               }
-                              style={{ background: "var(--accent)" }}
-                            >
-                              <CreditCard size={8} className="-rotate-12 text-brand-card" />
-                            </button>
-                            <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
-                              Fatura · {invoice.items.length}{" "}
-                              {invoice.items.length === 1 ? "compra" : "compras"} —{" "}
-                              {currency(invoice.total)}
+                            />
+                            <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
+                              {tooltipLabel(bucket.receitas, receitaTotal)}
                             </div>
                           </div>
-                        );
-                      })}
-                      {level ? (
-                        <div className="group relative">
-                          <button
-                            type="button"
-                            onClick={() => selectAndReset({ kind: "day", day, type: "despesa" })}
-                            aria-label={`Gastos do dia ${day}`}
-                            className={
-                              isSelectedDespesa
-                                ? "h-3.5 w-3.5 rounded-full ring-2 ring-brand-ink"
-                                : "h-2.5 w-2.5 rounded-full"
-                            }
-                            style={{ background: LEVEL_COLOR[level] }}
-                          />
-                          <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
-                            {tooltipLabel(bucket!.despesas, despesaTotal)}
-                          </div>
-                        </div>
-                      ) : null}
+                        ) : null}
+                      </div>
+                    )}
+
+                    <div
+                      className={isToday ? "w-px bg-[var(--accent)]" : "w-px bg-brand-line"}
+                      style={{ height: isToday ? 14 : 8 }}
+                    />
+                    <div
+                      className={
+                        isToday
+                          ? "mt-0.5 text-[10px] font-bold text-brand-ink"
+                          : "mt-0.5 text-[10px] text-brand-ink-soft"
+                      }
+                    >
+                      {day}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    {!hasEntries && isToday && (
+                      <div className="mt-0.5 whitespace-nowrap text-[8.5px] font-bold text-[var(--accent)]">
+                        HOJE
+                      </div>
+                    )}
+
+                    {hasEntries && (
+                      <div className="mt-1 flex flex-1 flex-col items-center gap-1">
+                        {dayInvoices.map((invoice) => {
+                          const isSelectedInvoice =
+                            selected?.kind === "invoice" && selected.invoiceId === invoice.id;
+                          return (
+                            <div key={invoice.id} className="group relative">
+                              <button
+                                type="button"
+                                onClick={() => toggleInvoice(invoice.id)}
+                                aria-label={`Fatura do cartão do dia ${day}`}
+                                className={
+                                  isSelectedInvoice
+                                    ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
+                                    : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
+                                }
+                                style={{ background: "var(--accent)" }}
+                              >
+                                <CreditCard size={8} className="-rotate-12 text-brand-card" />
+                              </button>
+                              <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
+                                Fatura · {invoice.items.length}{" "}
+                                {invoice.items.length === 1 ? "compra" : "compras"} —{" "}
+                                {currency(invoice.total)}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {level ? (
+                          <div className="group relative">
+                            <button
+                              type="button"
+                              onClick={() => selectAndReset({ kind: "day", day, type: "despesa" })}
+                              aria-label={`Gastos do dia ${day}`}
+                              className={
+                                isSelectedDespesa
+                                  ? "h-3.5 w-3.5 rounded-full ring-2 ring-brand-ink"
+                                  : "h-2.5 w-2.5 rounded-full"
+                              }
+                              style={{ background: LEVEL_COLOR[level] }}
+                            />
+                            <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
+                              {tooltipLabel(bucket!.despesas, despesaTotal)}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {hasEntries && (
+              <div className="mt-0.5 text-[10px] font-semibold text-brand-coral">↓ saiu</div>
+            )}
           </div>
-          {hasEntries && (
-            <div className="mt-0.5 text-[10px] font-semibold text-brand-coral">↓ saiu</div>
-          )}
-        </div>
+          </>
+        )}
 
         {cardInvoices.map((invoice) => (
           <button
@@ -611,7 +621,7 @@ export function MonthRuler({
           </div>
         )}
 
-        {hasEntries && (
+        {hasEntries && !folego && (
           <div className="mb-7 flex flex-wrap items-center gap-3.5">
             {(
               [

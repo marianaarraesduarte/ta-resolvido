@@ -3,6 +3,7 @@ import { daysInMonth, monthLabel, toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { resolveViewedMonth } from "@/lib/viewed-month";
 import { comparePeriods, periodComparisonSentence, type SpendEntry } from "@/lib/period-comparison";
+import { computeFolego, type FolegoData } from "@/lib/folego";
 import { MonthRuler, type CardInvoiceSummary, type Entry } from "./month-ruler";
 
 type EntryWithCategory = Entry & { categories: { name: string } | null };
@@ -92,6 +93,7 @@ export default async function AppHomePage({
   });
 
   const monthName = monthLabel(viewedFirstDay);
+  const folego: FolegoData | null = isCurrentMonth ? await computeFolego(supabase, user.id, today) : null;
 
   return (
     <MonthRuler
@@ -107,6 +109,7 @@ export default async function AppHomePage({
       prevMonthKey={prevMonthKey}
       nextMonthKey={nextMonthKey}
       isCurrentMonth={isCurrentMonth}
+      folego={folego}
     />
   );
 }
