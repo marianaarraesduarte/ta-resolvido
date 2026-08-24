@@ -245,16 +245,6 @@ export function MonthRuler({
           )}
         </div>
 
-        <div className="mb-5 rounded-2xl bg-brand-card px-5 py-4">
-          <div className="text-[13px] text-brand-ink-soft">{isFutureMonth ? "Saldo previsto" : "Saldo"}</div>
-          <div
-            className="font-display text-[28px] font-bold"
-            style={{ color: saldoAtual >= 0 ? TOKENS.sage : TOKENS.coral }}
-          >
-            {currency(saldoAtual)}
-          </div>
-        </div>
-
         {!hasEntries && (
           <div className="mb-5 rounded-2xl bg-brand-card p-5">
             <div className="text-[15.5px] font-medium leading-snug text-brand-ink">
