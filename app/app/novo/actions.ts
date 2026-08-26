@@ -490,6 +490,15 @@ export async function recognizeAudioMessage(
     }>(audioDataUrl, audioPrompt(categoryNames, today), audioSchema(categoryNames));
     await logRecognition(supabase, user.id);
 
+    // Fala solta é menos previsível que texto digitado — se a IA devolver uma
+    // data fora do formato YYYY-MM-DD, cai pra hoje em vez de tentar salvar
+    // algo que a coluna de data do banco vai rejeitar.
+    const isValidDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+    result.items = result.items.map((item) => ({
+      ...item,
+      date: isValidDate(item.date) ? item.date : today,
+    }));
+
     const dates = [...new Set(result.items.map((item) => item.date))];
     const { data: existing } = dates.length
       ? await supabase
@@ -516,7 +525,10 @@ export async function recognizeAudioMessage(
     });
 
     return { transcript: result.transcript, items };
-  } catch {
+  } catch (err) {
+    // Feature nova (áudio) — loga a causa real enquanto valida em produção,
+    // já que a mensagem pra usuária precisa continuar genérica.
+    console.error("recognizeAudioMessage falhou:", err);
     throw new Error("Não deu pra entender esse áudio agora.");
   }
 }
@@ -625,6 +637,7 @@ export async function saveRecognizedItems(
 
   const { error } = await supabase.from("entries").insert(rows);
   if (error) {
+    console.error("saveRecognizedItems: insert em entries falhou:", error);
     throw new Error("Não deu pra salvar os lançamentos agora.");
   }
 
@@ -800,6 +813,7 @@ export async function saveCardInvoice(
 
   const { error } = await supabase.from("entries").insert(rows);
   if (error) {
+    console.error("saveCardInvoice: insert em entries falhou:", error);
     throw new Error("Não deu pra salvar os lançamentos agora.");
   }
 
