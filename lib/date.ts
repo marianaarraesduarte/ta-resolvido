@@ -38,6 +38,12 @@ export function shortDateLabel(dateKey: string): string {
   return `${day} ${MONTHS_PT_SHORT[month - 1]}`;
 }
 
+/** "26/08/2026" — formato brasileiro, pra exibir uma data "YYYY-MM-DD". */
+export function brDateLabel(dateKey: string): string {
+  const [year, month, day] = dateKey.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 /** Diferença em dias inteiros entre duas chaves "YYYY-MM-DD" (toKey - fromKey). */
 export function daysBetween(fromKey: string, toKey: string): number {
   const from = new Date(`${fromKey}T00:00:00`);

@@ -18,7 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
-import { toDateKey } from "@/lib/date";
+import { brDateLabel, toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { useAudioRecorder } from "@/lib/use-audio-recorder";
 import {
@@ -414,7 +414,9 @@ export function ChatTab({
                             </div>
                           )}
                         <div className="mt-1 flex flex-wrap items-center gap-2.5">
-                          <span className="text-[11px] text-brand-ink-soft">{item.date}</span>
+                          <span className="text-[11px] text-brand-ink-soft">
+                            {brDateLabel(item.date)}
+                          </span>
                           {item.type === "despesa" && (
                             <select
                               value={item.category ?? ""}
