@@ -10,16 +10,20 @@ import {
   Check,
   CreditCard,
   Lock,
+  Mic,
   MessageCircle,
   Repeat,
   Send,
+  Square,
   Trash2,
 } from "lucide-react";
 import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
+import { useAudioRecorder } from "@/lib/use-audio-recorder";
 import {
   checkExistingInvoiceDate,
+  recognizeAudioMessage,
   recognizeChatMessage,
   saveRecognizedItems,
   type ChatItem,
@@ -30,9 +34,17 @@ type FixedExpense = { name: string; expected_amount: number };
 type ReviewItem = ChatItem & { id: string; isSalary: boolean; amountText: string; dueDate: string };
 type ChatEntry =
   | { kind: "user"; id: string; text: string }
-  | { kind: "batch"; id: string; items: ReviewItem[] }
+  | { kind: "user-audio"; id: string; durationMs: number }
+  | { kind: "batch"; id: string; items: ReviewItem[]; origin: "chat" | "audio"; transcript?: string }
   | { kind: "saved"; id: string; count: number }
-  | { kind: "empty"; id: string };
+  | { kind: "empty"; id: string; transcript?: string };
+
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
 
 export function ChatTab({
   fixedExpenses,
@@ -56,6 +68,7 @@ export function ChatTab({
   const [error, setError] = useState("");
   const [savingBatch, setSavingBatch] = useState<string | null>(null);
   const [duplicateDates, setDuplicateDates] = useState<Record<string, boolean>>({});
+  const recorder = useAudioRecorder();
 
   const creditItems = isCompleto
     ? entries.flatMap((e) => (e.kind === "batch" ? e.items : [])).filter(
@@ -89,6 +102,16 @@ export function ChatTab({
     if (initialText) handleSend(initialText);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Gravação cortada automaticamente no tempo máximo (sem a pessoa apertar
+  // "parar") — precisa mandar pro reconhecimento do mesmo jeito.
+  useEffect(() => {
+    if (!recorder.autoStopResult) return;
+    const result = recorder.autoStopResult;
+    recorder.clearAutoStopResult();
+    processAudioResult(result);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorder.autoStopResult]);
 
   function updateBatch(batchId: string, updater: (items: ReviewItem[]) => ReviewItem[]) {
     setEntries((prev) =>
@@ -159,7 +182,7 @@ export function ChatTab({
         amountText: item.amount !== null ? amountToInputValue(item.amount) : "",
         dueDate: item.isCreditCard ? toDateKey(new Date()) : "",
       }));
-      setEntries((prev) => [...prev, { kind: "batch", id: `b-${Date.now()}`, items }]);
+      setEntries((prev) => [...prev, { kind: "batch", id: `b-${Date.now()}`, items, origin: "chat" }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não deu pra entender essa mensagem agora.");
     } finally {
@@ -167,7 +190,50 @@ export function ChatTab({
     }
   }
 
-  async function handleSaveBatch(batchId: string, items: ReviewItem[]) {
+  async function handleSendAudio() {
+    const result = await recorder.stop();
+    if (!result) return;
+    await processAudioResult(result);
+  }
+
+  // Usado tanto pra gravação encerrada na mão (botão de parar) quanto pro
+  // corte automático no tempo máximo — os dois precisam mandar o que foi
+  // gravado até ali pro reconhecimento, não só um deles.
+  async function processAudioResult(result: { dataUrl: string; durationMs: number }) {
+    if (analyzing) return;
+    setError("");
+    setEntries((prev) => [
+      ...prev,
+      { kind: "user-audio", id: `u-${Date.now()}`, durationMs: result.durationMs },
+    ]);
+    setAnalyzing(true);
+
+    try {
+      const { transcript, items: recognized } = await recognizeAudioMessage(result.dataUrl);
+      if (recognized.length === 0) {
+        setEntries((prev) => [...prev, { kind: "empty", id: `e-${Date.now()}`, transcript }]);
+        return;
+      }
+      const items: ReviewItem[] = recognized.map((item, i) => ({
+        ...item,
+        id: `${Date.now()}-${i}`,
+        isSalary:
+          item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
+        amountText: item.amount !== null ? amountToInputValue(item.amount) : "",
+        dueDate: item.isCreditCard ? toDateKey(new Date()) : "",
+      }));
+      setEntries((prev) => [
+        ...prev,
+        { kind: "batch", id: `b-${Date.now()}`, items, origin: "audio", transcript },
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não deu pra entender esse áudio agora.");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function handleSaveBatch(batchId: string, items: ReviewItem[], origin: "chat" | "audio") {
     const missingAmount = items.some((it) => it.amount === null || it.amount <= 0);
     if (missingAmount) {
       setError("Completa o valor que falta antes de salvar.");
@@ -194,7 +260,7 @@ export function ChatTab({
           isCreditCard: isCompleto && isCreditCard,
           dueDate: isCompleto && isCreditCard ? dueDate : null,
         })),
-        "chat",
+        origin,
       );
       setEntries((prev) =>
         prev
@@ -216,7 +282,7 @@ export function ChatTab({
           <p className="mb-3.5 text-[12.5px] text-brand-ink-soft">
             Você ainda tem {recognitionsRemaining}{" "}
             {recognitionsRemaining === 1 ? "reconhecimento grátis" : "reconhecimentos grátis"} esse
-            mês (foto ou chat).
+            mês (foto, chat ou áudio).
           </p>
         ) : (
           <p className="mb-3.5 text-[12.5px] font-medium text-brand-coral">
@@ -250,11 +316,22 @@ export function ChatTab({
             );
           }
 
+          if (entry.kind === "user-audio") {
+            return (
+              <div key={entry.id} className="flex justify-end">
+                <div className="flex items-center gap-1.5 rounded-2xl rounded-br-sm bg-brand-ink px-3.5 py-2.5 text-[13.5px] text-brand-card">
+                  <Mic size={13} className="flex-shrink-0" />
+                  Áudio · {formatDuration(entry.durationMs)}
+                </div>
+              </div>
+            );
+          }
+
           if (entry.kind === "empty") {
             return (
               <div key={entry.id} className="rounded-2xl bg-brand-bg px-3.5 py-2.5 text-[13px] text-brand-ink-soft">
-                Não consegui identificar nenhum lançamento nessa mensagem. Tenta descrever
-                de outro jeito.
+                Não consegui identificar nenhum lançamento {entry.transcript ? "nesse áudio" : "nessa mensagem"}.{" "}
+                {entry.transcript ? `Ouvi: "${entry.transcript}"` : "Tenta descrever de outro jeito."}
               </div>
             );
           }
@@ -273,6 +350,11 @@ export function ChatTab({
 
           return (
             <div key={entry.id} className="rounded-2xl bg-brand-bg p-2.5">
+              {entry.transcript && (
+                <p className="mb-1.5 px-1 text-[11.5px] italic text-brand-ink-soft">
+                  Ouvi: &quot;{entry.transcript}&quot;
+                </p>
+              )}
               <p className="mb-2 px-1 text-[11.5px] text-brand-ink-soft">
                 {entry.items.length === 1
                   ? "1 lançamento identificado"
@@ -431,7 +513,7 @@ export function ChatTab({
               <button
                 type="button"
                 disabled={savingBatch === entry.id}
-                onClick={() => handleSaveBatch(entry.id, entry.items)}
+                onClick={() => handleSaveBatch(entry.id, entry.items, entry.origin)}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-sage py-3 font-display text-[14px] font-semibold text-white disabled:opacity-60"
               >
                 <Check size={16} />
@@ -448,30 +530,63 @@ export function ChatTab({
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-brand-coral">{error}</p>}
+      {(error || recorder.error) && (
+        <p className="mb-3 text-sm text-brand-coral">{error || recorder.error}</p>
+      )}
 
       <div className="flex items-center gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder="Escreve aqui..."
-          className="flex-1 rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
-        />
-        <button
-          type="button"
-          disabled={analyzing || !input.trim()}
-          onClick={() => handleSend()}
-          aria-label="Enviar"
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink text-brand-card disabled:opacity-40"
-        >
-          <Send size={17} />
-        </button>
+        {recorder.isRecording ? (
+          <>
+            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-brand-coral bg-brand-coral/10 px-3.5 py-3 text-[14px] font-medium text-brand-coral">
+              <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-brand-coral" />
+              Gravando... {formatDuration(recorder.elapsedMs)}
+            </div>
+            <button
+              type="button"
+              onClick={handleSendAudio}
+              aria-label="Parar e enviar áudio"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-coral text-white"
+            >
+              <Square size={15} fill="currentColor" />
+            </button>
+          </>
+        ) : (
+          <>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Escreve aqui..."
+              className="flex-1 rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
+            />
+            {input.trim() ? (
+              <button
+                type="button"
+                disabled={analyzing}
+                onClick={() => handleSend()}
+                aria-label="Enviar"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink text-brand-card disabled:opacity-40"
+              >
+                <Send size={17} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={analyzing}
+                onClick={recorder.start}
+                aria-label="Gravar áudio"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink text-brand-card disabled:opacity-40"
+              >
+                <Mic size={17} />
+              </button>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

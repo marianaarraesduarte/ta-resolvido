@@ -58,7 +58,7 @@ export function PhotoTab({
           <p className="mb-3.5 text-[12.5px] text-brand-ink-soft">
             Você ainda tem {recognitionsRemaining}{" "}
             {recognitionsRemaining === 1 ? "reconhecimento grátis" : "reconhecimentos grátis"} esse
-            mês (foto ou chat).
+            mês (foto, chat ou áudio).
           </p>
         ) : (
           <p className="mb-3.5 text-[12.5px] font-medium text-brand-coral">

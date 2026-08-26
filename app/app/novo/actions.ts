@@ -316,21 +316,45 @@ export type ChatItem = {
   possibleDuplicate: boolean;
 };
 
+function chatItemProperties(categoryNames: string[]) {
+  return {
+    description: { type: Type.STRING },
+    amount: { type: Type.NUMBER, nullable: true },
+    type: { type: Type.STRING, enum: ["despesa", "receita"] },
+    date: { type: Type.STRING },
+    category: { type: Type.STRING, enum: [...categoryNames, NO_CATEGORY] },
+    isCreditCard: { type: Type.BOOLEAN },
+  };
+}
+
+const CHAT_ITEM_REQUIRED = ["description", "type", "date", "category", "isCreditCard"];
+
 function chatSchema(categoryNames: string[]) {
   return {
     type: Type.ARRAY,
     items: {
       type: Type.OBJECT,
-      properties: {
-        description: { type: Type.STRING },
-        amount: { type: Type.NUMBER, nullable: true },
-        type: { type: Type.STRING, enum: ["despesa", "receita"] },
-        date: { type: Type.STRING },
-        category: { type: Type.STRING, enum: [...categoryNames, NO_CATEGORY] },
-        isCreditCard: { type: Type.BOOLEAN },
-      },
-      required: ["description", "type", "date", "category", "isCreditCard"],
+      properties: chatItemProperties(categoryNames),
+      required: CHAT_ITEM_REQUIRED,
     },
+  };
+}
+
+function audioSchema(categoryNames: string[]) {
+  return {
+    type: Type.OBJECT,
+    properties: {
+      transcript: { type: Type.STRING },
+      items: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: chatItemProperties(categoryNames),
+          required: CHAT_ITEM_REQUIRED,
+        },
+      },
+    },
+    required: ["transcript", "items"],
   };
 }
 
@@ -346,6 +370,22 @@ Para cada lançamento que você identificar na mensagem, extraia:
 - isCreditCard: true somente se a mensagem disser claramente que esse gasto específico foi no crédito ou no cartão (ex: "no crédito", "no cartão"). Se for receita, ou se não houver menção a crédito/cartão, use false.
 
 Se a mensagem descrever mais de um lançamento, retorne todos, um por item. Se não conseguir identificar nenhum lançamento de dinheiro na mensagem, retorne uma lista vazia.`;
+}
+
+function audioPrompt(categoryNames: string[], today: string): string {
+  return `Você está ouvindo um áudio em português do Brasil em que uma pessoa fala, naturalmente, um ou mais gastos ou recebimentos do dia a dia dela. Hoje é ${today}.
+
+Primeiro, em transcript, escreva uma transcrição literal do que foi dito (sem hesitações tipo "é", "tipo", "ãh").
+
+Depois, pra cada lançamento que você identificar na fala, extraia, em items:
+- description: descrição curta (o que foi, ou de onde veio o dinheiro)
+- amount: o valor em reais, sempre um número positivo. Números falados por extenso (ex: "cinquenta reais", "uns quarenta e oito") devem virar o valor numérico correspondente. Se a fala não deixar o valor claro, deixe null — não invente um número.
+- type: "despesa" se foi um gasto, "receita" se foi dinheiro que entrou
+- date: data no formato YYYY-MM-DD. Resolva termos relativos ("hoje", "ontem", "anteontem") usando ${today} como referência. Se não disser nada sobre quando, use ${today}.
+- category: só pra despesas, escolha a categoria que melhor combina entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Se for receita, ou se nenhuma categoria combinar bem, use "${NO_CATEGORY}".
+- isCreditCard: true somente se a fala disser claramente que esse gasto específico foi no crédito ou no cartão. Se for receita, ou se não houver menção a crédito/cartão, use false.
+
+Se a fala descrever mais de um lançamento, retorne todos em items, um por item. Se não conseguir identificar nenhum lançamento de dinheiro, items deve ser uma lista vazia — mas ainda assim preencha transcript com o que você ouviu.`;
 }
 
 export async function recognizeChatMessage(message: string): Promise<ChatItem[]> {
@@ -415,6 +455,72 @@ export async function recognizeChatMessage(message: string): Promise<ChatItem[]>
   }
 }
 
+export async function recognizeAudioMessage(
+  audioDataUrl: string,
+): Promise<{ transcript: string; items: ChatItem[] }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
+  }
+
+  await enforceRecognitionLimit(supabase, user.id);
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("id, name")
+    .eq("user_id", user.id);
+  const categoryNames = (categories ?? []).map((c) => c.name);
+  const categoryNameById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+
+  const { data: patternsData } = await supabase
+    .from("category_patterns")
+    .select("description_pattern, category_id")
+    .eq("user_id", user.id);
+  const patterns = patternsData ?? [];
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const result = await extractFromDocument<{
+      transcript: string;
+      items: Omit<ChatItem, "possibleDuplicate">[];
+    }>(audioDataUrl, audioPrompt(categoryNames, today), audioSchema(categoryNames));
+    await logRecognition(supabase, user.id);
+
+    const dates = [...new Set(result.items.map((item) => item.date))];
+    const { data: existing } = dates.length
+      ? await supabase
+          .from("entries")
+          .select("amount, entry_date, description")
+          .eq("user_id", user.id)
+          .in("entry_date", dates)
+      : { data: [] };
+
+    const items = result.items.map((item) => {
+      const baseCategory = item.category === NO_CATEGORY ? null : item.category;
+      const learnedCategoryId =
+        item.type === "despesa" ? matchCategoryPattern(item.description, patterns) : null;
+      const category = learnedCategoryId
+        ? (categoryNameById.get(learnedCategoryId) ?? baseCategory)
+        : baseCategory;
+
+      return {
+        ...item,
+        category,
+        possibleDuplicate:
+          item.amount !== null ? isPossibleDuplicate({ ...item, amount: item.amount }, existing ?? []) : false,
+      };
+    });
+
+    return { transcript: result.transcript, items };
+  } catch {
+    throw new Error("Não deu pra entender esse áudio agora.");
+  }
+}
+
 export async function saveRecognizedItems(
   items: {
     description: string;
@@ -426,7 +532,7 @@ export async function saveRecognizedItems(
     isCreditCard?: boolean;
     dueDate?: string | null;
   }[],
-  source: "foto" | "chat" = "foto",
+  source: "foto" | "chat" | "audio" = "foto",
 ): Promise<void> {
   const supabase = await createClient();
   const {
