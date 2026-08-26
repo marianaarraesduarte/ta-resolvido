@@ -18,12 +18,12 @@ import {
 } from "lucide-react";
 import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
-import type { FolegoData } from "@/lib/folego";
+import type { AssistantData } from "@/lib/assistant-data";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
-import { FolegoCard } from "./folego-card";
+import { AssistantCard } from "./assistant-card";
 
 export type Entry = {
   id: string;
@@ -71,9 +71,7 @@ export function MonthRuler({
   prevMonthKey,
   nextMonthKey,
   isCurrentMonth,
-  isFutureMonth,
-  saldoAtual,
-  folego,
+  assistantData,
 }: {
   monthName: string;
   viewedYear: number;
@@ -87,9 +85,7 @@ export function MonthRuler({
   prevMonthKey: string;
   nextMonthKey: string;
   isCurrentMonth: boolean;
-  isFutureMonth: boolean;
-  saldoAtual: number;
-  folego: FolegoData | null;
+  assistantData: AssistantData | null;
 }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -258,10 +254,7 @@ export function MonthRuler({
           </div>
         )}
 
-        {folego ? (
-          <FolegoCard {...folego} />
-        ) : (
-          <>
+        <>
           <div className="mb-1.5 text-[13px] font-semibold text-brand-ink">Régua do mês</div>
           <div className="mb-4 overflow-x-auto rounded-[20px] bg-brand-card p-3.5">
             {hasEntries && (
@@ -281,7 +274,7 @@ export function MonthRuler({
                 const dayInvoices = invoicesByDay.get(day) ?? [];
                 const despesaTotal = bucket?.despesas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
                 const receitaTotal = bucket?.receitas.reduce((sum, e) => sum + e.amount, 0) ?? 0;
-                const level = bucket?.despesas.length ? levelFor(despesaTotal, despesaAvg) : null;
+                const hasDespesa = (bucket?.despesas.length ?? 0) > 0;
                 const isSelectedDespesa =
                   selected?.kind === "day" && selected.day === day && selected.type === "despesa";
                 const isSelectedReceita =
@@ -362,7 +355,7 @@ export function MonthRuler({
                             </div>
                           );
                         })}
-                        {level ? (
+                        {hasDespesa ? (
                           <div className="group relative">
                             <button
                               type="button"
@@ -370,10 +363,9 @@ export function MonthRuler({
                               aria-label={`Gastos do dia ${day}`}
                               className={
                                 isSelectedDespesa
-                                  ? "h-3.5 w-3.5 rounded-full ring-2 ring-brand-ink"
-                                  : "h-2.5 w-2.5 rounded-full"
+                                  ? "h-3.5 w-3.5 rounded-full bg-brand-coral ring-2 ring-brand-ink"
+                                  : "h-2.5 w-2.5 rounded-full bg-brand-coral"
                               }
-                              style={{ background: LEVEL_COLOR[level] }}
                             />
                             <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
                               {tooltipLabel(bucket!.despesas, despesaTotal)}
@@ -390,7 +382,10 @@ export function MonthRuler({
               <div className="mt-0.5 text-[10px] font-semibold text-brand-coral">↓ saiu</div>
             )}
           </div>
-          </>
+        </>
+
+        {assistantData && (
+          <AssistantCard data={assistantData} comparisonSentence={comparisonSentence ?? null} dayOfMonth={todayDayOfMonth ?? 1} />
         )}
 
         {cardInvoices.map((invoice) => (
@@ -594,13 +589,12 @@ export function MonthRuler({
           </div>
         )}
 
-        {hasEntries && !folego && (
+        {hasEntries && (
           <div className="mb-7 flex flex-wrap items-center gap-3.5">
             {(
               [
-                [TOKENS.sage, "entrada / gasto leve"],
-                [TOKENS.amber, "gasto médio"],
-                [TOKENS.coral, "gasto alto"],
+                [TOKENS.sage, "entrada"],
+                [TOKENS.coral, "saída"],
               ] as const
             ).map(([color, label]) => (
               <div key={label} className="flex items-center gap-1.5">

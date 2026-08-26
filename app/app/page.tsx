@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { daysInMonth, monthLabel, toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
-import { resolveViewedMonth, saldoEndDate } from "@/lib/viewed-month";
+import { resolveViewedMonth } from "@/lib/viewed-month";
 import { comparePeriods, periodComparisonSentence, type SpendEntry } from "@/lib/period-comparison";
-import { computeSaldoAtDate } from "@/lib/saldo";
+import { computeAssistantData, type AssistantData } from "@/lib/assistant-data";
 import { MonthRuler, type CardInvoiceSummary, type Entry } from "./month-ruler";
 
 type EntryWithCategory = Entry & { categories: { name: string } | null };
@@ -23,7 +23,7 @@ export default async function AppHomePage({
   const today = new Date();
   const { mes } = await searchParams;
   const viewed = resolveViewedMonth(mes, await getSelectedMonthKey(), today);
-  const { firstDay, lastDay, isCurrentMonth, isFutureMonth, prevMonthKey, nextMonthKey } = viewed;
+  const { firstDay, lastDay, isCurrentMonth, prevMonthKey, nextMonthKey } = viewed;
   const viewedFirstDay = firstDay;
 
   // Mesmo intervalo de dias (1 até hoje), mas no mês passado — pra comparar
@@ -93,7 +93,9 @@ export default async function AppHomePage({
   });
 
   const monthName = monthLabel(viewedFirstDay);
-  const saldoAtual = await computeSaldoAtDate(supabase, user.id, saldoEndDate(viewed, today));
+  const assistantData: AssistantData | null = isCurrentMonth
+    ? await computeAssistantData(supabase, user.id, today)
+    : null;
 
   return (
     <MonthRuler
@@ -109,9 +111,7 @@ export default async function AppHomePage({
       prevMonthKey={prevMonthKey}
       nextMonthKey={nextMonthKey}
       isCurrentMonth={isCurrentMonth}
-      isFutureMonth={isFutureMonth}
-      saldoAtual={saldoAtual}
-      folego={null}
+      assistantData={assistantData}
     />
   );
 }
