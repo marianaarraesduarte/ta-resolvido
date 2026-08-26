@@ -21,27 +21,14 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function analyzeDataUrl(dataUrl: string, filePdf: boolean, name: string) {
     setError("");
     setItems(null);
-    setPreviewUrl(null);
-    setIsPdf(false);
-    setFileName(file.name);
-
-    const filePdf = file.type === "application/pdf";
-
-    if (filePdf && file.size > MAX_PDF_SIZE) {
-      setError("Esse PDF é grande demais (máximo 8MB). Tenta um arquivo menor.");
-      return;
-    }
-
+    setPreviewUrl(dataUrl);
+    setIsPdf(filePdf);
+    setFileName(name);
+    setAnalyzing(true);
     try {
-      const dataUrl = filePdf ? await readFileAsDataUrl(file) : await compressImage(file);
-      setPreviewUrl(dataUrl);
-      setIsPdf(filePdf);
-      setAnalyzing(true);
       const recognized = await recognize(dataUrl);
       setItems(recognized);
     } catch (err) {
@@ -51,6 +38,29 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
     } finally {
       setAnalyzing(false);
     }
+  }
+
+  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const filePdf = file.type === "application/pdf";
+    if (filePdf && file.size > MAX_PDF_SIZE) {
+      setError("Esse PDF é grande demais (máximo 8MB). Tenta um arquivo menor.");
+      return;
+    }
+
+    const dataUrl = filePdf ? await readFileAsDataUrl(file) : await compressImage(file);
+    await analyzeDataUrl(dataUrl, filePdf, file.name);
+  }
+
+  /**
+   * Mesma análise, mas a partir de um data URL que já existe (ex: uma
+   * imagem recebida por "Compartilhar" de outro app) — sem passar pelo
+   * input de arquivo nem pela compressão, que já não se aplica aqui.
+   */
+  async function loadFromDataUrl(dataUrl: string, filePdf: boolean) {
+    await analyzeDataUrl(dataUrl, filePdf, filePdf ? "Compartilhado.pdf" : "Compartilhado");
   }
 
   return {
@@ -64,5 +74,6 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
     error,
     setError,
     handleFileChange,
+    loadFromDataUrl,
   };
 }

@@ -14,11 +14,13 @@ export function PhotoTab({
   fixedExpenses,
   categories,
   recognitionsRemaining,
+  sharedPhoto,
 }: {
   salaryPatterns: string[];
   fixedExpenses: FixedExpense[];
   categories: Category[];
   recognitionsRemaining: number | null;
+  sharedPhoto?: { dataUrl: string; isPdf: boolean } | null;
 }) {
   const [source, setSource] = useState<"extrato" | "fatura">("extrato");
 
@@ -73,6 +75,7 @@ export function PhotoTab({
           salaryPatterns={salaryPatterns}
           fixedExpenses={fixedExpenses}
           categories={categories}
+          sharedPhoto={sharedPhoto}
         />
       ) : (
         <CardInvoiceReview fixedExpenses={fixedExpenses} categories={categories} />

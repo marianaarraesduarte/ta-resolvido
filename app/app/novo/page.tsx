@@ -8,7 +8,7 @@ import { EntryForm } from "./entry-form";
 export default async function NovoLancamentoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; shared?: string; sharedText?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -16,6 +16,21 @@ export default async function NovoLancamentoPage({
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  const { error, shared, sharedText } = await searchParams;
+  let sharedPhoto: { dataUrl: string; isPdf: boolean } | null = null;
+  if (shared) {
+    const { data: pending } = await supabase
+      .from("pending_shares")
+      .select("id, data_url, is_pdf")
+      .eq("id", shared)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (pending) {
+      sharedPhoto = { dataUrl: pending.data_url, isPdf: pending.is_pdf };
+      await supabase.from("pending_shares").delete().eq("id", pending.id);
+    }
+  }
 
   const firstDayOfMonth = new Date();
   firstDayOfMonth.setDate(1);
@@ -47,8 +62,6 @@ export default async function NovoLancamentoPage({
     ? null
     : Math.max(0, FREE_RECOGNITION_LIMIT - (recognitionsUsed ?? 0));
 
-  const { error } = await searchParams;
-
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
@@ -71,6 +84,8 @@ export default async function NovoLancamentoPage({
           fixedExpenses={fixedExpenses ?? []}
           recognitionsRemaining={recognitionsRemaining}
           isCompleto={isCompleto(profile?.plan)}
+          sharedPhoto={sharedPhoto}
+          sharedText={sharedText}
         />
       </div>
     </div>

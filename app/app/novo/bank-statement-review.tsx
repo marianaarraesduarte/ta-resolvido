@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -30,10 +30,12 @@ export function BankStatementReview({
   salaryPatterns,
   fixedExpenses,
   categories,
+  sharedPhoto,
 }: {
   salaryPatterns: string[];
   fixedExpenses: FixedExpense[];
   categories: Category[];
+  sharedPhoto?: { dataUrl: string; isPdf: boolean } | null;
 }) {
   const {
     fileInputRef,
@@ -46,6 +48,7 @@ export function BankStatementReview({
     error,
     setError,
     handleFileChange,
+    loadFromDataUrl,
   } = usePhotoRecognition<ReviewItem>(async (dataUrl) => {
     const recognized = await recognizeStatement(dataUrl);
     return recognized.map((item, i) => ({
@@ -56,6 +59,15 @@ export function BankStatementReview({
       amountText: amountToInputValue(item.amount),
     }));
   });
+
+  // Se a pessoa compartilhou uma foto de outro app (ex: WhatsApp), já cai
+  // direto na análise — sem precisar tocar em "escolher arquivo" de novo.
+  useEffect(() => {
+    if (sharedPhoto) {
+      loadFromDataUrl(sharedPhoto.dataUrl, sharedPhoto.isPdf);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const router = useRouter();
   const [saving, setSaving] = useState(false);

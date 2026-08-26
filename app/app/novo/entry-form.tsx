@@ -107,6 +107,8 @@ export function EntryForm({
   fixedExpenses,
   recognitionsRemaining,
   isCompleto,
+  sharedPhoto,
+  sharedText,
 }: {
   categories: Category[];
   defaultDate: string;
@@ -116,8 +118,12 @@ export function EntryForm({
   fixedExpenses: { name: string; expected_amount: number }[];
   recognitionsRemaining: number | null;
   isCompleto: boolean;
+  sharedPhoto?: { dataUrl: string; isPdf: boolean } | null;
+  sharedText?: string | null;
 }) {
-  const [mode, setMode] = useState<"manual" | "foto" | "chat">("manual");
+  const [mode, setMode] = useState<"manual" | "foto" | "chat">(
+    sharedPhoto ? "foto" : sharedText ? "chat" : "manual",
+  );
   const [type, setType] = useState<"despesa" | "receita">("despesa");
   const [categories, setCategories] = useState(initialCategories);
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id ?? "");
@@ -212,6 +218,7 @@ export function EntryForm({
           fixedExpenses={fixedExpenses}
           categories={categories}
           recognitionsRemaining={recognitionsRemaining}
+          sharedPhoto={sharedPhoto}
         />
       ) : mode === "chat" ? (
         <ChatTab
@@ -220,6 +227,7 @@ export function EntryForm({
           salaryPatterns={salaryPatterns}
           recognitionsRemaining={recognitionsRemaining}
           isCompleto={isCompleto}
+          initialText={sharedText}
         />
       ) : (
         <form

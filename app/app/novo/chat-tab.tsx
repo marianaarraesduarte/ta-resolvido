@@ -40,12 +40,14 @@ export function ChatTab({
   salaryPatterns,
   recognitionsRemaining,
   isCompleto,
+  initialText,
 }: {
   fixedExpenses: FixedExpense[];
   categories: Category[];
   salaryPatterns: string[];
   recognitionsRemaining: number | null;
   isCompleto: boolean;
+  initialText?: string | null;
 }) {
   const router = useRouter();
   const [entries, setEntries] = useState<ChatEntry[]>([]);
@@ -80,6 +82,13 @@ export function ChatTab({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creditItemsKey]);
+
+  // Texto compartilhado de outro app (ex: copiar uma mensagem) — já manda
+  // pra análise sozinho, sem esperar a pessoa apertar enviar de novo.
+  useEffect(() => {
+    if (initialText) handleSend(initialText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function updateBatch(batchId: string, updater: (items: ReviewItem[]) => ReviewItem[]) {
     setEntries((prev) =>
@@ -127,8 +136,8 @@ export function ChatTab({
     return matchFixedExpense(description, amount, fixedExpenses);
   }
 
-  async function handleSend() {
-    const text = input.trim();
+  async function handleSend(overrideText?: string) {
+    const text = (overrideText ?? input).trim();
     if (!text || analyzing) return;
     setInput("");
     setError("");
@@ -457,7 +466,7 @@ export function ChatTab({
         <button
           type="button"
           disabled={analyzing || !input.trim()}
-          onClick={handleSend}
+          onClick={() => handleSend()}
           aria-label="Enviar"
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink text-brand-card disabled:opacity-40"
         >
