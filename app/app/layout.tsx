@@ -80,7 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <ConfirmDialogProvider>
       <div
         className="min-h-screen bg-brand-bg pb-24"
-        style={{ "--accent": profile?.accent_color ?? "#D9A441" } as React.CSSProperties}
+        style={{ "--accent": profile?.accent_color ?? "#7A5C7E" } as React.CSSProperties}
       >
         <header className="flex items-center justify-between gap-3.5 px-4 py-4">
           <SaldoBadge saldo={saldo} previsto={viewed.isFutureMonth} />

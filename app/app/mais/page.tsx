@@ -74,7 +74,7 @@ export default async function MaisPage() {
                     {item.label}
                   </div>
                   {item.locked && (
-                    <span className="flex flex-shrink-0 items-center gap-0.5 rounded-full bg-brand-amber/15 px-1.5 py-[1.5px] text-[9.5px] font-bold text-brand-amber">
+                    <span className="flex flex-shrink-0 items-center gap-0.5 rounded-full bg-brand-plum/15 px-1.5 py-[1.5px] text-[9.5px] font-bold text-brand-plum">
                       <Lock size={8} />
                       COMPLETO
                     </span>
@@ -87,13 +87,23 @@ export default async function MaisPage() {
           ))}
         </div>
 
-        <Link
-          href="/app/planos"
-          className="flex items-center justify-between rounded-2xl bg-brand-plum px-[18px] py-4"
-        >
-          <div className="text-[14.5px] font-semibold text-white">Ver planos</div>
-          <ChevronRight size={16} className="text-white" />
-        </Link>
+        {isFree ? (
+          <Link
+            href="/app/planos"
+            className="flex items-center justify-between rounded-2xl bg-brand-plum px-[18px] py-4"
+          >
+            <div className="text-[14.5px] font-semibold text-white">Ver planos</div>
+            <ChevronRight size={16} className="text-white" />
+          </Link>
+        ) : (
+          <Link
+            href="/app/planos"
+            className="flex items-center justify-between rounded-2xl border border-brand-line bg-brand-card px-[18px] py-4"
+          >
+            <div className="text-[14.5px] font-semibold text-brand-ink">Meu plano</div>
+            <ChevronRight size={16} className="text-brand-ink-soft" />
+          </Link>
+        )}
       </div>
     </div>
   );

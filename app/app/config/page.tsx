@@ -33,7 +33,7 @@ export default async function ConfigPage() {
 
         <ConfigBody
           initialSeparateByAccount={profile?.separate_by_account ?? false}
-          initialAccentColor={profile?.accent_color ?? "#D9A441"}
+          initialAccentColor={profile?.accent_color ?? "#7A5C7E"}
           initialMonthlyInsightsEnabled={profile?.monthly_insights_enabled ?? true}
         />
 

@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
+import { TOKENS } from "@/lib/tokens";
+import { useThemePreference, type ThemePreference } from "@/lib/use-theme-preference";
 import { setAccentColor, setMonthlyInsightsEnabled, setSeparateByAccount } from "./actions";
+
+const THEME_OPTIONS: { key: ThemePreference; label: string }[] = [
+  { key: "system", label: "Sistema" },
+  { key: "light", label: "Claro" },
+  { key: "dark", label: "Escuro" },
+];
 
 const ACCENT_COLORS = [
   { key: "amber", label: "Âmbar", hex: "#D9A441" },
@@ -40,6 +48,7 @@ export function ConfigBody({
   initialAccentColor: string;
   initialMonthlyInsightsEnabled: boolean;
 }) {
+  const { preference: themePreference, setPreference: setThemePreference } = useThemePreference();
   const [separateByAccount, setSeparateByAccountState] = useState(initialSeparateByAccount);
   const [accentColor, setAccentColorState] = useState(initialAccentColor);
   const [monthlyInsightsEnabled, setMonthlyInsightsEnabledState] = useState(
@@ -98,7 +107,7 @@ export function ConfigBody({
                   className="flex h-10 w-10 items-center justify-center rounded-full"
                   style={{
                     background: c.hex,
-                    border: isSelected ? "2.5px solid #1F3A3D" : "2.5px solid transparent",
+                    border: isSelected ? `2.5px solid ${TOKENS.ink}` : "2.5px solid transparent",
                   }}
                 >
                   {isSelected && <Check size={16} className="text-white" />}
@@ -108,6 +117,27 @@ export function ConfigBody({
             );
           })}
         </div>
+      </div>
+
+      <div className="mb-2 text-[13px] font-semibold text-brand-ink">Aparência</div>
+      <p className="mb-3.5 text-xs leading-snug text-brand-ink-soft">
+        &quot;Sistema&quot; segue o modo claro/escuro que já está configurado no seu celular.
+      </p>
+      <div className="mb-6 flex gap-2 rounded-2xl bg-brand-card p-2">
+        {THEME_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => setThemePreference(opt.key)}
+            className={
+              themePreference === opt.key
+                ? "flex-1 rounded-xl bg-brand-ink-solid py-2 text-[12.5px] font-medium text-white"
+                : "flex-1 rounded-xl py-2 text-[12.5px] font-medium text-brand-ink-soft"
+            }
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       <div className="mb-2 text-[13px] font-semibold text-brand-ink">Comentário do mês</div>

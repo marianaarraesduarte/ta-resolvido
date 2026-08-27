@@ -18,12 +18,30 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1F3A3D",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F5EDE0" },
+    { media: "(prefers-color-scheme: dark)", color: "#14201F" },
+  ],
 };
+
+// Aplica o tema escolhido (Configurações > Aparência) antes da página
+// pintar — sem isso, a tela pisca no tema errado por um instante toda vez
+// que abre o app, já que o localStorage só é lido depois do JS carregar.
+const THEME_INIT_SCRIPT = `
+try {
+  var theme = localStorage.getItem("theme-preference");
+  if (theme === "light" || theme === "dark") {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+} catch (e) {}
+`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${baloo2.variable} ${inter.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="font-sans">{children}</body>
     </html>
   );
