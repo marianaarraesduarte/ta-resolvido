@@ -28,7 +28,7 @@ function TypeTab({
       onClick={onClick}
       className={
         active
-          ? "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-brand-ink px-0 py-3 font-display text-sm font-semibold text-brand-card"
+          ? "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-brand-ink-solid px-0 py-3 font-display text-sm font-semibold text-white"
           : "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-transparent px-0 py-3 font-display text-sm font-semibold text-brand-ink-soft"
       }
     >
@@ -58,8 +58,8 @@ function ChipButton({
         onClick={onClick}
         className={
           active
-            ? "flex items-center gap-1.5 rounded-full border border-brand-ink bg-brand-ink px-3.5 py-2 text-sm font-medium text-brand-card"
-            : "flex items-center gap-1.5 rounded-full border border-brand-line bg-white px-3.5 py-2 text-sm font-medium text-brand-ink-soft"
+            ? "flex items-center gap-1.5 rounded-full border border-brand-ink bg-brand-ink-solid px-3.5 py-2 text-sm font-medium text-white"
+            : "flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3.5 py-2 text-sm font-medium text-brand-ink-soft"
         }
       >
         {icon}
@@ -72,8 +72,8 @@ function ChipButton({
     <span
       className={
         active
-          ? "flex items-center gap-1 rounded-full border border-brand-ink bg-brand-ink py-2 pl-3.5 pr-1.5 text-sm font-medium text-brand-card"
-          : "flex items-center gap-1 rounded-full border border-brand-line bg-white py-2 pl-3.5 pr-1.5 text-sm font-medium text-brand-ink-soft"
+          ? "flex items-center gap-1 rounded-full border border-brand-ink bg-brand-ink-solid py-2 pl-3.5 pr-1.5 text-sm font-medium text-white"
+          : "flex items-center gap-1 rounded-full border border-brand-line bg-brand-card py-2 pl-3.5 pr-1.5 text-sm font-medium text-brand-ink-soft"
       }
     >
       <button type="button" onClick={onClick} className="flex items-center gap-1.5">
@@ -96,7 +96,7 @@ function ChipButton({
 }
 
 const inputClass =
-  "w-full rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink";
+  "w-full rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink";
 
 export function EntryForm({
   categories: initialCategories,
@@ -338,7 +338,7 @@ export function EntryForm({
                 type="button"
                 disabled={creatingCategory}
                 onClick={handleCreateCategory}
-                className="rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+                className="rounded-xl bg-brand-ink-solid px-3.5 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {creatingCategory ? "..." : "Adicionar"}
               </button>
@@ -366,8 +366,8 @@ export function EntryForm({
                 onClick={() => setIncomeType(key)}
                 className={
                   incomeType === key
-                    ? "flex-1 rounded-full border border-brand-ink bg-brand-ink px-0 py-2.5 text-sm font-medium text-brand-card"
-                    : "flex-1 rounded-full border border-brand-line bg-white px-0 py-2.5 text-sm font-medium text-brand-ink-soft"
+                    ? "flex-1 rounded-full border border-brand-ink bg-brand-ink-solid px-0 py-2.5 text-sm font-medium text-white"
+                    : "flex-1 rounded-full border border-brand-line bg-brand-card px-0 py-2.5 text-sm font-medium text-brand-ink-soft"
                 }
               >
                 {label}

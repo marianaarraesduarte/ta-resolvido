@@ -75,14 +75,14 @@ function CategoryRow({
                 handleSave();
               }
             }}
-            className="flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
           <button
             type="button"
             disabled={saving}
             onClick={handleSave}
             aria-label="Salvar"
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-brand-ink text-brand-card disabled:opacity-60"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-brand-ink-solid text-white disabled:opacity-60"
           >
             <Check size={14} />
           </button>
@@ -200,7 +200,7 @@ export function CategoriasBody({ categories: initial }: { categories: Category[]
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Nome da categoria"
-            className="flex-1 rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
+            className="flex-1 rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -212,7 +212,7 @@ export function CategoriasBody({ categories: initial }: { categories: Category[]
             type="button"
             disabled={creating}
             onClick={handleCreate}
-            className="rounded-2xl bg-brand-ink px-4 font-display text-sm font-semibold text-brand-card disabled:opacity-60"
+            className="rounded-2xl bg-brand-ink-solid px-4 font-display text-sm font-semibold text-white disabled:opacity-60"
           >
             {creating ? "..." : "Adicionar"}
           </button>

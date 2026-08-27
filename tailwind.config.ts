@@ -6,15 +6,16 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          bg: "#EDE9DE",
-          card: "#FBFAF6",
-          ink: "#1F3A3D",
-          "ink-soft": "#5B6E6C",
-          amber: "#D9A441",
-          coral: "#C1553D",
-          sage: "#6F8F6A",
-          plum: "#7A5C7E",
-          line: "#D9D3C4",
+          bg: "rgb(var(--color-brand-bg) / <alpha-value>)",
+          card: "rgb(var(--color-brand-card) / <alpha-value>)",
+          ink: "rgb(var(--color-brand-ink) / <alpha-value>)",
+          "ink-soft": "rgb(var(--color-brand-ink-soft) / <alpha-value>)",
+          amber: "rgb(var(--color-brand-amber) / <alpha-value>)",
+          coral: "rgb(var(--color-brand-coral) / <alpha-value>)",
+          sage: "rgb(var(--color-brand-sage) / <alpha-value>)",
+          plum: "rgb(var(--color-brand-plum) / <alpha-value>)",
+          line: "rgb(var(--color-brand-line) / <alpha-value>)",
+          "ink-solid": "rgb(var(--color-brand-ink-solid) / <alpha-value>)",
         },
       },
       fontFamily: {

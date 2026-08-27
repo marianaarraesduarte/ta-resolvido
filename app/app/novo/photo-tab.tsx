@@ -32,7 +32,7 @@ export function PhotoTab({
           onClick={() => setSource("extrato")}
           className={
             source === "extrato"
-              ? "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-brand-ink px-0 py-3 font-display text-sm font-semibold text-brand-card"
+              ? "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-brand-ink-solid px-0 py-3 font-display text-sm font-semibold text-white"
               : "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-transparent px-0 py-3 font-display text-sm font-semibold text-brand-ink-soft"
           }
         >
@@ -44,7 +44,7 @@ export function PhotoTab({
           onClick={() => setSource("fatura")}
           className={
             source === "fatura"
-              ? "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-brand-ink px-0 py-3 font-display text-sm font-semibold text-brand-card"
+              ? "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-brand-ink-solid px-0 py-3 font-display text-sm font-semibold text-white"
               : "flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-transparent px-0 py-3 font-display text-sm font-semibold text-brand-ink-soft"
           }
         >

@@ -113,7 +113,7 @@ export function OnboardingClient() {
                   onChange={(e) => setBalance(formatCentsInput(e.target.value))}
                   inputMode="decimal"
                   placeholder="0,00"
-                  className="w-full rounded-2xl border border-brand-line bg-white py-3 pl-9 pr-3.5 text-center text-[16px] text-brand-ink outline-none focus:border-brand-ink"
+                  className="w-full rounded-2xl border border-brand-line bg-brand-card py-3 pl-9 pr-3.5 text-center text-[16px] text-brand-ink outline-none focus:border-brand-ink"
                 />
               </div>
               <p className="mx-auto mt-3.5 max-w-[260px] text-center text-[12px] leading-snug text-brand-ink-soft">
@@ -145,7 +145,7 @@ export function OnboardingClient() {
           type="button"
           disabled={finishing}
           onClick={() => (isLast ? handleFinish() : setStep((s) => s + 1))}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink py-[15px] font-display text-[15px] font-semibold text-brand-card disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink-solid py-[15px] font-display text-[15px] font-semibold text-white disabled:opacity-60"
         >
           {isLast ? (finishing ? "Só um instante..." : "Começar") : "Próximo"}
           <ArrowRight size={16} />

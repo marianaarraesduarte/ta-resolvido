@@ -54,7 +54,7 @@ export function CategoryList({
                 <div className="truncate text-[14.5px] font-medium text-brand-ink">{c.name}</div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-brand-bg">
                   <div
-                    className="h-full rounded-full bg-brand-ink opacity-75"
+                    className="h-full rounded-full bg-brand-ink-solid opacity-75"
                     style={{ width: `${barPct}%` }}
                   />
                 </div>

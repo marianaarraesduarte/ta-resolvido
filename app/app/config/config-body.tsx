@@ -19,7 +19,7 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
       onClick={onClick}
       className={
         on
-          ? "relative h-[26px] w-11 flex-shrink-0 rounded-full bg-brand-ink"
+          ? "relative h-[26px] w-11 flex-shrink-0 rounded-full bg-brand-ink-solid"
           : "relative h-[26px] w-11 flex-shrink-0 rounded-full bg-brand-line"
       }
     >

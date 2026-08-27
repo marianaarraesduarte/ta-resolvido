@@ -23,7 +23,7 @@ type Entry = {
 type Category = { id: string; name: string };
 
 const inputClass =
-  "w-full rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink";
+  "w-full rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink";
 
 export function EditEntryForm({
   entry,
@@ -187,8 +187,8 @@ export function EditEntryForm({
                   onClick={() => setIncomeType(key)}
                   className={
                     incomeType === key
-                      ? "flex-1 rounded-full border border-brand-ink bg-brand-ink px-0 py-2.5 text-sm font-medium text-brand-card"
-                      : "flex-1 rounded-full border border-brand-line bg-white px-0 py-2.5 text-sm font-medium text-brand-ink-soft"
+                      ? "flex-1 rounded-full border border-brand-ink bg-brand-ink-solid px-0 py-2.5 text-sm font-medium text-white"
+                      : "flex-1 rounded-full border border-brand-line bg-brand-card px-0 py-2.5 text-sm font-medium text-brand-ink-soft"
                   }
                 >
                   {label}

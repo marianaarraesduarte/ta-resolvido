@@ -7,7 +7,7 @@ type PasswordMode = "signin" | "signup" | "forgot";
 type Status = "idle" | "sending" | "sent" | "error";
 
 const inputClass =
-  "rounded-xl border border-brand-line bg-white px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
+  "rounded-xl border border-brand-line bg-brand-card px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
 
 function rateLimitAwareMessage(error: { status?: number; message?: string }, fallback: string): string {
   if (error.status !== 429) return fallback;
@@ -223,7 +223,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={status === "sending"}
-              className="mt-2 rounded-xl bg-brand-ink px-4 py-3 font-display font-semibold text-brand-card disabled:opacity-60"
+              className="mt-2 rounded-xl bg-brand-ink-solid px-4 py-3 font-display font-semibold text-white disabled:opacity-60"
             >
               {status === "sending" ? "Entrando..." : "Entrar"}
             </button>
@@ -270,7 +270,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={status === "sending"}
-              className="mt-2 rounded-xl bg-brand-ink px-4 py-3 font-display font-semibold text-brand-card disabled:opacity-60"
+              className="mt-2 rounded-xl bg-brand-ink-solid px-4 py-3 font-display font-semibold text-white disabled:opacity-60"
             >
               {status === "sending" ? "Criando..." : "Criar conta"}
             </button>
@@ -282,7 +282,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => switchPasswordMode("signin")}
-                      className="rounded-lg bg-brand-ink px-3.5 py-2 text-xs font-semibold text-brand-card"
+                      className="rounded-lg bg-brand-ink-solid px-3.5 py-2 text-xs font-semibold text-white"
                     >
                       Entrar
                     </button>
@@ -325,7 +325,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={status === "sending" || cooldown > 0}
-              className="mt-2 rounded-xl bg-brand-ink px-4 py-3 font-display font-semibold text-brand-card disabled:opacity-60"
+              className="mt-2 rounded-xl bg-brand-ink-solid px-4 py-3 font-display font-semibold text-white disabled:opacity-60"
             >
               {status === "sending"
                 ? "Enviando..."

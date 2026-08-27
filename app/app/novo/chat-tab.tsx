@@ -308,7 +308,7 @@ export function ChatTab({
         ))}
 
       {entries.length === 0 && (
-        <div className="mb-3.5 rounded-2xl border-2 border-dashed border-brand-line bg-white py-9 text-center">
+        <div className="mb-3.5 rounded-2xl border-2 border-dashed border-brand-line bg-brand-card py-9 text-center">
           <MessageCircle size={26} className="mx-auto mb-2 text-brand-ink" />
           <p className="mx-auto max-w-[240px] text-[13.5px] font-medium text-brand-ink-soft">
             Escreve o que você gastou ou recebeu, do seu jeito. Ex: &quot;gastei 45 no
@@ -322,7 +322,7 @@ export function ChatTab({
           if (entry.kind === "user") {
             return (
               <div key={entry.id} className="flex justify-end">
-                <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-brand-ink px-3.5 py-2.5 text-[13.5px] text-brand-card">
+                <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-brand-ink-solid px-3.5 py-2.5 text-[13.5px] text-white">
                   {entry.text}
                 </div>
               </div>
@@ -332,7 +332,7 @@ export function ChatTab({
           if (entry.kind === "user-audio") {
             return (
               <div key={entry.id} className="flex justify-end">
-                <div className="flex items-center gap-1.5 rounded-2xl rounded-br-sm bg-brand-ink px-3.5 py-2.5 text-[13.5px] text-brand-card">
+                <div className="flex items-center gap-1.5 rounded-2xl rounded-br-sm bg-brand-ink-solid px-3.5 py-2.5 text-[13.5px] text-white">
                   <Mic size={13} className="flex-shrink-0" />
                   Áudio · {formatDuration(entry.durationMs)}
                 </div>
@@ -385,7 +385,7 @@ export function ChatTab({
                           ? "flex items-start gap-2.5 bg-brand-coral/10 px-3.5 py-3"
                           : item.possibleDuplicate
                             ? "flex items-start gap-2.5 bg-brand-coral/10 px-3.5 py-3"
-                            : "flex items-start gap-2.5 bg-white px-3.5 py-3"
+                            : "flex items-start gap-2.5 bg-brand-card px-3.5 py-3"
                       }
                     >
                       {item.type === "receita" ? (
@@ -398,7 +398,7 @@ export function ChatTab({
                           value={item.description}
                           onChange={(e) => updateItemDescription(entry.id, item.id, e.target.value)}
                           aria-label="Descrição"
-                          className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                          className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
                         />
                         {missing && (
                           <div className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
@@ -437,7 +437,7 @@ export function ChatTab({
                                 updateItemCategory(entry.id, item.id, e.target.value || null)
                               }
                               aria-label={`Categoria de ${item.description}`}
-                              className="rounded-md border border-brand-line bg-white px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
+                              className="rounded-md border border-brand-line bg-brand-card px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
                             >
                               <option value="">Sem categoria</option>
                               {categories.map((c) => (
@@ -474,7 +474,7 @@ export function ChatTab({
                               type="date"
                               value={item.dueDate}
                               onChange={(e) => updateItemDueDate(entry.id, item.id, e.target.value)}
-                              className="w-full rounded-md border border-brand-line bg-white px-2 py-1 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                              className="w-full rounded-md border border-brand-line bg-brand-card px-2 py-1 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
                             />
                             {duplicateDates[item.id] && (
                               <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
@@ -508,8 +508,8 @@ export function ChatTab({
                           aria-label="Valor"
                           className={
                             missing
-                              ? "w-16 rounded-md border border-dashed border-brand-coral bg-white px-0.5 text-right text-[14px] font-bold text-brand-coral outline-none"
-                              : "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                              ? "w-16 rounded-md border border-dashed border-brand-coral bg-brand-card px-0.5 text-right text-[14px] font-bold text-brand-coral outline-none"
+                              : "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
                           }
                         />
                       </div>
@@ -579,7 +579,7 @@ export function ChatTab({
                 }
               }}
               placeholder="Escreve aqui..."
-              className="flex-1 rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
+              className="flex-1 rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
             />
             {input.trim() ? (
               <button
@@ -587,7 +587,7 @@ export function ChatTab({
                 disabled={analyzing}
                 onClick={() => handleSend()}
                 aria-label="Enviar"
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink text-brand-card disabled:opacity-40"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink-solid text-white disabled:opacity-40"
               >
                 <Send size={17} />
               </button>
@@ -597,7 +597,7 @@ export function ChatTab({
                 disabled={analyzing}
                 onClick={recorder.start}
                 aria-label="Gravar áudio"
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink text-brand-card disabled:opacity-40"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink-solid text-white disabled:opacity-40"
               >
                 <Mic size={17} />
               </button>

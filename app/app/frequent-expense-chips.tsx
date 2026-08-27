@@ -45,7 +45,7 @@ export function FrequentExpenseChips({ items }: { items: FrequentExpense[] }) {
                 onChange={(e) => {
                   e.target.value = formatCentsInput(e.target.value);
                 }}
-                className="w-16 rounded-lg border border-brand-line bg-white px-1.5 py-1 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                className="w-16 rounded-lg border border-brand-line bg-brand-card px-1.5 py-1 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
               />
               <button
                 type="submit"

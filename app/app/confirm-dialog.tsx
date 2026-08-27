@@ -27,7 +27,7 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
     <ConfirmContext.Provider value={confirm}>
       {children}
       {state && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-brand-ink/40 px-4 pb-6 sm:items-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-brand-ink-solid/40 px-4 pb-6 sm:items-center">
           <div className="w-full max-w-sm rounded-[22px] bg-brand-card p-6 shadow-xl">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand-coral/15">
               <AlertTriangle size={18} className="text-brand-coral" />
@@ -37,7 +37,7 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
               <button
                 type="button"
                 onClick={() => handle(false)}
-                className="flex-1 rounded-xl border border-brand-line bg-white py-2.5 text-sm font-semibold text-brand-ink-soft"
+                className="flex-1 rounded-xl border border-brand-line bg-brand-card py-2.5 text-sm font-semibold text-brand-ink-soft"
               >
                 {state.options.cancelLabel ?? "Cancelar"}
               </button>

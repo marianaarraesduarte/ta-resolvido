@@ -168,7 +168,7 @@ export function CardInvoiceReview({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-brand-line bg-white py-9 text-brand-ink-soft"
+          className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-brand-line bg-brand-card py-9 text-brand-ink-soft"
         >
           <ImagePlus size={26} className="text-brand-ink" />
           <span className="text-[13.5px] font-medium">
@@ -178,7 +178,7 @@ export function CardInvoiceReview({
       ) : (
         <div>
           {isPdf ? (
-            <div className="mb-3.5 flex items-center gap-3 rounded-2xl border border-brand-line bg-white px-4 py-3.5">
+            <div className="mb-3.5 flex items-center gap-3 rounded-2xl border border-brand-line bg-brand-card px-4 py-3.5">
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-bg">
                 <FileText size={18} className="text-brand-ink" />
               </div>
@@ -209,7 +209,7 @@ export function CardInvoiceReview({
                   onClick={() => (selecting ? exitSelection() : setSelecting(true))}
                   className={
                     selecting
-                      ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink px-3 py-1.5 text-[12px] font-semibold text-brand-card"
+                      ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
                       : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
                   }
                 >
@@ -255,7 +255,7 @@ export function CardInvoiceReview({
                         value={item.description}
                         onChange={(e) => updateItemDescription(item.id, e.target.value)}
                         aria-label="Descrição"
-                        className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                        className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
                       />
                       {matchedFixedExpense(item.description, item.amount) && (
                         <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-amber px-2 py-0.5 text-[11px] font-semibold text-white">
@@ -267,7 +267,7 @@ export function CardInvoiceReview({
                         value={item.category ?? ""}
                         onChange={(e) => updateItemCategory(item.id, e.target.value || null)}
                         aria-label={`Categoria de ${item.description}`}
-                        className="mt-1 rounded-md border border-brand-line bg-white px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
+                        className="mt-1 rounded-md border border-brand-line bg-brand-card px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
                       >
                         <option value="">Sem categoria</option>
                         {categories.map((c) => (
@@ -284,7 +284,7 @@ export function CardInvoiceReview({
                         onChange={(e) => updateItemAmountText(item.id, e.target.value)}
                         inputMode="decimal"
                         aria-label="Valor"
-                        className="w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-white"
+                        className="w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
                       />
                     </div>
                     <button
@@ -301,18 +301,18 @@ export function CardInvoiceReview({
 
               {selecting && selectedIds.size > 0 && (
                 <div className="fixed inset-x-0 bottom-[68px] z-20 flex justify-center px-3">
-                  <div className="w-full max-w-sm rounded-2xl bg-brand-ink px-4 py-3.5 shadow-lg">
+                  <div className="w-full max-w-sm rounded-2xl bg-brand-ink-solid px-4 py-3.5 shadow-lg">
                     {pickingCategory ? (
                       <div>
                         <div className="mb-2 flex items-center justify-between">
-                          <span className="text-[12.5px] font-semibold text-brand-card">
+                          <span className="text-[12.5px] font-semibold text-white">
                             Trocar categoria de {selectedIds.size}
                           </span>
                           <button
                             type="button"
                             onClick={() => setPickingCategory(false)}
                             aria-label="Cancelar"
-                            className="text-brand-card/70"
+                            className="text-white/70"
                           >
                             <X size={16} />
                           </button>
@@ -321,7 +321,7 @@ export function CardInvoiceReview({
                           <button
                             type="button"
                             onClick={() => applyBulkCategory(null)}
-                            className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                            className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-white"
                           >
                             Sem categoria
                           </button>
@@ -330,7 +330,7 @@ export function CardInvoiceReview({
                               key={c.id}
                               type="button"
                               onClick={() => applyBulkCategory(c.name)}
-                              className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                              className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-white"
                             >
                               {c.name}
                             </button>
@@ -339,13 +339,13 @@ export function CardInvoiceReview({
                       </div>
                     ) : (
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-semibold text-brand-card">
+                        <span className="text-[13px] font-semibold text-white">
                           {selectedIds.size} {selectedIds.size === 1 ? "selecionada" : "selecionadas"}
                         </span>
                         <button
                           type="button"
                           onClick={() => setPickingCategory(true)}
-                          className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-brand-card"
+                          className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-white"
                         >
                           <Tag size={13} />
                           Categoria
@@ -375,7 +375,7 @@ export function CardInvoiceReview({
                   type="date"
                   value={invoiceDate}
                   onChange={(e) => setInvoiceDate(e.target.value)}
-                  className="w-full rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
+                  className="w-full rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
                 />
                 {duplicateDate && (
                   <div className="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-brand-coral">

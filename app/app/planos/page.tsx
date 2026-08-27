@@ -72,9 +72,9 @@ export default async function PlanosPage() {
             </ul>
           </div>
 
-          <div className="rounded-[26px] bg-brand-ink p-7">
+          <div className="rounded-[26px] bg-brand-ink-solid p-7">
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-display text-[15px] font-bold text-brand-card">
+              <span className="font-display text-[15px] font-bold text-white">
                 Plano Completo
               </span>
               {plan === "completo" && (
@@ -83,13 +83,13 @@ export default async function PlanosPage() {
                 </span>
               )}
             </div>
-            <div className="mb-1 font-display text-3xl font-bold text-brand-card">
-              R$29,90<span className="text-[15px] font-medium text-brand-card/70">/mês</span>
+            <div className="mb-1 font-display text-3xl font-bold text-white">
+              R$29,90<span className="text-[15px] font-medium text-white/70">/mês</span>
             </div>
-            <div className="mb-5 text-[12.5px] text-brand-card/70">Tudo do plano grátis, mais:</div>
+            <div className="mb-5 text-[12.5px] text-white/70">Tudo do plano grátis, mais:</div>
             <ul className="mb-6 flex flex-col gap-2.5">
               {PAID_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-[13.5px] text-brand-card/85">
+                <li key={f} className="flex items-start gap-2 text-[13.5px] text-white/85">
                   <Check size={15} className="mt-0.5 flex-shrink-0" style={{ color: "#D9A441" }} />
                   {f}
                 </li>

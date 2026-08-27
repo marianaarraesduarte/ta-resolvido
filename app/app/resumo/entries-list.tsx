@@ -158,7 +158,7 @@ export function EntriesList({
             onClick={() => (selecting ? exitSelection() : setSelecting(true))}
             className={
               selecting
-                ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink px-3 py-1.5 text-[12.5px] font-semibold text-brand-card"
+                ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12.5px] font-semibold text-white"
                 : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[12.5px] font-semibold text-brand-ink"
             }
           >
@@ -211,7 +211,7 @@ export function EntriesList({
                       className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
                       style={{ background: "var(--accent)" }}
                     >
-                      <CreditCard size={16} className="text-brand-card" />
+                      <CreditCard size={16} className="text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[14.5px] font-medium text-brand-ink">
@@ -343,18 +343,18 @@ export function EntriesList({
 
       {selecting && selectedIds.size > 0 && (
         <div className="fixed inset-x-0 bottom-[68px] z-20 flex justify-center px-3">
-          <div className="w-full max-w-sm rounded-2xl bg-brand-ink px-4 py-3.5 shadow-lg">
+          <div className="w-full max-w-sm rounded-2xl bg-brand-ink-solid px-4 py-3.5 shadow-lg">
             {pickingCategory ? (
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[12.5px] font-semibold text-brand-card">
+                  <span className="text-[12.5px] font-semibold text-white">
                     Trocar categoria de {selectedIds.size}
                   </span>
                   <button
                     type="button"
                     onClick={() => setPickingCategory(false)}
                     aria-label="Cancelar"
-                    className="text-brand-card/70"
+                    className="text-white/70"
                   >
                     <X size={16} />
                   </button>
@@ -366,7 +366,7 @@ export function EntriesList({
                       type="button"
                       disabled={processing}
                       onClick={() => handleBulkCategory(c.id)}
-                      className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card disabled:opacity-60"
+                      className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-white disabled:opacity-60"
                     >
                       {c.name}
                     </button>
@@ -375,7 +375,7 @@ export function EntriesList({
               </div>
             ) : (
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[13px] font-semibold text-brand-card">
+                <span className="text-[13px] font-semibold text-white">
                   {selectedIds.size} {selectedIds.size === 1 ? "selecionado" : "selecionados"}
                 </span>
                 <div className="flex gap-2">
@@ -383,7 +383,7 @@ export function EntriesList({
                     type="button"
                     disabled={processing}
                     onClick={() => setPickingCategory(true)}
-                    className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-brand-card disabled:opacity-60"
+                    className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-white disabled:opacity-60"
                   >
                     <Tag size={13} />
                     Categoria

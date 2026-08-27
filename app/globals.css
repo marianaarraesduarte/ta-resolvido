@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Paleta "Creme intenso" no claro, "Noite calma" no escuro — segue a
+   configuração de aparência do próprio celular (prefers-color-scheme), sem
+   alternância manual dentro do app. Valores em "R G B" (sem vírgula) pro
+   Tailwind aplicar opacidade com a sintaxe bg-brand-x/NN. */
+:root {
+  --color-brand-bg: 245 237 224;
+  --color-brand-card: 255 255 255;
+  --color-brand-ink: 26 26 26;
+  --color-brand-ink-soft: 107 100 90;
+  --color-brand-amber: 217 164 65;
+  --color-brand-coral: 181 72 47;
+  --color-brand-sage: 63 107 74;
+  --color-brand-plum: 122 92 126;
+  --color-brand-line: 227 217 196;
+  /* "ink" de texto inverte entre claro/escuro (pra continuar legível); esse
+     aqui é o fundo escuro sólido usado em botões/toasts/balões de chat —
+     fica sempre escuro nos dois temas, porque sempre é combinado com texto
+     branco fixo, não com o texto normal da página. */
+  --color-brand-ink-solid: 26 26 26;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-brand-bg: 20 32 31;
+    --color-brand-card: 29 43 41;
+    --color-brand-ink: 240 234 217;
+    --color-brand-ink-soft: 155 175 169;
+    --color-brand-amber: 224 169 76;
+    --color-brand-coral: 201 106 90;
+    --color-brand-sage: 127 174 138;
+    --color-brand-plum: 176 140 174;
+    --color-brand-line: 44 59 57;
+  }
+}
+
 body {
   @apply bg-brand-bg text-brand-ink;
 }

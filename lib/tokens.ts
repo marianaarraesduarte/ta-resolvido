@@ -1,18 +1,19 @@
 /**
- * Mesmos tokens de cor usados nos mockups em mockups/*.jsx.
- * Mantido à parte do tailwind.config para uso em lugares que precisam do valor
- * hex puro (ex: cor dinâmica calculada em runtime, SVGs).
+ * Mesmas cores da paleta em globals.css (--color-brand-*), só que prontas
+ * pra usar em lugares que precisam de um valor de cor em JS (ex: cor
+ * dinâmica calculada em runtime, SVGs) — referenciar a variável CSS aqui
+ * em vez de repetir hex garante que também sigam claro/escuro sozinhas.
  */
 export const TOKENS = {
-  bg: "#EDE9DE",
-  card: "#FBFAF6",
-  ink: "#1F3A3D",
-  inkSoft: "#5B6E6C",
-  amber: "#D9A441",
-  coral: "#C1553D",
-  sage: "#6F8F6A",
-  plum: "#7A5C7E",
-  line: "#D9D3C4",
+  bg: "rgb(var(--color-brand-bg))",
+  card: "rgb(var(--color-brand-card))",
+  ink: "rgb(var(--color-brand-ink))",
+  inkSoft: "rgb(var(--color-brand-ink-soft))",
+  amber: "rgb(var(--color-brand-amber))",
+  coral: "rgb(var(--color-brand-coral))",
+  sage: "rgb(var(--color-brand-sage))",
+  plum: "rgb(var(--color-brand-plum))",
+  line: "rgb(var(--color-brand-line))",
 } as const;
 
 export function currency(value: number): string {

@@ -103,7 +103,7 @@ export function CategoryLimitRow({
               onChange={(e) => handleValueChange(e.target.value)}
               placeholder="0,00 (zero remove o limite)"
               inputMode="decimal"
-              className="min-w-0 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -112,7 +112,7 @@ export function CategoryLimitRow({
               }}
             />
             {receita > 0 && (
-              <div className="flex w-20 flex-shrink-0 items-center gap-1 rounded-xl border border-brand-line bg-white px-2.5 py-2">
+              <div className="flex w-20 flex-shrink-0 items-center gap-1 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2">
                 <input
                   value={pctValue}
                   onChange={(e) => handlePctChange(e.target.value)}
@@ -133,7 +133,7 @@ export function CategoryLimitRow({
               type="button"
               disabled={saving}
               onClick={handleSave}
-              className="flex-shrink-0 rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+              className="flex-shrink-0 rounded-xl bg-brand-ink-solid px-3.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {saving ? "..." : "Salvar"}
             </button>

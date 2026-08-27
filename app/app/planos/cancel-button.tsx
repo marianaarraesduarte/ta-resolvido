@@ -35,7 +35,7 @@ export function CancelButton() {
         type="button"
         disabled={canceling}
         onClick={handleCancel}
-        className="w-full text-center text-[12.5px] font-medium text-brand-card/70 underline underline-offset-2 disabled:opacity-60"
+        className="w-full text-center text-[12.5px] font-medium text-white/70 underline underline-offset-2 disabled:opacity-60"
       >
         {canceling ? "Cancelando..." : "Cancelar assinatura"}
       </button>

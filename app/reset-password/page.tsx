@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
-  "rounded-xl border border-brand-line bg-white px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
+  "rounded-xl border border-brand-line bg-brand-card px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
 
 export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
@@ -108,7 +108,7 @@ export default function ResetPasswordPage() {
           </p>
           <a
             href="/login"
-            className="block rounded-xl bg-brand-ink px-4 py-3 text-center font-display font-semibold text-brand-card"
+            className="block rounded-xl bg-brand-ink-solid px-4 py-3 text-center font-display font-semibold text-white"
           >
             Voltar pro login
           </a>
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
             <p className="mb-4 text-sm text-brand-ink">Senha alterada! Já pode entrar com ela.</p>
             <a
               href="/app"
-              className="block rounded-xl bg-brand-ink px-4 py-3 text-center font-display font-semibold text-brand-card"
+              className="block rounded-xl bg-brand-ink-solid px-4 py-3 text-center font-display font-semibold text-white"
             >
               Ir pro app
             </a>
@@ -162,7 +162,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={status === "saving"}
-              className="mt-2 rounded-xl bg-brand-ink px-4 py-3 font-display font-semibold text-brand-card disabled:opacity-60"
+              className="mt-2 rounded-xl bg-brand-ink-solid px-4 py-3 font-display font-semibold text-white disabled:opacity-60"
             >
               {status === "saving" ? "Salvando..." : "Salvar senha"}
             </button>

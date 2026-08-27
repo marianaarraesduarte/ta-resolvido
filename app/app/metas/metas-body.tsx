@@ -82,7 +82,7 @@ function GoalRow({
                   handleSaveName();
                 }
               }}
-              className="min-w-0 flex-1 rounded-lg border border-brand-line bg-white px-2 py-1 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              className="min-w-0 flex-1 rounded-lg border border-brand-line bg-brand-card px-2 py-1 text-sm text-brand-ink outline-none focus:border-brand-ink"
             />
             <button
               type="button"
@@ -119,11 +119,11 @@ function GoalRow({
           <button
             type="button"
             onClick={() => onChangePercent(goal.percent - 1)}
-            className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-white text-brand-ink"
+            className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-brand-card text-brand-ink"
           >
             <Minus size={12} />
           </button>
-          <div className="flex w-14 items-baseline justify-center rounded-lg border border-brand-line bg-white px-1.5 py-1">
+          <div className="flex w-14 items-baseline justify-center rounded-lg border border-brand-line bg-brand-card px-1.5 py-1">
             <input
               type="text"
               inputMode="numeric"
@@ -141,7 +141,7 @@ function GoalRow({
           <button
             type="button"
             onClick={() => onChangePercent(goal.percent + 1)}
-            className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-white text-brand-ink"
+            className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-brand-line bg-brand-card text-brand-ink"
           >
             <Plus size={12} />
           </button>
@@ -162,7 +162,7 @@ function GoalRow({
           className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-md border-[1.5px]"
           style={{
             background: confirmed ? TOKENS.sage : "transparent",
-            borderColor: confirmed ? TOKENS.sage : "#D9D3C4",
+            borderColor: confirmed ? TOKENS.sage : TOKENS.line,
           }}
         >
           {confirmed && <Check size={12} className="text-white" />}
@@ -258,20 +258,20 @@ function ReserveRow({
             onChange={(e) => setSaved(formatCentsInput(e.target.value))}
             placeholder="Guardado"
             inputMode="decimal"
-            className="w-24 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="w-24 flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
           <input
             value={target}
             onChange={(e) => setTarget(formatCentsInput(e.target.value))}
             placeholder="Meta"
             inputMode="decimal"
-            className="w-24 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="w-24 flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
           <button
             type="button"
             disabled={saving}
             onClick={handleSave}
-            className="rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+            className="rounded-xl bg-brand-ink-solid px-3.5 text-sm font-semibold text-white disabled:opacity-60"
           >
             {saving ? "..." : "Salvar"}
           </button>
@@ -475,7 +475,7 @@ export function MetasBody({
             onClick={() => handleBasisChange(key)}
             className={
               incomeBasis === key
-                ? "flex-1 rounded-full border border-brand-ink bg-brand-ink py-2 text-[12.5px] font-medium text-brand-card"
+                ? "flex-1 rounded-full border border-brand-ink bg-brand-ink-solid py-2 text-[12.5px] font-medium text-white"
                 : "flex-1 rounded-full border border-brand-line bg-brand-card py-2 text-[12.5px] font-medium text-brand-ink-soft"
             }
           >
@@ -516,7 +516,7 @@ export function MetasBody({
               value={newGoalName}
               onChange={(e) => setNewGoalName(e.target.value)}
               placeholder="Nome da meta (ex: Aposentadoria)"
-              className="min-w-0 flex-1 rounded-xl border border-brand-line bg-white px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -528,7 +528,7 @@ export function MetasBody({
               type="button"
               disabled={creatingGoal}
               onClick={handleCreateGoal}
-              className="flex-shrink-0 rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+              className="flex-shrink-0 rounded-xl bg-brand-ink-solid px-3.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {creatingGoal ? "..." : "Criar"}
             </button>
@@ -610,7 +610,7 @@ export function MetasBody({
               value={newReserveName}
               onChange={(e) => setNewReserveName(e.target.value)}
               placeholder="Nome da reserva (ex: IPVA 2027)"
-              className="w-full rounded-xl border border-brand-line bg-white px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              className="w-full rounded-xl border border-brand-line bg-brand-card px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
             />
           </div>
           <div className="flex gap-2">
@@ -619,7 +619,7 @@ export function MetasBody({
               onChange={(e) => setNewReserveTarget(formatCentsInput(e.target.value))}
               placeholder="Valor alvo (0,00)"
               inputMode="decimal"
-              className="flex-1 rounded-xl border border-brand-line bg-white px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              className="flex-1 rounded-xl border border-brand-line bg-brand-card px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -631,7 +631,7 @@ export function MetasBody({
               type="button"
               disabled={creatingReserve}
               onClick={handleCreateReserve}
-              className="rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+              className="rounded-xl bg-brand-ink-solid px-3.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {creatingReserve ? "..." : "Criar"}
             </button>

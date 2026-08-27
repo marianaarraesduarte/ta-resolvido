@@ -304,7 +304,7 @@ export function MonthRuler({
                                   : "h-2.5 w-2.5 rounded-full bg-brand-sage"
                               }
                             />
-                            <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
+                            <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                               {tooltipLabel(bucket.receitas, receitaTotal)}
                             </div>
                           </div>
@@ -349,9 +349,9 @@ export function MonthRuler({
                                 }
                                 style={{ background: "var(--accent)" }}
                               >
-                                <CreditCard size={8} className="-rotate-12 text-brand-card" />
+                                <CreditCard size={8} className="-rotate-12 text-white" />
                               </button>
-                              <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
+                              <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                                 Fatura · {invoice.items.length}{" "}
                                 {invoice.items.length === 1 ? "compra" : "compras"} —{" "}
                                 {currency(invoice.total)}
@@ -371,7 +371,7 @@ export function MonthRuler({
                                   : "h-2.5 w-2.5 rounded-full bg-brand-coral"
                               }
                             />
-                            <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink px-2 py-1 text-[11px] font-medium text-brand-card opacity-0 transition-opacity group-hover:opacity-100">
+                            <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                               {tooltipLabel(bucket!.despesas, despesaTotal)}
                             </div>
                           </div>
@@ -404,7 +404,7 @@ export function MonthRuler({
               className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
               style={{ background: "var(--accent)" }}
             >
-              <CreditCard size={16} className="text-brand-card" />
+              <CreditCard size={16} className="text-white" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[14px] font-semibold text-brand-ink">
@@ -468,7 +468,7 @@ export function MonthRuler({
                 onClick={() => (selecting ? exitSelection() : setSelecting(true))}
                 className={
                   selecting
-                    ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink px-3 py-1.5 text-[12px] font-semibold text-brand-card"
+                    ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
                     : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
                 }
               >
@@ -526,18 +526,18 @@ export function MonthRuler({
 
         {selecting && selectedIds.size > 0 && (
           <div className="fixed inset-x-0 bottom-[68px] z-20 flex justify-center px-3">
-            <div className="w-full max-w-sm rounded-2xl bg-brand-ink px-4 py-3.5 shadow-lg">
+            <div className="w-full max-w-sm rounded-2xl bg-brand-ink-solid px-4 py-3.5 shadow-lg">
               {pickingCategory ? (
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[12.5px] font-semibold text-brand-card">
+                    <span className="text-[12.5px] font-semibold text-white">
                       Trocar categoria de {selectedIds.size}
                     </span>
                     <button
                       type="button"
                       onClick={() => setPickingCategory(false)}
                       aria-label="Cancelar"
-                      className="text-brand-card/70"
+                      className="text-white/70"
                     >
                       <X size={16} />
                     </button>
@@ -546,7 +546,7 @@ export function MonthRuler({
                     <button
                       type="button"
                       onClick={() => handleBulkCategory(null)}
-                      className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                      className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-white"
                     >
                       Sem categoria
                     </button>
@@ -555,7 +555,7 @@ export function MonthRuler({
                         key={c.id}
                         type="button"
                         onClick={() => handleBulkCategory(c.id)}
-                        className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-brand-card"
+                        className="rounded-full bg-brand-card/15 px-3 py-1.5 text-[12.5px] font-medium text-white"
                       >
                         {c.name}
                       </button>
@@ -564,7 +564,7 @@ export function MonthRuler({
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-semibold text-brand-card">
+                  <span className="text-[13px] font-semibold text-white">
                     {selectedIds.size} {selectedIds.size === 1 ? "selecionado" : "selecionados"}
                   </span>
                   <div className="flex gap-2">
@@ -572,7 +572,7 @@ export function MonthRuler({
                       type="button"
                       disabled={processing}
                       onClick={() => setPickingCategory(true)}
-                      className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-brand-card disabled:opacity-60"
+                      className="flex items-center gap-1.5 rounded-xl bg-brand-card/15 px-3 py-2 text-[12.5px] font-semibold text-white disabled:opacity-60"
                     >
                       <Tag size={13} />
                       Categoria
@@ -620,7 +620,7 @@ export function MonthRuler({
 
         <Link
           href="/app/novo"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 font-display text-[15px] font-semibold text-brand-card"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 font-display text-[15px] font-semibold text-white"
         >
           <Plus size={16} />
           Marcar lançamento

@@ -63,7 +63,7 @@ export function MonthPicker({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-brand-ink/40 px-4 pb-6 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-brand-ink-solid/40 px-4 pb-6 sm:items-center"
           onClick={() => setOpen(false)}
         >
           <div
@@ -108,7 +108,7 @@ export function MonthPicker({
                       type="submit"
                       className={
                         isSelected
-                          ? "w-full rounded-xl bg-brand-ink py-2.5 font-display text-sm font-semibold text-brand-card"
+                          ? "w-full rounded-xl bg-brand-ink-solid py-2.5 font-display text-sm font-semibold text-white"
                           : "w-full rounded-xl bg-brand-bg py-2.5 font-display text-sm font-semibold text-brand-ink"
                       }
                     >

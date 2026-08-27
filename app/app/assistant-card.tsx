@@ -273,8 +273,8 @@ export function AssistantCard({
       {open && (
         <div className="mt-2 rounded-2xl bg-brand-bg p-3">
           <div className="mb-2 flex items-start gap-2">
-            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-ink">
-              <Sparkles size={11} className="text-brand-card" />
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-ink-solid">
+              <Sparkles size={11} className="text-white" />
             </div>
             <div className="rounded-[4px_16px_16px_16px] bg-brand-card px-3.5 py-2.5 text-[13px] font-medium text-brand-ink">
               {greeting}
@@ -284,13 +284,13 @@ export function AssistantCard({
           {askedQuestions.map((q) => (
             <div key={q.id} className="mb-2 flex flex-col gap-2">
               <div className="flex justify-end">
-                <div className="max-w-[78%] rounded-[16px_4px_16px_16px] bg-[var(--accent)] px-3.5 py-2.5 text-[13px] font-medium text-brand-card">
+                <div className="max-w-[78%] rounded-[16px_4px_16px_16px] bg-[var(--accent)] px-3.5 py-2.5 text-[13px] font-medium text-white">
                   {q.label}
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-ink">
-                  <Sparkles size={11} className="text-brand-card" />
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-ink-solid">
+                  <Sparkles size={11} className="text-white" />
                 </div>
                 <AnswerBubble answer={q.answer} />
               </div>
@@ -305,7 +305,7 @@ export function AssistantCard({
                 onClick={() => setAsked((prev) => [...prev, q.id])}
                 className={
                   q.primary
-                    ? "rounded-full bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-brand-card"
+                    ? "rounded-full bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-white"
                     : "rounded-full border border-brand-line bg-brand-card px-3 py-2 text-[12px] font-semibold text-brand-ink"
                 }
               >

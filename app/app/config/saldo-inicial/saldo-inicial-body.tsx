@@ -6,7 +6,7 @@ import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tok
 import { setInitialBalance } from "../actions";
 
 const inputClass =
-  "w-full rounded-2xl border border-brand-line bg-white px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink";
+  "w-full rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink";
 
 export function SaldoInicialBody({
   initialAmount,

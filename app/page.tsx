@@ -91,7 +91,7 @@ export default async function RootPage() {
     <div className="min-h-screen bg-brand-bg">
       <header className="flex items-center justify-between px-5 py-5 sm:px-10">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-ink">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-ink-solid">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 12.5L9 17.5L20 5"
@@ -200,15 +200,15 @@ export default async function RootPage() {
 
       {/* 5. Prova real */}
       <section className="px-5 pb-16 sm:px-10">
-        <div className="mx-auto max-w-md rounded-[28px] bg-brand-ink px-7 py-10 text-center">
-          <h2 className="mb-4 font-display text-xl font-bold text-brand-card">
+        <div className="mx-auto max-w-md rounded-[28px] bg-brand-ink-solid px-7 py-10 text-center">
+          <h2 className="mb-4 font-display text-xl font-bold text-white">
             Por que eu criei isso
           </h2>
-          <p className="text-[14.5px] leading-relaxed text-brand-card/85">
+          <p className="text-[14.5px] leading-relaxed text-white/85">
             Eu criei o Tá Resolvido pra mim primeiro. Sou mãe, trabalho fora, e é comigo mesma
             que testo cada tela antes de qualquer outra pessoa usar.
           </p>
-          <p className="mt-3 text-[14.5px] leading-relaxed text-brand-card/85">
+          <p className="mt-3 text-[14.5px] leading-relaxed text-white/85">
             Não é fórmula mágica. É o que funciona pra quem, como eu, não tem tempo sobrando.
           </p>
         </div>
@@ -262,18 +262,18 @@ export default async function RootPage() {
             </Link>
           </div>
 
-          <div className="rounded-[26px] bg-brand-ink p-7">
-            <div className="mb-1 font-display text-[15px] font-bold text-brand-card">
+          <div className="rounded-[26px] bg-brand-ink-solid p-7">
+            <div className="mb-1 font-display text-[15px] font-bold text-white">
               Plano Completo
             </div>
-            <div className="mb-1 font-display text-3xl font-bold text-brand-card">
-              R$29,90<span className="text-[15px] font-medium text-brand-card/70">/mês</span>
+            <div className="mb-1 font-display text-3xl font-bold text-white">
+              R$29,90<span className="text-[15px] font-medium text-white/70">/mês</span>
             </div>
-            <div className="mb-5 text-[12.5px] text-brand-card/70">Tudo do plano grátis, mais:</div>
+            <div className="mb-5 text-[12.5px] text-white/70">Tudo do plano grátis, mais:</div>
             <ul className="mb-6 flex flex-col gap-2.5">
               {PAID_FEATURES.map((f) => (
                 <li key={f.text} className="flex flex-col gap-2.5">
-                  <div className="flex items-start gap-2 text-[13.5px] text-brand-card/85">
+                  <div className="flex items-start gap-2 text-[13.5px] text-white/85">
                     <Check size={15} className="mt-0.5 flex-shrink-0" style={{ color: "#D9A441" }} />
                     {f.text}
                   </div>
@@ -297,7 +297,7 @@ export default async function RootPage() {
             >
               Quero o plano completo
             </Link>
-            <div className="mt-2.5 text-center text-[11.5px] leading-snug text-brand-card/60">
+            <div className="mt-2.5 text-center text-[11.5px] leading-snug text-white/60">
               Cria sua conta grátis primeiro — o upgrade pro Completo acontece de dentro do app.
             </div>
           </div>
@@ -377,8 +377,8 @@ export default async function RootPage() {
 
       {/* 11. CTA final */}
       <section className="px-5 pb-20 sm:px-10">
-        <div className="mx-auto max-w-2xl rounded-[28px] bg-brand-ink px-8 py-12 text-center">
-          <h2 className="mx-auto max-w-sm text-balance font-display text-2xl font-bold text-brand-card sm:text-[28px]">
+        <div className="mx-auto max-w-2xl rounded-[28px] bg-brand-ink-solid px-8 py-12 text-center">
+          <h2 className="mx-auto max-w-sm text-balance font-display text-2xl font-bold text-white sm:text-[28px]">
             Tá na hora de tirar isso da sua cabeça.
           </h2>
           <Link

@@ -44,7 +44,7 @@ export function NavLinks() {
               >
                 <Icon
                   size={active ? 16 : 14}
-                  className={active ? "text-brand-card" : "text-brand-ink-soft"}
+                  className={active ? "text-white" : "text-brand-ink-soft"}
                 />
               </div>
               <span

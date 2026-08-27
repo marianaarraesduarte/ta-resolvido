@@ -79,20 +79,20 @@ function FixedExpenseRow({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="min-w-0 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
           <input
             value={amount}
             onChange={(e) => setAmount(formatCentsInput(e.target.value))}
             inputMode="decimal"
             placeholder="0,00"
-            className="w-24 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="w-24 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
           <button
             type="button"
             disabled={saving}
             onClick={handleSave}
-            className="rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+            className="rounded-xl bg-brand-ink-solid px-3.5 text-sm font-semibold text-white disabled:opacity-60"
           >
             {saving ? "..." : "Salvar"}
           </button>
@@ -146,13 +146,13 @@ function FixedExpenseRow({
             type="date"
             value={paidDate}
             onChange={(e) => setPaidDate(e.target.value)}
-            className="rounded-lg border border-brand-line bg-white px-2 py-1.5 text-[13px] text-brand-ink outline-none focus:border-brand-ink"
+            className="rounded-lg border border-brand-line bg-brand-card px-2 py-1.5 text-[13px] text-brand-ink outline-none focus:border-brand-ink"
           />
           <button
             type="button"
             disabled={confirmingPaid}
             onClick={handleConfirmPaid}
-            className="flex items-center gap-1 rounded-lg bg-brand-ink px-3 py-1.5 text-[12.5px] font-semibold text-brand-card disabled:opacity-60"
+            className="flex items-center gap-1 rounded-lg bg-brand-ink-solid px-3 py-1.5 text-[12.5px] font-semibold text-white disabled:opacity-60"
           >
             <Check size={13} />
             {confirmingPaid ? "..." : "Confirmar"}
@@ -279,7 +279,7 @@ export function FixedExpensesSection({
                   key={s}
                   type="button"
                   onClick={() => setNewName(s)}
-                  className="rounded-full border border-brand-line bg-white px-3 py-1.5 text-xs font-medium text-brand-ink-soft"
+                  className="rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-xs font-medium text-brand-ink-soft"
                 >
                   {s}
                 </button>
@@ -292,14 +292,14 @@ export function FixedExpensesSection({
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nome (ex: Aluguel)"
-              className="min-w-0 flex-1 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
             />
             <input
               value={newAmount}
               onChange={(e) => setNewAmount(formatCentsInput(e.target.value))}
               inputMode="decimal"
               placeholder="Valor esperado (0,00)"
-              className="w-32 rounded-xl border border-brand-line bg-white px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              className="w-32 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -311,7 +311,7 @@ export function FixedExpensesSection({
               type="button"
               disabled={creating}
               onClick={handleCreate}
-              className="flex items-center gap-1.5 rounded-xl bg-brand-ink px-3.5 text-sm font-semibold text-brand-card disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-xl bg-brand-ink-solid px-3.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               <Check size={14} />
               {creating ? "..." : "Adicionar"}

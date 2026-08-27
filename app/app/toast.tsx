@@ -53,7 +53,7 @@ function ToastInner() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-      <div className="flex items-center gap-2 rounded-2xl bg-brand-ink px-4 py-3 text-[13px] font-medium text-brand-card shadow-lg">
+      <div className="flex items-center gap-2 rounded-2xl bg-brand-ink-solid px-4 py-3 text-[13px] font-medium text-white shadow-lg">
         <Check size={15} className="flex-shrink-0 text-brand-sage" />
         {message}
       </div>

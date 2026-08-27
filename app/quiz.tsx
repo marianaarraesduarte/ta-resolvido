@@ -96,7 +96,7 @@ export function Quiz() {
                 key={opt.label}
                 type="button"
                 onClick={() => choose(opt.profile)}
-                className="rounded-2xl border-[1.5px] border-brand-line bg-white px-5 py-3.5 text-left text-[15px] font-medium text-brand-ink transition-colors hover:border-brand-plum"
+                className="rounded-2xl border-[1.5px] border-brand-line bg-brand-card px-5 py-3.5 text-left text-[15px] font-medium text-brand-ink transition-colors hover:border-brand-plum"
               >
                 {opt.label}
               </button>
