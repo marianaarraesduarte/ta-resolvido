@@ -82,11 +82,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         className="min-h-screen bg-brand-bg pb-24"
         style={{ "--accent": profile?.accent_color ?? "#7A5C7E" } as React.CSSProperties}
       >
-        <header className="flex items-center justify-between gap-3.5 px-4 py-4">
+        <header className="flex items-start justify-between gap-3.5 px-4 py-4">
           <SaldoBadge saldo={saldo} previsto={viewed.isFutureMonth} />
-          <div className="flex flex-shrink-0 items-center gap-3.5">
+          <div className="flex flex-shrink-0 items-center gap-3 pt-1">
             <Link href="/app/insights" aria-label="Análises" className="relative text-brand-ink-soft">
-              <Bell size={20} />
+              <Bell size={18} />
               {!!unreadInsights && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
                   <span
@@ -101,7 +101,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               )}
             </Link>
             <Link href="/app/config" aria-label="Configurações" className="text-brand-ink-soft">
-              <Settings size={22} />
+              <Settings size={19} />
             </Link>
             <form action="/auth/signout" method="post">
               <button

@@ -5,16 +5,16 @@ export function SaldoBadge({ saldo, previsto }: { saldo: number; previsto?: bool
   const color = positive ? TOKENS.sage : TOKENS.coral;
 
   return (
-    <div
-      className="flex items-baseline gap-2 rounded-full px-3.5 py-2"
-      style={{ background: `color-mix(in srgb, ${color} 14%, ${TOKENS.card})` }}
-    >
-      <span className="text-[11px] font-medium text-brand-ink-soft">
+    <div>
+      <div className="mb-0.5 text-[11.5px] font-semibold text-brand-ink-soft">
         {previsto ? "Saldo previsto" : "Saldo"}
-      </span>
-      <span className="font-display text-[22px] font-bold" style={{ color }}>
+      </div>
+      <div
+        className="font-display text-[30px] font-bold leading-none [font-variant-numeric:tabular-nums]"
+        style={{ color }}
+      >
         {currency(saldo)}
-      </span>
+      </div>
     </div>
   );
 }

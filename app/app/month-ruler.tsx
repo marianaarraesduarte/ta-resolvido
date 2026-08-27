@@ -239,9 +239,12 @@ export function MonthRuler({
             </form>
           )}
           {hasEntries && comparisonSentence && (
-            <p className="mt-1.5 text-[12.5px] leading-snug text-brand-ink-soft">
-              {comparisonSentence}
-            </p>
+            <div className="mt-2 flex items-start gap-1.5">
+              <span className="mt-[5px] h-[6px] w-[6px] flex-shrink-0 rounded-full bg-brand-sage" />
+              <p className="text-[13px] font-semibold leading-snug text-brand-ink">
+                {comparisonSentence}
+              </p>
+            </div>
           )}
         </div>
 
@@ -260,7 +263,12 @@ export function MonthRuler({
 
         <>
           <div className="mb-1.5 text-[13px] font-semibold text-brand-ink">Régua do mês</div>
-          <div className="mb-4 overflow-x-auto rounded-[20px] bg-brand-card p-3.5">
+          <div
+            className="mb-4 overflow-x-auto rounded-[20px] bg-brand-card p-3.5"
+            style={{
+              backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${TOKENS.sage} 7%, transparent), transparent 55%)`,
+            }}
+          >
             {hasEntries && (
               <div className="mb-0.5 text-[10px] font-semibold text-brand-sage">↑ entrou</div>
             )}
@@ -300,8 +308,8 @@ export function MonthRuler({
                               aria-label={`Entradas do dia ${day}`}
                               className={
                                 isSelectedReceita
-                                  ? "h-3.5 w-3.5 rounded-full bg-brand-sage ring-2 ring-brand-ink"
-                                  : "h-2.5 w-2.5 rounded-full bg-brand-sage"
+                                  ? "h-3.5 w-3.5 rounded-full bg-brand-sage shadow-sm ring-2 ring-brand-ink"
+                                  : "h-2.5 w-2.5 rounded-full bg-brand-sage shadow-sm"
                               }
                             />
                             <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
@@ -367,8 +375,8 @@ export function MonthRuler({
                               aria-label={`Gastos do dia ${day}`}
                               className={
                                 isSelectedDespesa
-                                  ? "h-3.5 w-3.5 rounded-full bg-brand-coral ring-2 ring-brand-ink"
-                                  : "h-2.5 w-2.5 rounded-full bg-brand-coral"
+                                  ? "h-3.5 w-3.5 rounded-full bg-brand-coral shadow-sm ring-2 ring-brand-ink"
+                                  : "h-2.5 w-2.5 rounded-full bg-brand-coral shadow-sm"
                               }
                             />
                             <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
