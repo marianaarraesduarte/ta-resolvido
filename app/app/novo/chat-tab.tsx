@@ -64,7 +64,7 @@ export function ChatTab({
   const router = useRouter();
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState("");
-  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzing, setAnalyzing] = useState<"chat" | "audio" | null>(null);
   const [slowAnalyzing, setSlowAnalyzing] = useState(false);
   const [error, setError] = useState("");
   const [savingBatch, setSavingBatch] = useState<string | null>(null);
@@ -179,7 +179,7 @@ export function ChatTab({
     setError("");
     const userId = `u-${Date.now()}`;
     setEntries((prev) => [...prev, { kind: "user", id: userId, text }]);
-    setAnalyzing(true);
+    setAnalyzing("chat");
 
     try {
       const recognized = await recognizeChatMessage(text);
@@ -199,7 +199,7 @@ export function ChatTab({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não deu pra entender essa mensagem agora.");
     } finally {
-      setAnalyzing(false);
+      setAnalyzing(null);
     }
   }
 
@@ -219,7 +219,7 @@ export function ChatTab({
       ...prev,
       { kind: "user-audio", id: `u-${Date.now()}`, durationMs: result.durationMs },
     ]);
-    setAnalyzing(true);
+    setAnalyzing("audio");
 
     try {
       const { transcript, items: recognized } = await recognizeAudioMessage(result.dataUrl);
@@ -242,7 +242,7 @@ export function ChatTab({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não deu pra entender esse áudio agora.");
     } finally {
-      setAnalyzing(false);
+      setAnalyzing(null);
     }
   }
 
@@ -541,7 +541,9 @@ export function ChatTab({
         {analyzing && (
           <div className="w-fit rounded-2xl rounded-bl-sm bg-brand-bg px-4 py-3 text-[13px] text-brand-ink-soft">
             {slowAnalyzing
-              ? "Ainda analisando... áudio às vezes demora um pouco mais"
+              ? analyzing === "audio"
+                ? "Ainda analisando... áudio às vezes demora um pouco mais"
+                : "Ainda analisando... já vai"
               : "Analisando..."}
           </div>
         )}
@@ -584,7 +586,7 @@ export function ChatTab({
             {input.trim() ? (
               <button
                 type="button"
-                disabled={analyzing}
+                disabled={!!analyzing}
                 onClick={() => handleSend()}
                 aria-label="Enviar"
                 className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink-solid text-white disabled:opacity-40"
@@ -594,7 +596,7 @@ export function ChatTab({
             ) : (
               <button
                 type="button"
-                disabled={analyzing}
+                disabled={!!analyzing}
                 onClick={recorder.start}
                 aria-label="Gravar áudio"
                 className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-ink-solid text-white disabled:opacity-40"

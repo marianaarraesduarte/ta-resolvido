@@ -301,7 +301,8 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
         possibleDuplicate: isPossibleDuplicate(item, existing ?? []),
       };
     });
-  } catch {
+  } catch (err) {
+    console.error("recognizeStatement falhou:", err);
     throw new Error("Não deu pra analisar esse arquivo agora.");
   }
 }
@@ -450,7 +451,8 @@ export async function recognizeChatMessage(message: string): Promise<ChatItem[]>
           item.amount !== null ? isPossibleDuplicate({ ...item, amount: item.amount }, existing ?? []) : false,
       };
     });
-  } catch {
+  } catch (err) {
+    console.error("recognizeChatMessage falhou:", err);
     throw new Error("Não deu pra entender essa mensagem agora.");
   }
 }
@@ -740,7 +742,8 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
         : baseCategory;
       return { ...item, category };
     });
-  } catch {
+  } catch (err) {
+    console.error("recognizeCardInvoice falhou:", err);
     throw new Error("Não deu pra analisar esse arquivo agora.");
   }
 }
