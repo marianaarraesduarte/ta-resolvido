@@ -307,6 +307,7 @@ export function MetasBody({
   saldo: number;
 }) {
   const router = useRouter();
+  const [view, setView] = useState<"metas" | "reservas">("metas");
   const [incomeBasis, setIncomeBasisState] = useState(initialIncomeBasis);
   const [goals, setGoals] = useState(initialGoals);
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>(() => {
@@ -453,6 +454,33 @@ export function MetasBody({
 
   return (
     <>
+      <div className="mb-5 flex gap-1.5 rounded-2xl bg-brand-bg p-1.5">
+        <button
+          type="button"
+          onClick={() => setView("metas")}
+          className={
+            view === "metas"
+              ? "flex-1 rounded-xl bg-brand-card py-2.5 text-[13px] font-semibold text-brand-ink shadow-sm"
+              : "flex-1 rounded-xl py-2.5 text-[13px] font-semibold text-brand-ink-soft"
+          }
+        >
+          Metas
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("reservas")}
+          className={
+            view === "reservas"
+              ? "flex-1 rounded-xl bg-brand-card py-2.5 text-[13px] font-semibold text-brand-ink shadow-sm"
+              : "flex-1 rounded-xl py-2.5 text-[13px] font-semibold text-brand-ink-soft"
+          }
+        >
+          Reservas
+        </button>
+      </div>
+
+      {view === "metas" && (
+        <>
       <div className="mb-2.5 flex items-center justify-between rounded-[18px] bg-brand-card px-[18px] py-3.5">
         <div className="text-[13px] text-brand-ink-soft">
           Receita do mês
@@ -578,8 +606,11 @@ export function MetasBody({
           </div>
         </div>
       )}
+        </>
+      )}
 
-      <div className="mb-2 text-[13px] font-semibold text-brand-ink">Reservas planejadas</div>
+      {view === "reservas" && (
+        <>
       <p className="mb-3 text-xs leading-snug text-brand-ink-soft">
         Dinheiro guardado aos poucos pra um gasto grande que já sabe que vai ter — tipo IPVA,
         seguro ou uma viagem.
@@ -647,6 +678,8 @@ export function MetasBody({
           <Plus size={15} />
           Nova reserva
         </button>
+      )}
+        </>
       )}
     </>
   );
