@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -99,6 +99,13 @@ export function MonthRuler({
   const [pickingCategory, setPickingCategory] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [bulkError, setBulkError] = useState("");
+  const todayRef = useRef<HTMLDivElement>(null);
+
+  // A régua abre rolada pro dia 1 por padrão — sem isso, quem entra dia 20
+  // teria que arrastar a tela toda vez só pra ver onde está hoje.
+  useEffect(() => {
+    todayRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, []);
 
   function exitSelection() {
     setSelecting(false);
@@ -274,11 +281,11 @@ export function MonthRuler({
             )}
             <div
               className="relative"
-              style={{ minWidth: daysInMonth * DAY_WIDTH, height: hasEntries ? 130 : 76 }}
+              style={{ minWidth: daysInMonth * DAY_WIDTH, height: hasEntries ? 96 : 76 }}
             >
               <div
                 className="absolute left-0 right-0 bg-brand-line"
-                style={{ top: hasEntries ? 65 : 26, height: 2 }}
+                style={{ top: hasEntries ? 48 : 26, height: 2 }}
               />
               {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                 const isToday = day === todayDayOfMonth;
@@ -295,6 +302,7 @@ export function MonthRuler({
                 return (
                   <div
                     key={day}
+                    ref={isToday ? todayRef : undefined}
                     className="absolute top-0 flex h-full flex-col items-center"
                     style={{ left: (day - 1) * DAY_WIDTH, width: DAY_WIDTH }}
                   >
