@@ -4,6 +4,7 @@ import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { resolveViewedMonth } from "@/lib/viewed-month";
 import { comparePeriods, periodComparisonSentence, type SpendEntry } from "@/lib/period-comparison";
 import { computeAssistantData, type AssistantData } from "@/lib/assistant-data";
+import { computeFrequentExpenses, type FrequentExpense } from "@/lib/frequent-expenses";
 import { MonthRuler, type CardInvoiceSummary, type Entry } from "./month-ruler";
 
 type EntryWithCategory = Entry & { categories: { name: string } | null };
@@ -34,34 +35,57 @@ export default async function AppHomePage({
   const lastPeriodEndDay = Math.min(today.getDate(), daysInMonth(lastMonthFirstDay));
   const lastPeriodEnd = new Date(today.getFullYear(), today.getMonth() - 1, lastPeriodEndDay);
 
-  const [{ data: entriesData }, { data: cardInvoicesData }, { data: lastPeriodData }, { data: categoriesData }] =
-    await Promise.all([
-      supabase
-        .from("entries")
-        .select(
-          "id, type, amount, description, entry_date, category_id, income_type, card_invoice_id, categories(name)",
-        )
-        .eq("user_id", user.id)
-        .gte("entry_date", toDateKey(firstDay))
-        .lte("entry_date", toDateKey(lastDay))
-        .order("entry_date", { ascending: true }),
-      supabase
-        .from("card_invoices")
-        .select("id, invoice_date")
-        .eq("user_id", user.id)
-        .gte("invoice_date", toDateKey(firstDay))
-        .lte("invoice_date", toDateKey(lastDay)),
-      isCurrentMonth
-        ? supabase
-            .from("entries")
-            .select("amount, categories(name)")
-            .eq("user_id", user.id)
-            .eq("type", "despesa")
-            .gte("entry_date", toDateKey(lastMonthFirstDay))
-            .lte("entry_date", toDateKey(lastPeriodEnd))
-        : Promise.resolve({ data: [] }),
-      supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
-    ]);
+  // Janela larga (não o mês em exibição) pra detectar gastos que se repetem
+  // com frequência, tipo cafezinho ou Uber — só faz sentido pro mês atual,
+  // já que é um atalho pra lançar algo agora.
+  const frequentLookbackStart = new Date(today);
+  frequentLookbackStart.setDate(frequentLookbackStart.getDate() - 60);
+
+  const [
+    { data: entriesData },
+    { data: cardInvoicesData },
+    { data: lastPeriodData },
+    { data: categoriesData },
+    { data: recentDespesasData },
+    { data: fixedExpensesData },
+  ] = await Promise.all([
+    supabase
+      .from("entries")
+      .select(
+        "id, type, amount, description, entry_date, category_id, income_type, card_invoice_id, categories(name)",
+      )
+      .eq("user_id", user.id)
+      .gte("entry_date", toDateKey(firstDay))
+      .lte("entry_date", toDateKey(lastDay))
+      .order("entry_date", { ascending: true }),
+    supabase
+      .from("card_invoices")
+      .select("id, invoice_date")
+      .eq("user_id", user.id)
+      .gte("invoice_date", toDateKey(firstDay))
+      .lte("invoice_date", toDateKey(lastDay)),
+    isCurrentMonth
+      ? supabase
+          .from("entries")
+          .select("amount, categories(name)")
+          .eq("user_id", user.id)
+          .eq("type", "despesa")
+          .gte("entry_date", toDateKey(lastMonthFirstDay))
+          .lte("entry_date", toDateKey(lastPeriodEnd))
+      : Promise.resolve({ data: [] }),
+    supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
+    isCurrentMonth
+      ? supabase
+          .from("entries")
+          .select("description, amount, category_id, entry_date")
+          .eq("user_id", user.id)
+          .eq("type", "despesa")
+          .gte("entry_date", toDateKey(frequentLookbackStart))
+      : Promise.resolve({ data: [] }),
+    isCurrentMonth
+      ? supabase.from("fixed_expenses").select("name, expected_amount").eq("user_id", user.id)
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const entriesWithCategory = (entriesData as unknown as EntryWithCategory[]) ?? [];
   const entries = entriesWithCategory as Entry[];
@@ -97,6 +121,10 @@ export default async function AppHomePage({
     ? await computeAssistantData(supabase, user.id, today)
     : null;
 
+  const frequentExpenses: FrequentExpense[] = isCurrentMonth
+    ? computeFrequentExpenses(recentDespesasData ?? [], fixedExpensesData ?? [])
+    : [];
+
   return (
     <MonthRuler
       monthName={monthName}
@@ -112,6 +140,7 @@ export default async function AppHomePage({
       nextMonthKey={nextMonthKey}
       isCurrentMonth={isCurrentMonth}
       assistantData={assistantData}
+      frequentExpenses={frequentExpenses}
     />
   );
 }

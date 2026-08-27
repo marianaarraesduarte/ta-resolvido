@@ -19,11 +19,13 @@ import {
 import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import type { AssistantData } from "@/lib/assistant-data";
+import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
 import { AssistantCard } from "./assistant-card";
+import { FrequentExpenseChips } from "./frequent-expense-chips";
 
 export type Entry = {
   id: string;
@@ -72,6 +74,7 @@ export function MonthRuler({
   nextMonthKey,
   isCurrentMonth,
   assistantData,
+  frequentExpenses,
 }: {
   monthName: string;
   viewedYear: number;
@@ -86,6 +89,7 @@ export function MonthRuler({
   nextMonthKey: string;
   isCurrentMonth: boolean;
   assistantData: AssistantData | null;
+  frequentExpenses: FrequentExpense[];
 }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -240,6 +244,8 @@ export function MonthRuler({
             </p>
           )}
         </div>
+
+        <FrequentExpenseChips items={frequentExpenses} />
 
         {!hasEntries && (
           <div className="mb-5 rounded-2xl bg-brand-card p-5">
