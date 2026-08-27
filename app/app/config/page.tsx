@@ -37,31 +37,33 @@ export default async function ConfigPage() {
           initialMonthlyInsightsEnabled={profile?.monthly_insights_enabled ?? true}
         />
 
-        <Link
-          href="/app/config/saldo-inicial"
-          className="mt-2 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
-        >
-          <div>
-            <div className="text-[14.5px] font-medium text-brand-ink">Saldo inicial</div>
-            <div className="mt-0.5 text-xs text-brand-ink-soft">
-              {currency(profile?.initial_balance ?? 0)}
+        <div className="mt-2 overflow-hidden rounded-2xl bg-brand-card">
+          <Link
+            href="/app/config/saldo-inicial"
+            className="flex items-center justify-between px-[18px] py-4"
+          >
+            <div>
+              <div className="text-[14.5px] font-medium text-brand-ink">Saldo inicial</div>
+              <div className="mt-0.5 text-xs text-brand-ink-soft">
+                {currency(profile?.initial_balance ?? 0)}
+              </div>
             </div>
-          </div>
-          <ChevronRight size={18} className="text-brand-ink-soft" />
-        </Link>
+            <ChevronRight size={18} className="text-brand-ink-soft" />
+          </Link>
 
-        <Link
-          href="/app/config/instalar"
-          className="mt-2.5 flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4"
-        >
-          <div>
-            <div className="text-[14.5px] font-medium text-brand-ink">Instalar o app</div>
-            <div className="mt-0.5 text-xs text-brand-ink-soft">
-              Coloque na tela inicial do seu celular
+          <Link
+            href="/app/config/instalar"
+            className="flex items-center justify-between border-t border-brand-bg px-[18px] py-4"
+          >
+            <div>
+              <div className="text-[14.5px] font-medium text-brand-ink">Instalar o app</div>
+              <div className="mt-0.5 text-xs text-brand-ink-soft">
+                Coloque na tela inicial do seu celular
+              </div>
             </div>
-          </div>
-          <ChevronRight size={18} className="text-brand-ink-soft" />
-        </Link>
+            <ChevronRight size={18} className="text-brand-ink-soft" />
+          </Link>
+        </div>
       </div>
     </div>
   );
