@@ -245,8 +245,6 @@ export function MonthRuler({
           )}
         </div>
 
-        <FrequentExpenseChips items={frequentExpenses} />
-
         {!hasEntries && (
           <div className="mb-5 rounded-2xl bg-brand-card p-5">
             <div className="text-[15.5px] font-medium leading-snug text-brand-ink">
@@ -617,6 +615,8 @@ export function MonthRuler({
             </div>
           </div>
         )}
+
+        <FrequentExpenseChips items={frequentExpenses} />
 
         <Link
           href="/app/novo"
