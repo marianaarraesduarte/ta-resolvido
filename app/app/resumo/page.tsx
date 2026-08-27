@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { monthLabel, toDateKey } from "@/lib/date";
 import { getSelectedMonthKey } from "@/lib/month-cookie";
@@ -9,7 +9,9 @@ import { namesMatch } from "@/lib/text-match";
 import { clearMonthSelection, goToMonth } from "../month-actions";
 import { MonthPicker } from "../month-picker";
 import { FixedExpensesSection } from "./fixed-expenses-section";
-import { EntriesList, type CardInvoiceRow } from "./entries-list";
+import { type CardInvoiceRow } from "./entries-list";
+import { GastosView } from "./gastos-view";
+import type { CategoryTotal } from "../categorias/category-list";
 
 type DespesaRow = {
   id: string;
@@ -28,7 +30,7 @@ type CardInvoiceDbRow = { id: string; invoice_date: string };
 export default async function ResumoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string }>;
+  searchParams: Promise<{ mes?: string; view?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -37,7 +39,7 @@ export default async function ResumoPage({
 
   if (!user) return null;
 
-  const { mes } = await searchParams;
+  const { mes, view } = await searchParams;
   const viewed = resolveViewedMonth(mes, await getSelectedMonthKey());
   const { firstDay, lastDay, isCurrentMonth, prevMonthKey, nextMonthKey } = viewed;
   const viewedFirstDay = firstDay;
@@ -83,7 +85,8 @@ export default async function ResumoPage({
   const pendingCount = pendingFixedExpenses.length;
 
   // Compras no cartão aparecem agrupadas numa fatura só (igual na régua),
-  // não espalhadas na lista — por isso ficam de fora de `despesas`.
+  // não espalhadas na lista por data — mas continuam contando na quebra por
+  // categoria normalmente, cada compra na sua categoria.
   const despesas = allDespesas.filter((d) => !d.card_invoice_id);
   const cardInvoices: CardInvoiceRow[] = ((invoicesData as CardInvoiceDbRow[] | null) ?? []).map(
     (invoice) => {
@@ -104,6 +107,26 @@ export default async function ResumoPage({
     },
   );
 
+  const totalsByCategory = new Map<string, CategoryTotal>();
+  for (const d of allDespesas) {
+    const key = d.category_id ?? "sem-categoria";
+    const existing = totalsByCategory.get(key);
+    const item = { id: d.id, description: d.description, amount: d.amount };
+    if (existing) {
+      existing.total += d.amount;
+      existing.items.push(item);
+    } else {
+      totalsByCategory.set(key, {
+        key,
+        name: d.categories?.name ?? "Sem categoria",
+        icon: d.categories?.icon ?? null,
+        total: d.amount,
+        items: [item],
+      });
+    }
+  }
+  const categoryTotals = Array.from(totalsByCategory.values()).sort((a, b) => b.total - a.total);
+
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
@@ -121,24 +144,13 @@ export default async function ResumoPage({
             viewedMonth={viewedFirstDay.getMonth()}
             size="sm"
           />
-          <form action={goToMonth.bind(null, "/app/resumo", prevMonthKey)}>
-            <button
-              type="submit"
-              aria-label="Mês anterior"
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-            >
-              <ChevronLeft size={16} />
-            </button>
-          </form>
-          <form action={goToMonth.bind(null, "/app/resumo", nextMonthKey)}>
-            <button
-              type="submit"
-              aria-label="Próximo mês"
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </form>
+          <Link
+            href="/app/config/categorias"
+            aria-label="Editar categorias"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink-soft"
+          >
+            <Pencil size={16} />
+          </Link>
         </div>
         {!isCurrentMonth && (
           <form action={clearMonthSelection.bind(null, "/app/resumo")}>
@@ -151,6 +163,20 @@ export default async function ResumoPage({
           </form>
         )}
 
+        <div className="mb-5 flex items-center gap-2.5">
+          <div className="w-1 self-stretch rounded-full bg-brand-plum" />
+          <div>
+            <div className="text-[13px] text-brand-ink-soft">Total do mês</div>
+            <div className="font-display text-[26px] font-bold leading-none text-brand-ink [font-variant-numeric:tabular-nums]">
+              {currency(total)}
+            </div>
+            <div className="mt-1 text-[12px] text-brand-ink-soft">
+              {allDespesas.length} {allDespesas.length === 1 ? "gasto" : "gastos"} ·{" "}
+              {categoryTotals.length} {categoryTotals.length === 1 ? "categoria" : "categorias"}
+            </div>
+          </div>
+        </div>
+
         <FixedExpensesSection
           fixedExpenses={fixedExpenses}
           paidById={paidById}
@@ -158,21 +184,13 @@ export default async function ResumoPage({
           pendingCount={pendingCount}
         />
 
-        <div className="mb-5 flex items-center justify-between rounded-2xl border border-brand-line bg-brand-card px-5 py-[18px]">
-          <div>
-            <div className="text-[13px] text-brand-ink-soft">Total do mês</div>
-            <div className="font-display text-2xl font-bold text-brand-ink">
-              {currency(total)}
-            </div>
-          </div>
-          <div className="text-right text-[12.5px] leading-snug text-brand-ink-soft">
-            {allDespesas.length} {allDespesas.length === 1 ? "gasto" : "gastos"}
-            <br />
-            marcados
-          </div>
-        </div>
-
-        <EntriesList entries={despesas} categories={categoriesData ?? []} cardInvoices={cardInvoices} />
+        <GastosView
+          entries={despesas}
+          categories={categoriesData ?? []}
+          cardInvoices={cardInvoices}
+          categoryTotals={categoryTotals}
+          initialView={view === "categoria" ? "categoria" : "data"}
+        />
       </div>
     </div>
   );

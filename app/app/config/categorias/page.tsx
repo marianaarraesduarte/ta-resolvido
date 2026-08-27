@@ -22,7 +22,7 @@ export default async function CategoriasConfigPage() {
       <div className="w-full max-w-sm">
         <div className="mb-5 flex items-center gap-2.5">
           <Link
-            href="/app/categorias"
+            href="/app/resumo?view=categoria"
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
           >
             <ChevronLeft size={18} />

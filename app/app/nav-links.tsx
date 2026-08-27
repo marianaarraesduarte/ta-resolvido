@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, LayoutGrid, Ruler, Tags, type LucideIcon } from "lucide-react";
+import { ClipboardList, LayoutGrid, Ruler, type LucideIcon } from "lucide-react";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/app", label: "Meu mês", icon: Ruler },
   { href: "/app/resumo", label: "Quanto gastei", icon: ClipboardList },
-  { href: "/app/categorias", label: "Onde gastei", icon: Tags },
   { href: "/app/mais", label: "Mais", icon: LayoutGrid },
 ];
 
