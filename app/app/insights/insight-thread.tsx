@@ -25,7 +25,7 @@ function Msg({
       </div>
       <div
         className="min-w-0 flex-1 rounded-tl-[4px] rounded-tr-2xl rounded-br-2xl rounded-bl-2xl p-3.5"
-        style={{ background: warm ? `color-mix(in srgb, ${TOKENS.amber} 18%, ${TOKENS.card})` : TOKENS.card }}
+        style={{ background: warm ? `color-mix(in srgb, ${color} 18%, ${TOKENS.card})` : TOKENS.card }}
       >
         <div
           className="mb-1 text-[10.5px] font-bold uppercase tracking-wide"
