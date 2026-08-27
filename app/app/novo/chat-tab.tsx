@@ -65,6 +65,7 @@ export function ChatTab({
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  const [slowAnalyzing, setSlowAnalyzing] = useState(false);
   const [error, setError] = useState("");
   const [savingBatch, setSavingBatch] = useState<string | null>(null);
   const [duplicateDates, setDuplicateDates] = useState<Record<string, boolean>>({});
@@ -112,6 +113,18 @@ export function ChatTab({
     processAudioResult(result);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.autoStopResult]);
+
+  // Áudio às vezes demora mais que texto pra ser reconhecido (arquivo maior,
+  // e o Gemini de vez em quando fica momentaneamente sobrecarregado) — sem
+  // isso, "Analisando..." parado por muito tempo parece que travou.
+  useEffect(() => {
+    if (!analyzing) {
+      setSlowAnalyzing(false);
+      return;
+    }
+    const timeout = setTimeout(() => setSlowAnalyzing(true), 6000);
+    return () => clearTimeout(timeout);
+  }, [analyzing]);
 
   function updateBatch(batchId: string, updater: (items: ReviewItem[]) => ReviewItem[]) {
     setEntries((prev) =>
@@ -527,7 +540,9 @@ export function ChatTab({
 
         {analyzing && (
           <div className="w-fit rounded-2xl rounded-bl-sm bg-brand-bg px-4 py-3 text-[13px] text-brand-ink-soft">
-            Analisando...
+            {slowAnalyzing
+              ? "Ainda analisando... áudio às vezes demora um pouco mais"
+              : "Analisando..."}
           </div>
         )}
       </div>
