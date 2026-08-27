@@ -266,7 +266,7 @@ export function MonthRuler({
           <div
             className="mb-4 overflow-x-auto rounded-[20px] bg-brand-card p-3.5"
             style={{
-              backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${TOKENS.sage} 7%, transparent), transparent 55%)`,
+              backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${TOKENS.sage} 14%, transparent), transparent 65%)`,
             }}
           >
             {hasEntries && (
@@ -298,6 +298,16 @@ export function MonthRuler({
                     className="absolute top-0 flex h-full flex-col items-center"
                     style={{ left: (day - 1) * DAY_WIDTH, width: DAY_WIDTH }}
                   >
+                    {isToday && (
+                      <div
+                        className="absolute inset-y-0 rounded-full"
+                        style={{
+                          left: 2,
+                          right: 2,
+                          background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+                        }}
+                      />
+                    )}
                     {hasEntries && (
                       <div className="flex flex-1 items-end justify-center">
                         {bucket?.receitas.length ? (
@@ -308,8 +318,8 @@ export function MonthRuler({
                               aria-label={`Entradas do dia ${day}`}
                               className={
                                 isSelectedReceita
-                                  ? "h-3.5 w-3.5 rounded-full bg-brand-sage shadow-sm ring-2 ring-brand-ink"
-                                  : "h-2.5 w-2.5 rounded-full bg-brand-sage shadow-sm"
+                                  ? "h-4 w-4 rounded-full bg-brand-sage shadow-md ring-2 ring-brand-ink"
+                                  : "h-3 w-3 rounded-full bg-brand-sage shadow-md"
                               }
                             />
                             <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
@@ -321,8 +331,8 @@ export function MonthRuler({
                     )}
 
                     <div
-                      className={isToday ? "w-px bg-[var(--accent)]" : "w-px bg-brand-line"}
-                      style={{ height: isToday ? 14 : 8 }}
+                      className={isToday ? "relative z-10 rounded-full bg-[var(--accent)]" : "w-px bg-brand-line"}
+                      style={isToday ? { width: 3, height: 16 } : { height: 8 }}
                     />
                     <div
                       className={
@@ -375,8 +385,8 @@ export function MonthRuler({
                               aria-label={`Gastos do dia ${day}`}
                               className={
                                 isSelectedDespesa
-                                  ? "h-3.5 w-3.5 rounded-full bg-brand-coral shadow-sm ring-2 ring-brand-ink"
-                                  : "h-2.5 w-2.5 rounded-full bg-brand-coral shadow-sm"
+                                  ? "h-4 w-4 rounded-full bg-brand-coral shadow-md ring-2 ring-brand-ink"
+                                  : "h-3 w-3 rounded-full bg-brand-coral shadow-md"
                               }
                             />
                             <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
