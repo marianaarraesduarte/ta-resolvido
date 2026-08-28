@@ -8,8 +8,10 @@ const MODEL = "gemini-flash-latest";
 // Sem isso, uma chamada que trava (rede lenta, API sem responder) fica
 // esperando pra sempre — a tela de "Analisando..." nunca sai do lugar e
 // nenhum erro chega a aparecer pra usuária. Foto/PDF demora bem mais que
-// texto pro Gemini processar, por isso tem um timeout maior próprio.
-const TEXT_TIMEOUT_MS = 20_000;
+// texto pro Gemini processar, por isso tem um timeout maior próprio. 20s
+// pro texto se mostrou curto demais na prática — um pico de lentidão do
+// Gemini já estourava esse limite antes mesmo de dar chance de retry.
+const TEXT_TIMEOUT_MS = 30_000;
 const DOCUMENT_TIMEOUT_MS = 45_000;
 
 function getClient(): GoogleGenAI {
@@ -28,12 +30,15 @@ function parseDataUrl(dataUrl: string): { mimeType: string; data: string } {
   return { mimeType: match[1], data: match[2] };
 }
 
+// 503 (sobrecarga momentânea) e 504 (o Gemini demorou demais pra responder)
+// — os dois são problemas passageiros do lado do Google, não erro de
+// verdade. Qualquer outro tipo (chave inválida, schema errado etc.)
+// continua falhando na hora, sem retry.
+const TRANSIENT_STATUS = new Set([503, 504]);
+
 /**
- * O Gemini às vezes devolve 503 (sobrecarga momentânea do modelo, segundo a
- * própria Google) — um problema passageiro, não um erro de verdade. Em vez
- * de já desistir e mostrar erro pra usuária, tenta de novo mais duas vezes
- * com uma pausa curta antes. Qualquer outro tipo de erro (chave inválida,
- * schema errado etc.) continua falhando na hora, sem retry.
+ * Em vez de já desistir e mostrar erro pra usuária num problema passageiro,
+ * tenta de novo mais duas vezes com uma pausa curta antes.
  */
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   const maxAttempts = 3;
@@ -41,8 +46,8 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
     } catch (err) {
-      const isOverloaded = err instanceof ApiError && err.status === 503;
-      if (!isOverloaded || attempt >= maxAttempts) throw err;
+      const isTransient = err instanceof ApiError && TRANSIENT_STATUS.has(err.status);
+      if (!isTransient || attempt >= maxAttempts) throw err;
       await new Promise((resolve) => setTimeout(resolve, 700 * attempt));
     }
   }
