@@ -1,38 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { amountToInputValue, currency, formatCentsInput, LEVEL_COLOR, parseCentsInput, TOKENS } from "@/lib/tokens";
+import { amountToInputValue, currency, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { iconForCategory } from "@/lib/category-icons";
 import { setCategoryLimit } from "./actions";
 
-export function CategoryLimitRow({
-  id,
-  name,
-  icon,
-  spent,
-  limit,
+type Category = { id: string; name: string; icon: string | null };
+
+export function NoLimitCategoryGrid({
+  categories,
   receita,
 }: {
-  id: string;
-  name: string;
-  icon: string | null;
-  spent: number;
-  limit: number;
+  categories: Category[];
   receita: number;
 }) {
-  const Icon = iconForCategory(icon);
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(amountToInputValue(limit));
-  const [pctValue, setPctValue] = useState(
-    receita > 0 ? String(Math.round((limit / receita) * 100)) : "",
-  );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [value, setValue] = useState("");
+  const [pctValue, setPctValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const limitPct = receita > 0 ? Math.round((limit / receita) * 100) : null;
-  const pct = Math.min(100, Math.round((spent / limit) * 100));
-  const over = spent > limit;
-  const barColor = over ? LEVEL_COLOR.coral : pct > 75 ? LEVEL_COLOR.amber : LEVEL_COLOR.sage;
+  const selected = categories.find((c) => c.id === selectedId) ?? null;
+
+  function selectCategory(c: Category) {
+    setSelectedId(c.id);
+    setValue("");
+    setPctValue("");
+    setError("");
+  }
 
   function handleValueChange(raw: string) {
     const formatted = formatCentsInput(raw);
@@ -51,12 +46,17 @@ export function CategoryLimitRow({
   }
 
   async function handleSave() {
+    if (!selected) return;
     const normalized = parseCentsInput(value);
+    if (!normalized || normalized <= 0) {
+      setError("Digite um valor pra salvar.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      await setCategoryLimit(id, normalized > 0 ? normalized : null);
-      setEditing(false);
+      await setCategoryLimit(selected.id, normalized);
+      setSelectedId(null);
     } catch {
       setError("Não deu pra salvar agora.");
     } finally {
@@ -64,43 +64,62 @@ export function CategoryLimitRow({
     }
   }
 
+  if (categories.length === 0) return null;
+
   return (
-    <div className="px-4 py-4">
-      <div className="mb-2.5 flex items-center gap-3">
-        <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[11px] bg-brand-bg">
-          <Icon size={15} className="text-brand-ink" />
-        </div>
-        <div className="flex-1">
-          <div className="text-[14.5px] font-medium text-brand-ink">{name}</div>
-        </div>
-        <div className="text-right">
-          <div
-            className="text-[13.5px] font-semibold"
-            style={{ color: over ? TOKENS.coral : TOKENS.ink }}
-          >
-            {currency(spent)}
-          </div>
-          {!editing && (
+    <div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-ink-soft">
+        Ainda sem limite — toque pra definir
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {categories.map((c) => {
+          const Icon = iconForCategory(c.icon);
+          const active = selectedId === c.id;
+          return (
             <button
+              key={c.id}
               type="button"
-              onClick={() => setEditing(true)}
-              className="text-[11px] text-brand-ink-soft underline underline-offset-2"
+              onClick={() => selectCategory(c)}
+              className={
+                active
+                  ? "flex flex-col items-center gap-1.5 rounded-2xl border border-brand-ink bg-brand-ink-solid px-1 py-2.5"
+                  : "flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-brand-line bg-brand-card px-1 py-2.5"
+              }
             >
-              de {currency(limit)}
-              {limitPct != null ? ` (${limitPct}% da renda)` : ""}
+              <span
+                className={
+                  active
+                    ? "flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/15"
+                    : "flex h-8 w-8 items-center justify-center rounded-[10px] bg-brand-bg"
+                }
+              >
+                <Icon size={15} className={active ? "text-white" : "text-brand-ink"} />
+              </span>
+              <span
+                className={
+                  active
+                    ? "line-clamp-2 text-center text-[10.5px] font-medium leading-tight text-white"
+                    : "line-clamp-2 text-center text-[10.5px] font-medium leading-tight text-brand-ink-soft"
+                }
+              >
+                {c.name}
+              </span>
             </button>
-          )}
-        </div>
+          );
+        })}
       </div>
 
-      {editing ? (
-        <div>
+      {selected && (
+        <div className="mt-2.5 rounded-2xl bg-brand-bg px-3.5 py-3">
+          <div className="mb-1.5 text-[11px] font-semibold text-brand-ink-soft">
+            Limite mensal — {selected.name}
+          </div>
           <div className="flex gap-2">
             <input
               autoFocus
               value={value}
               onChange={(e) => handleValueChange(e.target.value)}
-              placeholder="0,00 (zero remove o limite)"
+              placeholder="0,00"
               inputMode="decimal"
               className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               onKeyDown={(e) => {
@@ -142,16 +161,9 @@ export function CategoryLimitRow({
               {pctValue || "0"}% da sua renda de {currency(receita)}
             </p>
           )}
-        </div>
-      ) : (
-        <div className="h-1.5 overflow-hidden rounded-full bg-brand-bg">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${pct}%`, background: barColor }}
-          />
+          {error && <p className="mt-1.5 text-xs text-brand-coral">{error}</p>}
         </div>
       )}
-      {error && <p className="mt-1.5 text-xs text-brand-coral">{error}</p>}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
 import { currency } from "@/lib/tokens";
 import { CategoryLimitRow } from "./limit-row";
+import { NoLimitCategoryGrid } from "./no-limit-grid";
 import { Upsell } from "../upsell";
 
 type CategoryRow = {
@@ -89,6 +90,8 @@ export default async function LimitesPage() {
   }));
 
   const overLimit = rows.filter((r) => r.monthly_limit != null && r.spent > r.monthly_limit);
+  const withLimit = rows.filter((r) => r.monthly_limit != null);
+  const withoutLimit = rows.filter((r) => r.monthly_limit == null);
 
   return (
     <div className="flex justify-center px-3 py-7">
@@ -120,19 +123,24 @@ export default async function LimitesPage() {
             </div>
           </div>
         ) : (
-          <div className="divide-y divide-brand-bg overflow-hidden rounded-2xl bg-brand-card">
-            {rows.map((r) => (
-              <CategoryLimitRow
-                key={r.id}
-                id={r.id}
-                name={r.name}
-                icon={r.icon}
-                spent={r.spent}
-                limit={r.monthly_limit}
-                receita={receita}
-              />
-            ))}
-          </div>
+          <>
+            {withLimit.length > 0 && (
+              <div className="mb-4 divide-y divide-brand-bg overflow-hidden rounded-2xl bg-brand-card">
+                {withLimit.map((r) => (
+                  <CategoryLimitRow
+                    key={r.id}
+                    id={r.id}
+                    name={r.name}
+                    icon={r.icon}
+                    spent={r.spent}
+                    limit={r.monthly_limit as number}
+                    receita={receita}
+                  />
+                ))}
+              </div>
+            )}
+            <NoLimitCategoryGrid categories={withoutLimit} receita={receita} />
+          </>
         )}
       </div>
     </div>
