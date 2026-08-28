@@ -250,14 +250,14 @@ export function BankStatementReview({
                 </button>
               )}
 
-              <div className="mb-3.5 divide-y divide-brand-bg overflow-hidden rounded-2xl border border-brand-line">
+              <div className="mb-3.5 divide-y divide-brand-line/70 overflow-hidden rounded-2xl border border-brand-line">
                 {items.map((item) => (
                   <div
                     key={item.id}
                     className={
                       item.possibleDuplicate
-                        ? "flex items-center gap-2.5 bg-brand-coral/10 px-3.5 py-3"
-                        : "flex items-center gap-2.5 px-3.5 py-3"
+                        ? "flex items-start gap-2.5 border-l-[3px] border-l-brand-coral py-3.5 pl-3 pr-3.5"
+                        : "flex items-start gap-2.5 px-3.5 py-3.5"
                     }
                   >
                     {selecting && item.type === "despesa" && (
@@ -265,7 +265,7 @@ export function BankStatementReview({
                         type="button"
                         onClick={() => toggleOne(item.id)}
                         aria-label={`Selecionar ${item.description}`}
-                        className="flex-shrink-0"
+                        className="mt-0.5 flex-shrink-0"
                       >
                         {selectedIds.has(item.id) ? (
                           <SquareCheck size={18} style={{ color: "var(--accent)" }} />
@@ -274,11 +274,19 @@ export function BankStatementReview({
                         )}
                       </button>
                     )}
-                    {item.type === "receita" ? (
-                      <ArrowUpCircle size={15} className="flex-shrink-0 text-brand-sage" />
-                    ) : (
-                      <ArrowDownCircle size={15} className="flex-shrink-0 text-brand-coral" />
-                    )}
+                    <span
+                      className={
+                        item.type === "receita"
+                          ? "flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-sage/15"
+                          : "flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-coral/15"
+                      }
+                    >
+                      {item.type === "receita" ? (
+                        <ArrowUpCircle size={14} className="text-brand-sage" />
+                      ) : (
+                        <ArrowDownCircle size={14} className="text-brand-coral" />
+                      )}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <input
                         value={item.description}
@@ -286,32 +294,20 @@ export function BankStatementReview({
                         aria-label="Descrição"
                         className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
                       />
-                      {item.possibleDuplicate && (
-                        <div className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
-                          <AlertTriangle size={11} className="flex-shrink-0" />
-                          Pode ser repetido — já tem algo parecido nessa data
-                        </div>
-                      )}
-                      {item.type === "despesa" && matchedFixedExpense(item.description, item.amount) && (
-                        <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-amber px-2 py-0.5 text-[11px] font-semibold text-white">
-                          <Repeat size={10} className="flex-shrink-0" />
-                          Gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
-                        </div>
-                      )}
-                      <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <input
                           type="date"
                           value={item.date}
                           onChange={(e) => updateItemDate(item.id, e.target.value)}
                           aria-label={`Data de ${item.description}`}
-                          className="rounded-md border border-brand-line bg-brand-card px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
+                          className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink-soft outline-none focus:ring-1 focus:ring-brand-ink"
                         />
                         {item.type === "despesa" && (
                           <select
                             value={item.category ?? ""}
                             onChange={(e) => updateItemCategory(item.id, e.target.value || null)}
                             aria-label={`Categoria de ${item.description}`}
-                            className="rounded-md border border-brand-line bg-brand-card px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
+                            className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink-soft outline-none focus:ring-1 focus:ring-brand-ink"
                           >
                             <option value="">Sem categoria</option>
                             {categories.map((c) => (
@@ -321,22 +317,34 @@ export function BankStatementReview({
                             ))}
                           </select>
                         )}
+                        {item.type === "despesa" && matchedFixedExpense(item.description, item.amount) && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-brand-amber px-2 py-1 text-[10.5px] font-semibold text-brand-amber">
+                            <Repeat size={10} className="flex-shrink-0" />
+                            fixo
+                          </span>
+                        )}
                         {item.type === "receita" && (
                           <button
                             type="button"
                             onClick={() => toggleSalary(item.id)}
                             className={
                               item.isSalary
-                                ? "text-[11px] font-semibold text-brand-sage"
-                                : "text-[11px] font-semibold text-brand-ink-soft"
+                                ? "rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] font-semibold text-brand-sage"
+                                : "rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] font-medium text-brand-ink-soft"
                             }
                           >
-                            {item.isSalary ? "✓ marcado como salário" : "marcar como salário"}
+                            {item.isSalary ? "✓ salário" : "marcar como salário"}
                           </button>
                         )}
                       </div>
+                      {item.possibleDuplicate && (
+                        <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                          <AlertTriangle size={11} className="flex-shrink-0" />
+                          Pode ser repetido nessa data
+                        </div>
+                      )}
                     </div>
-                    <div className="flex flex-shrink-0 items-center gap-0.5 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
+                    <div className="flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-ink">
                       {item.type === "receita" ? "+" : "-"}
                       <input
                         value={item.amountText}
@@ -350,7 +358,7 @@ export function BankStatementReview({
                       type="button"
                       onClick={() => removeItem(item.id)}
                       aria-label={`Remover ${item.description}`}
-                      className="flex-shrink-0 text-brand-ink-soft"
+                      className="flex-shrink-0 p-1 text-brand-ink-soft/70"
                     >
                       <Trash2 size={14} />
                     </button>

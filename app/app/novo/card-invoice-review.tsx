@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  ArrowDownCircle,
   Check,
   FileText,
   ImagePlus,
@@ -233,15 +234,15 @@ export function CardInvoiceReview({
                 </button>
               )}
 
-              <div className="mb-3.5 divide-y divide-brand-bg overflow-hidden rounded-2xl border border-brand-line">
+              <div className="mb-3.5 divide-y divide-brand-line/70 overflow-hidden rounded-2xl border border-brand-line">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2.5 px-3.5 py-3">
+                  <div key={item.id} className="flex items-start gap-2.5 px-3.5 py-3.5">
                     {selecting && (
                       <button
                         type="button"
                         onClick={() => toggleOne(item.id)}
                         aria-label={`Selecionar ${item.description}`}
-                        className="flex-shrink-0"
+                        className="mt-0.5 flex-shrink-0"
                       >
                         {selectedIds.has(item.id) ? (
                           <SquareCheck size={18} style={{ color: "var(--accent)" }} />
@@ -250,6 +251,9 @@ export function CardInvoiceReview({
                         )}
                       </button>
                     )}
+                    <span className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-coral/15">
+                      <ArrowDownCircle size={14} className="text-brand-coral" />
+                    </span>
                     <div className="min-w-0 flex-1">
                       <input
                         value={item.description}
@@ -257,27 +261,29 @@ export function CardInvoiceReview({
                         aria-label="Descrição"
                         className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
                       />
-                      {matchedFixedExpense(item.description, item.amount) && (
-                        <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-amber px-2 py-0.5 text-[11px] font-semibold text-white">
-                          <Repeat size={10} className="flex-shrink-0" />
-                          Gasto fixo &quot;{matchedFixedExpense(item.description, item.amount)}&quot;
-                        </div>
-                      )}
-                      <select
-                        value={item.category ?? ""}
-                        onChange={(e) => updateItemCategory(item.id, e.target.value || null)}
-                        aria-label={`Categoria de ${item.description}`}
-                        className="mt-1 rounded-md border border-brand-line bg-brand-card px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
-                      >
-                        <option value="">Sem categoria</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <select
+                          value={item.category ?? ""}
+                          onChange={(e) => updateItemCategory(item.id, e.target.value || null)}
+                          aria-label={`Categoria de ${item.description}`}
+                          className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink-soft outline-none focus:ring-1 focus:ring-brand-ink"
+                        >
+                          <option value="">Sem categoria</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.name}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        {matchedFixedExpense(item.description, item.amount) && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-brand-amber px-2 py-1 text-[10.5px] font-semibold text-brand-amber">
+                            <Repeat size={10} className="flex-shrink-0" />
+                            fixo
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-shrink-0 items-center gap-0.5 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
+                    <div className="flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-ink">
                       -
                       <input
                         value={item.amountText}
@@ -291,7 +297,7 @@ export function CardInvoiceReview({
                       type="button"
                       onClick={() => removeItem(item.id)}
                       aria-label={`Remover ${item.description}`}
-                      className="flex-shrink-0 text-brand-ink-soft"
+                      className="flex-shrink-0 p-1 text-brand-ink-soft/70"
                     >
                       <Trash2 size={14} />
                     </button>

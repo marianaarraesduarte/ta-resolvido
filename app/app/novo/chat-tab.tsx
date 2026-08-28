@@ -374,25 +374,32 @@ export function ChatTab({
                   : `${entry.items.length} lançamentos identificados`}{" "}
                 — confere antes de salvar
               </p>
-              <div className="mb-2.5 divide-y divide-brand-bg overflow-hidden rounded-2xl border border-brand-line">
+              <div className="mb-2.5 divide-y divide-brand-line/70 overflow-hidden rounded-2xl border border-brand-line">
                 {entry.items.map((item) => {
                   const missing = item.amount === null;
+                  const flagged = missing || item.possibleDuplicate;
                   return (
                     <div
                       key={item.id}
                       className={
-                        missing
-                          ? "flex items-start gap-2.5 bg-brand-coral/10 px-3.5 py-3"
-                          : item.possibleDuplicate
-                            ? "flex items-start gap-2.5 bg-brand-coral/10 px-3.5 py-3"
-                            : "flex items-start gap-2.5 bg-brand-card px-3.5 py-3"
+                        flagged
+                          ? "flex items-start gap-2.5 border-l-[3px] border-l-brand-coral bg-brand-card py-3.5 pl-3 pr-3.5"
+                          : "flex items-start gap-2.5 bg-brand-card px-3.5 py-3.5"
                       }
                     >
-                      {item.type === "receita" ? (
-                        <ArrowUpCircle size={15} className="flex-shrink-0 text-brand-sage" />
-                      ) : (
-                        <ArrowDownCircle size={15} className="flex-shrink-0 text-brand-coral" />
-                      )}
+                      <span
+                        className={
+                          item.type === "receita"
+                            ? "flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-sage/15"
+                            : "flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-coral/15"
+                        }
+                      >
+                        {item.type === "receita" ? (
+                          <ArrowUpCircle size={14} className="text-brand-sage" />
+                        ) : (
+                          <ArrowDownCircle size={14} className="text-brand-coral" />
+                        )}
+                      </span>
                       <div className="min-w-0 flex-1">
                         <input
                           value={item.description}
@@ -400,34 +407,8 @@ export function ChatTab({
                           aria-label="Descrição"
                           className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
                         />
-                        {missing && (
-                          <div className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
-                            <AlertTriangle size={11} className="flex-shrink-0" />
-                            Não achei o valor — completa aqui
-                          </div>
-                        )}
-                        {!missing && item.possibleDuplicate && (
-                          <div className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
-                            <AlertTriangle size={11} className="flex-shrink-0" />
-                            Pode ser repetido — já tem algo parecido nessa data
-                          </div>
-                        )}
-                        {item.isCreditCard && (
-                          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-plum px-2 py-0.5 text-[11px] font-semibold text-white">
-                            <CreditCard size={10} className="flex-shrink-0" />
-                            crédito
-                          </div>
-                        )}
-                        {item.type === "despesa" &&
-                          matchedFixedExpense(item.description, item.amount) && (
-                            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-amber px-2 py-0.5 text-[11px] font-semibold text-white">
-                              <Repeat size={10} className="flex-shrink-0" />
-                              Gasto fixo &quot;
-                              {matchedFixedExpense(item.description, item.amount)}&quot;
-                            </div>
-                          )}
-                        <div className="mt-1 flex flex-wrap items-center gap-2.5">
-                          <span className="text-[11px] text-brand-ink-soft">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <span className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink-soft">
                             {brDateLabel(item.date)}
                           </span>
                           {item.type === "despesa" && (
@@ -437,7 +418,7 @@ export function ChatTab({
                                 updateItemCategory(entry.id, item.id, e.target.value || null)
                               }
                               aria-label={`Categoria de ${item.description}`}
-                              className="rounded-md border border-brand-line bg-brand-card px-1.5 py-0.5 text-[11px] text-brand-ink-soft outline-none focus:border-brand-ink"
+                              className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink-soft outline-none focus:ring-1 focus:ring-brand-ink"
                             >
                               <option value="">Sem categoria</option>
                               {categories.map((c) => (
@@ -453,39 +434,50 @@ export function ChatTab({
                               onClick={() => toggleSalary(entry.id, item.id)}
                               className={
                                 item.isSalary
-                                  ? "text-[11px] font-semibold text-brand-sage"
-                                  : "text-[11px] font-semibold text-brand-ink-soft"
+                                  ? "rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] font-semibold text-brand-sage"
+                                  : "rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] font-medium text-brand-ink-soft"
                               }
                             >
-                              {item.isSalary ? "✓ marcado como salário" : "marcar como salário"}
+                              {item.isSalary ? "✓ salário" : "marcar como salário"}
                             </button>
                           )}
+                          {item.isCreditCard && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-brand-plum px-2 py-1 text-[10.5px] font-semibold text-brand-plum">
+                              <CreditCard size={10} className="flex-shrink-0" />
+                              crédito
+                            </span>
+                          )}
+                          {item.type === "despesa" &&
+                            matchedFixedExpense(item.description, item.amount) && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-brand-amber px-2 py-1 text-[10.5px] font-semibold text-brand-amber">
+                                <Repeat size={10} className="flex-shrink-0" />
+                                fixo
+                              </span>
+                            )}
                         </div>
                         {item.isCreditCard && isCompleto && (
-                          <div className="mt-2 border-t border-dashed border-brand-line pt-2">
-                            <label
-                              htmlFor={`due-date-${item.id}`}
-                              className="mb-1 block text-[10.5px] font-semibold uppercase tracking-wide text-brand-ink-soft"
-                            >
-                              Vencimento da fatura
-                            </label>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10.5px] font-semibold uppercase tracking-wide text-brand-ink-soft">
+                              Vencimento
+                            </span>
                             <input
                               id={`due-date-${item.id}`}
                               type="date"
                               value={item.dueDate}
                               onChange={(e) => updateItemDueDate(entry.id, item.id, e.target.value)}
-                              className="w-full rounded-md border border-brand-line bg-brand-card px-2 py-1 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                              aria-label="Vencimento da fatura"
+                              className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink outline-none focus:ring-1 focus:ring-brand-ink"
                             />
-                            {duplicateDates[item.id] && (
-                              <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
-                                <AlertTriangle size={11} className="flex-shrink-0" />
-                                Você já tem uma fatura salva com essa data de vencimento
-                              </div>
-                            )}
+                          </div>
+                        )}
+                        {item.isCreditCard && isCompleto && duplicateDates[item.id] && (
+                          <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                            <AlertTriangle size={11} className="flex-shrink-0" />
+                            Fatura já cadastrada nessa data
                           </div>
                         )}
                         {item.isCreditCard && !isCompleto && (
-                          <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-brand-plum/10 px-2.5 py-2 text-[11px] leading-snug text-brand-plum">
+                          <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-brand-plum/10 px-2.5 py-2 text-[11px] leading-snug text-brand-plum">
                             <Lock size={11} className="mt-0.5 flex-shrink-0" />
                             <span>
                               Rastrear isso certinho na fatura (com data de vencimento) é um
@@ -497,8 +489,20 @@ export function ChatTab({
                             </span>
                           </div>
                         )}
+                        {missing && (
+                          <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                            <AlertTriangle size={11} className="flex-shrink-0" />
+                            Não achei o valor — completa aqui
+                          </div>
+                        )}
+                        {!missing && item.possibleDuplicate && (
+                          <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                            <AlertTriangle size={11} className="flex-shrink-0" />
+                            Pode ser repetido nessa data
+                          </div>
+                        )}
                       </div>
-                      <div className="flex flex-shrink-0 items-center gap-0.5 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
+                      <div className="flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-ink">
                         {item.type === "receita" ? "+" : "-"}
                         <input
                           value={item.amountText}
@@ -517,7 +521,7 @@ export function ChatTab({
                         type="button"
                         onClick={() => removeItem(entry.id, item.id)}
                         aria-label={`Remover ${item.description}`}
-                        className="flex-shrink-0 text-brand-ink-soft"
+                        className="flex-shrink-0 p-1 text-brand-ink-soft/70"
                       >
                         <Trash2 size={14} />
                       </button>

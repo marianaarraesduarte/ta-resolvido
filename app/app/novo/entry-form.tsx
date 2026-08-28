@@ -12,16 +12,15 @@ import {
   MessageCircle,
   Pencil,
   Plus,
-  X,
 } from "lucide-react";
-import { checkExistingInvoiceDate, createEntry, createCategory, deleteCategory } from "./actions";
+import { checkExistingInvoiceDate, createEntry, createCategory } from "./actions";
 import { suggestCategoryName } from "@/lib/category-keywords";
+import { iconForCategory } from "@/lib/category-icons";
 import { formatCentsInput } from "@/lib/tokens";
-import { useConfirm } from "../confirm-dialog";
 import { PhotoTab } from "./photo-tab";
 import { ChatTab } from "./chat-tab";
 
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; icon: string | null };
 
 function TypeTab({
   active,
@@ -47,63 +46,6 @@ function TypeTab({
       {icon}
       {label}
     </button>
-  );
-}
-
-function ChipButton({
-  active,
-  onClick,
-  label,
-  icon,
-  onDelete,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  icon?: React.ReactNode;
-  onDelete?: () => void;
-}) {
-  if (!onDelete) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={
-          active
-            ? "flex items-center gap-1.5 rounded-full border border-brand-ink bg-brand-ink-solid px-3.5 py-2 text-sm font-medium text-white"
-            : "flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3.5 py-2 text-sm font-medium text-brand-ink-soft"
-        }
-      >
-        {icon}
-        {label}
-      </button>
-    );
-  }
-
-  return (
-    <span
-      className={
-        active
-          ? "flex items-center gap-1 rounded-full border border-brand-ink bg-brand-ink-solid py-2 pl-3.5 pr-1.5 text-sm font-medium text-white"
-          : "flex items-center gap-1 rounded-full border border-brand-line bg-brand-card py-2 pl-3.5 pr-1.5 text-sm font-medium text-brand-ink-soft"
-      }
-    >
-      <button type="button" onClick={onClick} className="flex items-center gap-1.5">
-        {icon}
-        {label}
-      </button>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        aria-label={`Excluir categoria ${label}`}
-        className="flex h-4 w-4 items-center justify-center rounded-full opacity-60 hover:opacity-100"
-      >
-        <X size={11} />
-      </button>
-    </span>
   );
 }
 
@@ -164,7 +106,6 @@ export function EntryForm({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
-  const confirm = useConfirm();
 
   function selectCategory(id: string) {
     setCategoryId(id);
@@ -186,7 +127,7 @@ export function EntryForm({
     try {
       const created = await createCategory(newCategoryName);
       setCategories((prev) =>
-        prev.some((c) => c.id === created.id) ? prev : [...prev, created],
+        prev.some((c) => c.id === created.id) ? prev : [...prev, { ...created, icon: null }],
       );
       setCategoryId(created.id);
       setCategoryTouched(true);
@@ -196,25 +137,6 @@ export function EntryForm({
       setCategoryError("Não deu pra criar essa categoria agora.");
     } finally {
       setCreatingCategory(false);
-    }
-  }
-
-  async function handleDeleteCategory(id: string, name: string) {
-    const confirmed = await confirm(
-      `Excluir a categoria "${name}"? Gastos já marcados com ela ficam sem categoria.`,
-    );
-    if (!confirmed) return;
-
-    setCategoryError("");
-    try {
-      await deleteCategory(id);
-      setCategories((prev) => prev.filter((c) => c.id !== id));
-      if (categoryId === id) {
-        setCategoryId("");
-        setCategoryTouched(false);
-      }
-    } catch {
-      setCategoryError("Não deu pra excluir essa categoria agora.");
     }
   }
 
@@ -331,23 +253,53 @@ export function EntryForm({
       {type === "despesa" ? (
         <div className="mb-4">
           <div className="mb-1.5 text-xs font-medium text-brand-ink-soft">Categoria</div>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => (
-              <ChipButton
-                key={c.id}
-                active={categoryId === c.id}
-                onClick={() => selectCategory(c.id)}
-                label={c.name}
-                onDelete={() => handleDeleteCategory(c.id, c.name)}
-              />
-            ))}
+          <div className="grid grid-cols-4 gap-2">
+            {categories.map((c) => {
+              const Icon = iconForCategory(c.icon);
+              const active = categoryId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectCategory(c.id)}
+                  className={
+                    active
+                      ? "flex flex-col items-center gap-1.5 rounded-2xl border border-brand-ink bg-brand-ink-solid px-1 py-2.5"
+                      : "flex flex-col items-center gap-1.5 rounded-2xl border border-brand-line bg-brand-card px-1 py-2.5"
+                  }
+                >
+                  <span
+                    className={
+                      active
+                        ? "flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/15"
+                        : "flex h-8 w-8 items-center justify-center rounded-[10px] bg-brand-bg"
+                    }
+                  >
+                    <Icon size={15} className={active ? "text-white" : "text-brand-ink"} />
+                  </span>
+                  <span
+                    className={
+                      active
+                        ? "line-clamp-2 text-center text-[10.5px] font-medium leading-tight text-white"
+                        : "line-clamp-2 text-center text-[10.5px] font-medium leading-tight text-brand-ink-soft"
+                    }
+                  >
+                    {c.name}
+                  </span>
+                </button>
+              );
+            })}
             {!addingCategory && (
-              <ChipButton
-                active={false}
+              <button
+                type="button"
                 onClick={() => setAddingCategory(true)}
-                label="Nova"
-                icon={<Plus size={13} />}
-              />
+                className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-brand-line px-1 py-2.5 text-brand-ink-soft"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-dashed border-brand-line">
+                  <Plus size={15} />
+                </span>
+                <span className="text-center text-[10.5px] font-medium leading-tight">Nova</span>
+              </button>
             )}
           </div>
 

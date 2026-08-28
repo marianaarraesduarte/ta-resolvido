@@ -45,7 +45,7 @@ export default async function NovoLancamentoPage({
   ] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, name")
+      .select("id, name, icon")
       .eq("user_id", user.id)
       .order("name", { ascending: true }),
     supabase.from("profiles").select("separate_by_account, plan").eq("id", user.id).single(),
