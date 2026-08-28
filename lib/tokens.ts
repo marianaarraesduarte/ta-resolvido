@@ -65,3 +65,16 @@ export const LEVEL_COLOR: Record<IntensityLevel, string> = {
   amber: TOKENS.amber,
   coral: TOKENS.coral,
 };
+
+/**
+ * Tamanho (em px) da bolinha de um gasto na régua, crescendo bem discreto
+ * conforme o valor passa da média — só pra chamar atenção num gasto bem
+ * maior que o normal, sem virar um gráfico de barras.
+ */
+export function dotSizeForAmount(amount: number, averageDespesa: number): number {
+  const BASE = 11;
+  const MAX = 17;
+  if (averageDespesa <= 0 || amount <= averageDespesa) return BASE;
+  const ratio = amount / averageDespesa;
+  return Math.min(MAX, Math.round(BASE + (ratio - 1) * 3));
+}

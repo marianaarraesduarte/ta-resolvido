@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { amountToInputValue, formatCentsInput, parseCentsInput } from "./tokens";
+import { amountToInputValue, dotSizeForAmount, formatCentsInput, parseCentsInput } from "./tokens";
+
+describe("dotSizeForAmount", () => {
+  it("fica no tamanho base pra gastos na média ou abaixo", () => {
+    expect(dotSizeForAmount(50, 100)).toBe(11);
+    expect(dotSizeForAmount(100, 100)).toBe(11);
+  });
+
+  it("cresce discreto conforme passa da média", () => {
+    expect(dotSizeForAmount(200, 100)).toBe(14);
+    expect(dotSizeForAmount(300, 100)).toBe(17);
+  });
+
+  it("nunca passa do tamanho máximo, mesmo pra gastos muito acima da média", () => {
+    expect(dotSizeForAmount(5000, 100)).toBe(17);
+  });
+
+  it("usa o tamanho base quando não há média (mês sem histórico)", () => {
+    expect(dotSizeForAmount(500, 0)).toBe(11);
+  });
+});
 
 describe("formatCentsInput", () => {
   it("formata dígito por dígito, tipo caixa eletrônico", () => {

@@ -16,7 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { currency, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
+import { currency, dotSizeForAmount, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import type { AssistantData } from "@/lib/assistant-data";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
@@ -393,9 +393,14 @@ export function MonthRuler({
                               aria-label={`Gastos do dia ${day}`}
                               className={
                                 isSelectedDespesa
-                                  ? "h-4 w-4 rounded-full bg-brand-coral shadow-md ring-2 ring-brand-ink"
-                                  : "h-3 w-3 rounded-full bg-brand-coral shadow-md"
+                                  ? "rounded-full bg-brand-coral shadow-md ring-2 ring-brand-ink"
+                                  : "rounded-full bg-brand-coral shadow-md"
                               }
+                              style={(() => {
+                                const size =
+                                  dotSizeForAmount(despesaTotal, despesaAvg) + (isSelectedDespesa ? 4 : 0);
+                                return { width: size, height: size };
+                              })()}
                             />
                             <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                               {tooltipLabel(bucket!.despesas, despesaTotal)}
