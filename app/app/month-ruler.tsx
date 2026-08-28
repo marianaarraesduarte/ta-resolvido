@@ -279,13 +279,10 @@ export function MonthRuler({
             {hasEntries && (
               <div className="mb-0.5 text-[10px] font-semibold text-brand-sage">↑ entrou</div>
             )}
-            <div
-              className="relative"
-              style={{ minWidth: daysInMonth * DAY_WIDTH, height: hasEntries ? 96 : 76 }}
-            >
+            <div className="relative" style={{ minWidth: daysInMonth * DAY_WIDTH, height: 76 }}>
               <div
                 className="absolute left-0 right-0 bg-brand-line"
-                style={{ top: hasEntries ? 48 : 26, height: 2 }}
+                style={{ top: hasEntries ? 38 : 26, height: 2 }}
               />
               {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                 const isToday = day === todayDayOfMonth;
