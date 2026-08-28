@@ -58,8 +58,10 @@ export async function createEntry(formData: FormData) {
   const amount = parseCentsInput(String(formData.get("amount") ?? ""));
   const description = String(formData.get("description") ?? "").trim();
   const entryDate = String(formData.get("entry_date") ?? "");
+  const isCreditCard = type === "despesa" && formData.get("is_credit_card") === "true";
+  const dueDate = String(formData.get("due_date") ?? "");
 
-  if (!amount || amount <= 0 || !description || !entryDate) {
+  if (!amount || amount <= 0 || !description || (isCreditCard ? !dueDate : !entryDate)) {
     redirect("/app/novo?error=1");
   }
 
@@ -73,18 +75,44 @@ export async function createEntry(formData: FormData) {
     category_id?: string | null;
     income_type?: string | null;
     account_name?: string | null;
+    payment_method?: "cartao";
+    card_invoice_id?: string;
   } = {
     user_id: user.id,
     type,
     amount,
     description,
-    entry_date: entryDate,
+    entry_date: isCreditCard ? dueDate : entryDate,
     source: "manual",
     account_name: String(formData.get("account_name") ?? "").trim() || null,
   };
 
   if (type === "despesa") {
     payload.category_id = String(formData.get("category_id") ?? "") || null;
+    if (isCreditCard) {
+      const { data: existingInvoice } = await supabase
+        .from("card_invoices")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("invoice_date", dueDate)
+        .limit(1)
+        .maybeSingle();
+
+      const invoiceId = existingInvoice
+        ? existingInvoice.id
+        : await (async () => {
+            const { data: created, error: invoiceError } = await supabase
+              .from("card_invoices")
+              .insert({ user_id: user.id, invoice_date: dueDate })
+              .select("id")
+              .single();
+            if (invoiceError || !created) redirect("/app/novo?error=1");
+            return created.id;
+          })();
+
+      payload.payment_method = "cartao";
+      payload.card_invoice_id = invoiceId;
+    }
   } else {
     payload.income_type = formData.get("income_type") === "salario" ? "salario" : "outra";
   }

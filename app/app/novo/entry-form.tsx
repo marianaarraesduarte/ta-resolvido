@@ -1,8 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Camera, MessageCircle, Pencil, Plus, X } from "lucide-react";
-import { createEntry, createCategory, deleteCategory } from "./actions";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Camera,
+  CreditCard,
+  Lock,
+  MessageCircle,
+  Pencil,
+  Plus,
+  X,
+} from "lucide-react";
+import { checkExistingInvoiceDate, createEntry, createCategory, deleteCategory } from "./actions";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { formatCentsInput } from "@/lib/tokens";
 import { useConfirm } from "../confirm-dialog";
@@ -129,7 +141,24 @@ export function EntryForm({
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id ?? "");
   const [categoryTouched, setCategoryTouched] = useState(false);
   const [incomeType, setIncomeType] = useState<"salario" | "outra">("salario");
+  const [isCreditCard, setIsCreditCard] = useState(false);
+  const [dueDate, setDueDate] = useState(defaultDate);
+  const [duplicateDueDate, setDuplicateDueDate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isCreditCard || !isCompleto) {
+      setDuplicateDueDate(false);
+      return;
+    }
+    let cancelled = false;
+    checkExistingInvoiceDate(dueDate).then((dup) => {
+      if (!cancelled) setDuplicateDueDate(dup);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isCreditCard, isCompleto, dueDate]);
 
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -244,7 +273,10 @@ export function EntryForm({
             />
             <TypeTab
               active={type === "receita"}
-              onClick={() => setType("receita")}
+              onClick={() => {
+                setType("receita");
+                setIsCreditCard(false);
+              }}
               icon={<ArrowUpCircle size={15} />}
               label="Entrou (receita)"
             />
@@ -378,18 +410,80 @@ export function EntryForm({
         </div>
       )}
 
+      {type === "despesa" && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setIsCreditCard((v) => !v)}
+            className={
+              isCreditCard
+                ? "flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum px-3.5 py-2 text-sm font-medium text-white"
+                : "flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3.5 py-2 text-sm font-medium text-brand-ink-soft"
+            }
+          >
+            <CreditCard size={13} />
+            Foi no crédito?
+          </button>
+        </div>
+      )}
+
       <div className="mb-1">
-        <label className="mb-1.5 block text-xs font-medium text-brand-ink-soft" htmlFor="entry_date">
-          Data
-        </label>
-        <input
-          id="entry_date"
-          name="entry_date"
-          type="date"
-          required
-          defaultValue={defaultDate}
-          className={`${inputClass} min-w-0`}
-        />
+        {isCreditCard && isCompleto ? (
+          <>
+            <label
+              className="mb-1.5 block text-xs font-medium text-brand-ink-soft"
+              htmlFor="due_date"
+            >
+              Vencimento da fatura
+            </label>
+            <input
+              id="due_date"
+              type="date"
+              required
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className={`${inputClass} min-w-0`}
+            />
+            {duplicateDueDate && (
+              <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                <AlertTriangle size={11} className="flex-shrink-0" />
+                Você já tem uma fatura salva com essa data de vencimento
+              </div>
+            )}
+            <input type="hidden" name="due_date" value={dueDate} />
+            <input type="hidden" name="is_credit_card" value="true" />
+          </>
+        ) : (
+          <>
+            <label
+              className="mb-1.5 block text-xs font-medium text-brand-ink-soft"
+              htmlFor="entry_date"
+            >
+              Data
+            </label>
+            <input
+              id="entry_date"
+              name="entry_date"
+              type="date"
+              required
+              defaultValue={defaultDate}
+              className={`${inputClass} min-w-0`}
+            />
+            <input type="hidden" name="is_credit_card" value="false" />
+          </>
+        )}
+        {isCreditCard && !isCompleto && (
+          <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-brand-plum/10 px-2.5 py-2 text-[11px] leading-snug text-brand-plum">
+            <Lock size={11} className="mt-0.5 flex-shrink-0" />
+            <span>
+              Rastrear isso certinho na fatura (com data de vencimento) é um recurso do{" "}
+              <Link href="/app/planos" className="font-semibold underline underline-offset-2">
+                Completo
+              </Link>
+              . Por enquanto, vai entrar como um gasto normal, na data acima.
+            </span>
+          </div>
+        )}
       </div>
 
       {separateByAccount && (
