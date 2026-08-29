@@ -77,6 +77,16 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
     await analyzeDataUrl(dataUrl, filePdf, filePdf ? "Compartilhado.pdf" : "Compartilhado");
   }
 
+  /**
+   * Reenvia o mesmo arquivo já carregado depois de um erro, sem precisar
+   * escolher o arquivo de novo — o data URL já compactado continua guardado
+   * em previewUrl.
+   */
+  async function retry() {
+    if (!previewUrl) return;
+    await analyzeDataUrl(previewUrl, isPdf, fileName);
+  }
+
   return {
     fileInputRef,
     previewUrl,
@@ -90,5 +100,6 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
     setError,
     handleFileChange,
     loadFromDataUrl,
+    retry,
   };
 }

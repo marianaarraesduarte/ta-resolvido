@@ -12,7 +12,7 @@ const MODEL = "gemini-flash-latest";
 // pro texto se mostrou curto demais na prática — um pico de lentidão do
 // Gemini já estourava esse limite antes mesmo de dar chance de retry.
 const TEXT_TIMEOUT_MS = 30_000;
-const DOCUMENT_TIMEOUT_MS = 45_000;
+const DOCUMENT_TIMEOUT_MS = 60_000;
 
 function getClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -37,6 +37,17 @@ function parseDataUrl(dataUrl: string): { mimeType: string; data: string } {
 const TRANSIENT_STATUS = new Set([503, 504]);
 
 /**
+ * Quando o nosso próprio timeout (DOCUMENT_TIMEOUT_MS/TEXT_TIMEOUT_MS) estoura,
+ * o SDK aborta a chamada e joga um AbortError (não um ApiError com status) —
+ * confirmado ao vivo num caso real de fatura que bateu exatamente nos 45s.
+ * Sem essa checagem, esse caso passava direto sem nenhuma tentativa extra.
+ */
+function isTransientError(err: unknown): boolean {
+  if (err instanceof ApiError && TRANSIENT_STATUS.has(err.status)) return true;
+  return err instanceof Error && err.name === "AbortError";
+}
+
+/**
  * Em vez de já desistir e mostrar erro pra usuária num problema passageiro,
  * tenta de novo mais duas vezes com uma pausa curta antes.
  */
@@ -46,8 +57,7 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
     } catch (err) {
-      const isTransient = err instanceof ApiError && TRANSIENT_STATUS.has(err.status);
-      if (!isTransient || attempt >= maxAttempts) throw err;
+      if (!isTransientError(err) || attempt >= maxAttempts) throw err;
       await new Promise((resolve) => setTimeout(resolve, 700 * attempt));
     }
   }

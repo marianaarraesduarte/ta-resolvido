@@ -11,6 +11,7 @@ import {
   ImagePlus,
   ListChecks,
   Repeat,
+  RotateCw,
   Square,
   SquareCheck,
   Tag,
@@ -50,6 +51,7 @@ export function BankStatementReview({
     setError,
     handleFileChange,
     loadFromDataUrl,
+    retry,
   } = usePhotoRecognition<ReviewItem>(async (dataUrl) => {
     const recognized = await recognizeStatement(dataUrl);
     return recognized.map((item, i) => ({
@@ -448,7 +450,20 @@ export function BankStatementReview({
         </div>
       )}
 
-      {error && <p className="mt-3 text-sm text-brand-coral">{error}</p>}
+      {error && (
+        <div className="mt-3">
+          <p className="text-sm text-brand-coral">{error}</p>
+          <button
+            type="button"
+            onClick={retry}
+            disabled={analyzing}
+            className="mt-2 flex items-center gap-1.5 rounded-full bg-brand-ink-solid px-3.5 py-2 text-[13px] font-semibold text-white disabled:opacity-60"
+          >
+            <RotateCw size={13} />
+            Tentar de novo
+          </button>
+        </div>
+      )}
     </div>
   );
 }
