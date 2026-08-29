@@ -45,6 +45,7 @@ export function BankStatementReview({
     items,
     setItems,
     analyzing,
+    slowAnalyzing,
     error,
     setError,
     handleFileChange,
@@ -209,7 +210,11 @@ export function BankStatementReview({
           )}
 
           {analyzing && (
-            <p className="mb-3 text-[13px] text-brand-ink-soft">Analisando a imagem...</p>
+            <p className="mb-3 text-[13px] text-brand-ink-soft">
+              {slowAnalyzing
+                ? "Ainda analisando... pode levar até um minuto, não sai da tela"
+                : "Analisando a imagem..."}
+            </p>
           )}
 
           {items && items.length > 0 && (

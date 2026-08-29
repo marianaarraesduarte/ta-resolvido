@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { compressImage } from "@/lib/image-compress";
 import { readFileAsDataUrl } from "@/lib/read-file";
 
@@ -19,7 +19,21 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
   const [fileName, setFileName] = useState("");
   const [items, setItems] = useState<T[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [slowAnalyzing, setSlowAnalyzing] = useState(false);
   const [error, setError] = useState("");
+
+  // Foto/PDF pro Gemini pode passar de um minuto (documento grande, ou o
+  // Gemini momentaneamente lento) — sem avisar, "Analisando..." parado
+  // parece travado, e é fácil a pessoa sair da tela ou trocar de app
+  // achando que não vai dar em nada, o que corta a análise no meio.
+  useEffect(() => {
+    if (!analyzing) {
+      setSlowAnalyzing(false);
+      return;
+    }
+    const timeout = setTimeout(() => setSlowAnalyzing(true), 6000);
+    return () => clearTimeout(timeout);
+  }, [analyzing]);
 
   async function analyzeDataUrl(dataUrl: string, filePdf: boolean, name: string) {
     setError("");
@@ -71,6 +85,7 @@ export function usePhotoRecognition<T>(recognize: (dataUrl: string) => Promise<T
     items,
     setItems,
     analyzing,
+    slowAnalyzing,
     error,
     setError,
     handleFileChange,
