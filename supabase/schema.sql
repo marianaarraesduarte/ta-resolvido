@@ -12,7 +12,7 @@ create table if not exists public.profiles (
   income_basis text not null default 'all' check (income_basis in ('all', 'salary_only')),
   hide_goals_screen boolean not null default false,
   reminder_frequency smallint not null default 0 check (reminder_frequency in (0, 1, 2, 4)),
-  last_print_sent_at timestamptz,
+  last_reminder_sent_at timestamptz,
   created_at timestamptz not null default now()
 );
 

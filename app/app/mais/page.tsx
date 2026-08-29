@@ -42,7 +42,7 @@ export default async function MaisPage() {
     },
     {
       href: "/app/config/lembrete",
-      label: "Lembrete do print",
+      label: "Lembrete de lançamento",
       desc: "Configure a frequência do aviso",
       icon: Bell,
       locked: isFree,

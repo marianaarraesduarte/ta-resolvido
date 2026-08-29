@@ -8,7 +8,7 @@ const OPTIONS = [
   { key: 1 as const, label: "1x por mês", desc: "Um lembrete no fim do mês" },
   { key: 2 as const, label: "2x por mês", desc: "A cada 15 dias, aproximadamente" },
   { key: 4 as const, label: "4x por mês", desc: "Toda semana" },
-  { key: 0 as const, label: "Não quero lembretes", desc: "Eu mando o print quando lembrar" },
+  { key: 0 as const, label: "Não quero lembretes", desc: "Eu volto pro app quando lembrar" },
 ];
 
 export function LembreteBody({ initialFrequency }: { initialFrequency: number }) {

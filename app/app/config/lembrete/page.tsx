@@ -22,7 +22,7 @@ export default async function LembretePage() {
       >
         <ChevronLeft size={18} />
       </Link>
-      <div className="font-display text-xl font-bold text-brand-ink">Lembrete do print</div>
+      <div className="font-display text-xl font-bold text-brand-ink">Lembrete de lançamento</div>
     </div>
   );
 
@@ -32,7 +32,7 @@ export default async function LembretePage() {
       <div className="flex justify-center px-3 py-7">
         <div className="w-full max-w-sm">
           {header}
-          <Upsell feature="Lembrete do print" />
+          <Upsell feature="Lembrete de lançamento" />
         </div>
       </div>
     );
@@ -55,7 +55,8 @@ export default async function LembretePage() {
         {header}
 
         <p className="mb-5 text-[13.5px] leading-snug text-brand-ink-soft">
-          Com que frequência você quer que a gente te lembre de mandar o print do extrato?
+          Com que frequência você quer que a gente te lembre de lançar, se passar um tempo sem
+          marcar nada?
         </p>
 
         <LembreteBody initialFrequency={profile?.reminder_frequency ?? 0} />

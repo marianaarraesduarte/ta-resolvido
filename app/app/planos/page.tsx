@@ -17,7 +17,7 @@ const PAID_FEATURES = [
   "Comentário do mês — um resumo simples de como foi, sem gráfico complicado",
   "Metas de investimento e reservas planejadas",
   "Limites por categoria com alerta",
-  "Lembrete configurável de envio do print",
+  "Lembrete configurável de lançamento",
 ];
 
 export default async function PlanosPage() {
