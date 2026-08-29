@@ -1,22 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, ChevronDown, Repeat, X } from "lucide-react";
 import { amountToInputValue, formatCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { createEntry } from "./novo/actions";
 
 export function FrequentExpenseChips({ items }: { items: FrequentExpense[] }) {
+  const [expanded, setExpanded] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(null);
 
   if (items.length === 0) return null;
 
   return (
     <div className="mb-4">
-      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink-soft">
-        Lançar de novo
-      </div>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="mb-1.5 flex w-full items-center gap-2.5 rounded-2xl bg-brand-card px-4 py-3.5 text-left"
+      >
+        <Repeat size={15} className="flex-shrink-0 text-brand-ink-soft" />
+        <span className="flex-1 text-[13px] font-semibold text-brand-ink">Lançar de novo</span>
+        {!expanded && (
+          <span className="flex-shrink-0 text-[12px] text-brand-ink-soft">
+            {items.length} {items.length === 1 ? "opção" : "opções"}
+          </span>
+        )}
+        <ChevronDown
+          size={15}
+          className="flex-shrink-0 text-brand-ink-soft transition-transform"
+          style={{ transform: expanded ? "rotate(180deg)" : "none" }}
+        />
+      </button>
+      {expanded && (
       <div className="flex flex-wrap gap-1.5">
         {items.map((item) => {
           const isOpen = openKey === item.description;
@@ -75,6 +92,7 @@ export function FrequentExpenseChips({ items }: { items: FrequentExpense[] }) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
