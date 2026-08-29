@@ -1,36 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, Repeat, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { amountToInputValue, formatCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { createEntry } from "./novo/actions";
 
 export function FrequentExpenseChips({ items }: { items: FrequentExpense[] }) {
-  const [expanded, setExpanded] = useState(true);
   const [openKey, setOpenKey] = useState<string | null>(null);
 
   if (items.length === 0) return null;
 
   return (
     <div className="mb-4">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="mb-1.5 flex w-full items-center gap-2 text-left"
-      >
-        <Repeat size={12} className="flex-shrink-0 text-brand-ink-soft" />
-        <span className="flex-1 text-[11px] font-semibold uppercase tracking-wide text-brand-ink-soft">
-          Lançar de novo
-        </span>
-        <ChevronDown
-          size={14}
-          className="flex-shrink-0 text-brand-ink-soft transition-transform"
-          style={{ transform: expanded ? "rotate(180deg)" : "none" }}
-        />
-      </button>
-      {expanded && (
+      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink-soft">
+        Lançar de novo
+      </div>
       <div className="flex flex-wrap gap-1.5">
         {items.map((item) => {
           const isOpen = openKey === item.description;
@@ -89,7 +75,6 @@ export function FrequentExpenseChips({ items }: { items: FrequentExpense[] }) {
           );
         })}
       </div>
-      )}
     </div>
   );
 }
