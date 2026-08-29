@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Pencil, Plus, X } from "lucide-react";
+import { Check, ChevronDown, Pencil, Plus, X } from "lucide-react";
 import { amountToInputValue, currency, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { useConfirm } from "../confirm-dialog";
@@ -185,6 +185,7 @@ export function FixedExpensesSection({
 }) {
   const router = useRouter();
   const [expenses, setExpenses] = useState(initialExpenses);
+  const [expanded, setExpanded] = useState(initialExpenses.length === 0);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newAmount, setNewAmount] = useState("");
@@ -240,20 +241,37 @@ export function FixedExpensesSection({
 
   return (
     <div className="mb-6">
-      <div className="mb-2 text-[13px] font-semibold text-brand-ink">Gastos fixos do mês</div>
+      {expenses.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mb-2 flex w-full items-center gap-2.5 rounded-2xl bg-brand-card px-4 py-3.5 text-left"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold text-brand-ink">Gastos fixos do mês</div>
+            {pendingTotal > 0 ? (
+              <div className="mt-0.5 truncate text-[12px] text-brand-ink-soft">
+                Ainda tem {currency(pendingTotal)} em {pendingCount}{" "}
+                {pendingCount === 1 ? "conta fixa" : "contas fixas"} pra pagar
+              </div>
+            ) : (
+              <div className="mt-0.5 truncate text-[12px] font-medium text-brand-sage">
+                Todas as contas fixas já foram pagas
+              </div>
+            )}
+          </div>
+          <ChevronDown
+            size={15}
+            className="flex-shrink-0 text-brand-ink-soft transition-transform"
+            style={{ transform: expanded ? "rotate(180deg)" : "none" }}
+          />
+        </button>
+      ) : (
+        <div className="mb-2 text-[13px] font-semibold text-brand-ink">Gastos fixos do mês</div>
+      )}
 
-      {expenses.length > 0 &&
-        (pendingTotal > 0 ? (
-          <p className="mb-2.5 text-[12.5px] leading-snug text-brand-ink-soft">
-            Ainda tem {currency(pendingTotal)} em {pendingCount}{" "}
-            {pendingCount === 1 ? "conta fixa" : "contas fixas"} pra pagar esse mês.
-          </p>
-        ) : (
-          <p className="mb-2.5 text-[12.5px] font-medium text-brand-sage">
-            Todas as contas fixas desse mês já foram pagas.
-          </p>
-        ))}
-
+      {expanded && (
+        <>
       {deleteError && <p className="mb-2.5 text-xs text-brand-coral">{deleteError}</p>}
 
       {expenses.length > 0 && (
@@ -328,6 +346,8 @@ export function FixedExpensesSection({
           <Plus size={15} />
           Novo gasto fixo
         </button>
+      )}
+        </>
       )}
     </div>
   );

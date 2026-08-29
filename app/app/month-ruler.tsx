@@ -320,7 +320,11 @@ export function MonthRuler({
                           <div className="group relative mb-1.5">
                             <button
                               type="button"
-                              onClick={() => selectAndReset({ kind: "day", day, type: "receita" })}
+                              onClick={() =>
+                                selectAndReset(
+                                  isSelectedReceita ? null : { kind: "day", day, type: "receita" },
+                                )
+                              }
                               aria-label={`Entradas do dia ${day}`}
                               className="flex h-6 w-6 items-center justify-center"
                             >
@@ -395,7 +399,11 @@ export function MonthRuler({
                           <div className="group relative">
                             <button
                               type="button"
-                              onClick={() => selectAndReset({ kind: "day", day, type: "despesa" })}
+                              onClick={() =>
+                                selectAndReset(
+                                  isSelectedDespesa ? null : { kind: "day", day, type: "despesa" },
+                                )
+                              }
                               aria-label={`Gastos do dia ${day}`}
                               className="flex h-6 w-6 items-center justify-center"
                             >
