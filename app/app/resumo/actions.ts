@@ -123,3 +123,37 @@ export async function markFixedExpensePaid(
 
   if (error) throw new Error("Não deu pra marcar como pago agora.");
 }
+
+export type SearchedEntry = {
+  id: string;
+  description: string;
+  amount: number;
+  entry_date: string;
+  type: "despesa" | "receita";
+};
+
+// Busca em todos os meses, não só no que está aberto na tela — o problema
+// que motivou isso foi justamente não achar um lançamento antigo porque
+// ele estava em outro mês.
+export async function searchEntries(query: string): Promise<SearchedEntry[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+
+  const { data, error } = await supabase
+    .from("entries")
+    .select("id, description, amount, entry_date, type")
+    .eq("user_id", user.id)
+    .ilike("description", `%${trimmed}%`)
+    .order("entry_date", { ascending: false })
+    .limit(20);
+
+  if (error) throw new Error("Não deu pra buscar agora.");
+
+  return data;
+}

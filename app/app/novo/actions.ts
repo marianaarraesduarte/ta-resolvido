@@ -44,6 +44,125 @@ async function logRecognition(
   await supabase.from("photo_recognitions").insert({ user_id: userId });
 }
 
+// Em qual fatura uma compra no crédito entra: uma já existente (escolhida
+// numa lista) ou uma nova, a criar na hora sob um cartão específico —
+// "nova" ainda reaproveita a fatura existente se já tiver uma pro mesmo
+// cartão+data, pra não duplicar por acidente.
+export type CreditSelection =
+  | { kind: "existing"; invoiceId: string }
+  | { kind: "new"; cardId: string; dueDate: string };
+
+async function resolveInvoiceId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  selection: CreditSelection,
+): Promise<string> {
+  if (selection.kind === "existing") return selection.invoiceId;
+
+  const { data: existingInvoice } = await supabase
+    .from("card_invoices")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("card_id", selection.cardId)
+    .eq("invoice_date", selection.dueDate)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingInvoice) return existingInvoice.id;
+
+  const { data: created, error } = await supabase
+    .from("card_invoices")
+    .insert({ user_id: userId, card_id: selection.cardId, invoice_date: selection.dueDate })
+    .select("id")
+    .single();
+
+  if (error || !created) {
+    throw new Error("Não deu pra salvar a fatura agora.");
+  }
+  return created.id;
+}
+
+export type CardWithInvoices = {
+  id: string;
+  name: string;
+  color: string;
+  invoices: { id: string; dueDate: string }[];
+};
+
+export async function listCardsWithInvoices(): Promise<CardWithInvoices[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const [{ data: cards }, { data: invoices }] = await Promise.all([
+    supabase.from("cards").select("id, name, color").eq("user_id", user.id).order("name"),
+    supabase
+      .from("card_invoices")
+      .select("id, card_id, invoice_date")
+      .eq("user_id", user.id)
+      .not("card_id", "is", null)
+      .order("invoice_date", { ascending: false }),
+  ]);
+
+  return (cards ?? []).map((card) => ({
+    ...card,
+    invoices: (invoices ?? [])
+      .filter((inv) => inv.card_id === card.id)
+      .map((inv) => ({ id: inv.id, dueDate: inv.invoice_date })),
+  }));
+}
+
+export async function checkExistingInvoiceDate(cardId: string, invoiceDate: string): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("card_invoices")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("card_id", cardId)
+    .eq("invoice_date", invoiceDate)
+    .limit(1)
+    .maybeSingle();
+
+  return !!data;
+}
+
+// Só deixa excluir uma fatura vazia (sem lançamentos) — se tiver compras
+// dentro, é pra excluir as compras primeiro, não a fatura por baixo delas.
+export async function deleteCardInvoice(id: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { count } = await supabase
+    .from("entries")
+    .select("id", { count: "exact", head: true })
+    .eq("card_invoice_id", id)
+    .eq("user_id", user.id);
+
+  if ((count ?? 0) > 0) {
+    throw new Error("Essa fatura ainda tem compras — exclua elas primeiro.");
+  }
+
+  const { error } = await supabase
+    .from("card_invoices")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error("Não deu pra excluir essa fatura agora.");
+  }
+}
+
 export async function createEntry(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -58,10 +177,24 @@ export async function createEntry(formData: FormData) {
   const amount = parseCentsInput(String(formData.get("amount") ?? ""));
   const description = String(formData.get("description") ?? "").trim();
   const entryDate = String(formData.get("entry_date") ?? "");
-  const isCreditCard = type === "despesa" && formData.get("is_credit_card") === "true";
-  const dueDate = String(formData.get("due_date") ?? "");
+  const invoiceKind = String(formData.get("invoice_kind") ?? "");
+  const isCreditCard = type === "despesa" && (invoiceKind === "existing" || invoiceKind === "new");
 
-  if (!amount || amount <= 0 || !description || (isCreditCard ? !dueDate : !entryDate)) {
+  let creditSelection: CreditSelection | null = null;
+  if (isCreditCard) {
+    if (invoiceKind === "existing") {
+      const invoiceId = String(formData.get("invoice_id") ?? "");
+      if (!invoiceId) redirect("/app/novo?error=1");
+      creditSelection = { kind: "existing", invoiceId };
+    } else {
+      const cardId = String(formData.get("card_id") ?? "");
+      const dueDate = String(formData.get("due_date") ?? "");
+      if (!cardId || !dueDate) redirect("/app/novo?error=1");
+      creditSelection = { kind: "new", cardId, dueDate };
+    }
+  }
+
+  if (!amount || amount <= 0 || !description || (isCreditCard ? !creditSelection : !entryDate)) {
     redirect("/app/novo?error=1");
   }
 
@@ -82,34 +215,23 @@ export async function createEntry(formData: FormData) {
     type,
     amount,
     description,
-    entry_date: isCreditCard ? dueDate : entryDate,
+    entry_date: entryDate,
     source: "manual",
     account_name: String(formData.get("account_name") ?? "").trim() || null,
   };
 
   if (type === "despesa") {
     payload.category_id = String(formData.get("category_id") ?? "") || null;
-    if (isCreditCard) {
-      const { data: existingInvoice } = await supabase
+    if (isCreditCard && creditSelection) {
+      const invoiceId = await resolveInvoiceId(supabase, user.id, creditSelection);
+      const { data: invoiceRow } = await supabase
         .from("card_invoices")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("invoice_date", dueDate)
-        .limit(1)
-        .maybeSingle();
+        .select("invoice_date")
+        .eq("id", invoiceId)
+        .single();
+      if (!invoiceRow) redirect("/app/novo?error=1");
 
-      const invoiceId = existingInvoice
-        ? existingInvoice.id
-        : await (async () => {
-            const { data: created, error: invoiceError } = await supabase
-              .from("card_invoices")
-              .insert({ user_id: user.id, invoice_date: dueDate })
-              .select("id")
-              .single();
-            if (invoiceError || !created) redirect("/app/novo?error=1");
-            return created.id;
-          })();
-
+      payload.entry_date = invoiceRow.invoice_date;
       payload.payment_method = "cartao";
       payload.card_invoice_id = invoiceId;
     }
@@ -571,8 +693,7 @@ export async function saveRecognizedItems(
     isSalary: boolean;
     date: string;
     category: string | null;
-    isCreditCard?: boolean;
-    dueDate?: string | null;
+    creditSelection?: CreditSelection | null;
   }[],
   source: "foto" | "chat" | "audio" = "foto",
 ): Promise<void> {
@@ -584,64 +705,68 @@ export async function saveRecognizedItems(
   if (!user) {
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
+  const userId = user.id;
 
-  if (
-    items.length === 0 ||
-    items.some((item) => !item.date || (item.isCreditCard && !item.dueDate))
-  ) {
+  if (items.length === 0 || items.some((item) => !item.date)) {
     throw new Error("Confere as datas antes de salvar.");
   }
 
   const { data: categories } = await supabase
     .from("categories")
     .select("id, name")
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
   const categoryByName = new Map((categories ?? []).map((c) => [c.name, c.id]));
 
-  const dueDates = [
-    ...new Set(items.filter((item) => item.isCreditCard).map((item) => item.dueDate as string)),
-  ];
-  const invoiceIdByDueDate = new Map<string, string>();
-  for (const dueDate of dueDates) {
-    const { data: existing } = await supabase
-      .from("card_invoices")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("invoice_date", dueDate)
-      .limit(1)
-      .maybeSingle();
-
-    if (existing) {
-      invoiceIdByDueDate.set(dueDate, existing.id);
-      continue;
-    }
-
-    const { data: created, error: invoiceError } = await supabase
-      .from("card_invoices")
-      .insert({ user_id: user.id, invoice_date: dueDate })
-      .select("id")
-      .single();
-    if (invoiceError || !created) {
-      throw new Error("Não deu pra salvar a fatura agora.");
-    }
-    invoiceIdByDueDate.set(dueDate, created.id);
+  // Duas compras diferentes podem escolher a mesma fatura (existente ou
+  // "nova" com o mesmo cartão+data) — resolve uma vez só por chave, senão
+  // "nova fatura" criaria uma linha duplicada pra cada item.
+  const invoiceIdByKey = new Map<string, string>();
+  async function resolveKeyed(selection: CreditSelection): Promise<string> {
+    const key =
+      selection.kind === "existing"
+        ? `existing:${selection.invoiceId}`
+        : `new:${selection.cardId}:${selection.dueDate}`;
+    const cached = invoiceIdByKey.get(key);
+    if (cached) return cached;
+    const id = await resolveInvoiceId(supabase, userId, selection);
+    invoiceIdByKey.set(key, id);
+    return id;
   }
 
-  const rows = items.map((item) => {
+  const resolvedInvoiceIdByItemIndex = new Map<number, string>();
+  for (let i = 0; i < items.length; i++) {
+    const selection = items[i].creditSelection;
+    if (selection) {
+      resolvedInvoiceIdByItemIndex.set(i, await resolveKeyed(selection));
+    }
+  }
+
+  const uniqueInvoiceIds = [...new Set(resolvedInvoiceIdByItemIndex.values())];
+  const invoiceDateById = new Map<string, string>();
+  if (uniqueInvoiceIds.length > 0) {
+    const { data: invoiceRows } = await supabase
+      .from("card_invoices")
+      .select("id, invoice_date")
+      .in("id", uniqueInvoiceIds);
+    for (const row of invoiceRows ?? []) invoiceDateById.set(row.id, row.invoice_date);
+  }
+
+  const rows = items.map((item, i) => {
     if (item.type === "despesa") {
       const categoryName = item.category ?? suggestCategoryName(item.description);
       const categoryId = categoryName ? (categoryByName.get(categoryName) ?? null) : null;
-      if (item.isCreditCard) {
+      const invoiceId = resolvedInvoiceIdByItemIndex.get(i);
+      if (invoiceId) {
         return {
           user_id: user.id,
           type: "despesa" as const,
           amount: item.amount,
           description: item.description,
-          entry_date: item.dueDate as string,
+          entry_date: invoiceDateById.get(invoiceId) as string,
           category_id: categoryId,
           source,
           payment_method: "cartao" as const,
-          card_invoice_id: invoiceIdByDueDate.get(item.dueDate as string) as string,
+          card_invoice_id: invoiceId,
         };
       }
       return {
@@ -776,27 +901,9 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
   }
 }
 
-export async function checkExistingInvoiceDate(invoiceDate: string): Promise<boolean> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data } = await supabase
-    .from("card_invoices")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("invoice_date", invoiceDate)
-    .limit(1)
-    .maybeSingle();
-
-  return !!data;
-}
-
 export async function saveCardInvoice(
   items: { description: string; amount: number; category: string | null }[],
-  invoiceDate: string,
+  selection: CreditSelection,
 ): Promise<void> {
   const supabase = await createClient();
   const {
@@ -807,19 +914,21 @@ export async function saveCardInvoice(
     throw new Error("Sessão expirada. Atualiza a página e entra de novo.");
   }
 
-  if (items.length === 0 || !invoiceDate) {
+  if (items.length === 0) {
     throw new Error("Nada pra salvar.");
   }
 
-  const { data: invoice, error: invoiceError } = await supabase
+  const invoiceId = await resolveInvoiceId(supabase, user.id, selection);
+  const { data: invoiceRow } = await supabase
     .from("card_invoices")
-    .insert({ user_id: user.id, invoice_date: invoiceDate })
-    .select("id")
+    .select("invoice_date")
+    .eq("id", invoiceId)
     .single();
 
-  if (invoiceError || !invoice) {
+  if (!invoiceRow) {
     throw new Error("Não deu pra salvar a fatura agora.");
   }
+  const invoiceDate = invoiceRow.invoice_date;
 
   const { data: categories } = await supabase
     .from("categories")
@@ -838,7 +947,7 @@ export async function saveCardInvoice(
       category_id: categoryName ? (categoryByName.get(categoryName) ?? null) : null,
       source: "foto" as const,
       payment_method: "cartao" as const,
-      card_invoice_id: invoice.id as string,
+      card_invoice_id: invoiceId,
     };
   });
 

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  AlertTriangle,
   ArrowDownCircle,
   Check,
   FileText,
@@ -21,12 +20,8 @@ import { amountToInputValue, currency, formatCentsInput, parseCentsInput } from 
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
-import {
-  checkExistingInvoiceDate,
-  recognizeCardInvoice,
-  saveCardInvoice,
-  type RecognizedCardItem,
-} from "./actions";
+import { recognizeCardInvoice, saveCardInvoice, type CardWithInvoices, type RecognizedCardItem } from "./actions";
+import { InvoicePicker, invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
@@ -35,9 +30,11 @@ type ReviewItem = RecognizedCardItem & { id: string; amountText: string };
 export function CardInvoiceReview({
   fixedExpenses,
   categories,
+  cards,
 }: {
   fixedExpenses: FixedExpense[];
   categories: Category[];
+  cards: CardWithInvoices[];
 }) {
   const {
     fileInputRef,
@@ -62,9 +59,9 @@ export function CardInvoiceReview({
   });
 
   const router = useRouter();
-  const [invoiceDate, setInvoiceDate] = useState(() => toDateKey(new Date()));
+  const defaultDate = toDateKey(new Date());
+  const [invoiceValue, setInvoiceValue] = useState<InvoiceValue | null>(null);
   const [saving, setSaving] = useState(false);
-  const [duplicateDate, setDuplicateDate] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pickingCategory, setPickingCategory] = useState(false);
@@ -97,17 +94,6 @@ export function CardInvoiceReview({
     exitSelection();
   }
 
-  useEffect(() => {
-    if (!items || items.length === 0) return;
-    let cancelled = false;
-    checkExistingInvoiceDate(invoiceDate).then((exists) => {
-      if (!cancelled) setDuplicateDate(exists);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [invoiceDate, items]);
-
   function removeItem(id: string) {
     setItems((prev) => (prev ? prev.filter((it) => it.id !== id) : prev));
   }
@@ -139,12 +125,17 @@ export function CardInvoiceReview({
 
   async function handleSave() {
     if (!items || items.length === 0) return;
+    const selection = invoiceValueToSelection(invoiceValue);
+    if (!selection) {
+      setError("Escolhe em qual fatura essa compra entra antes de salvar.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
       await saveCardInvoice(
         items.map(({ description, amount, category }) => ({ description, amount, category })),
-        invoiceDate,
+        selection,
       );
       router.push(`/app?saved=lote&count=${items.length}`);
       router.refresh();
@@ -377,26 +368,13 @@ export function CardInvoiceReview({
               </div>
 
               <div className="mb-4">
-                <label
-                  className="mb-1.5 block text-xs font-medium text-brand-ink-soft"
-                  htmlFor="invoice-date"
-                >
-                  Data de vencimento da fatura
-                </label>
-                <input
-                  id="invoice-date"
-                  type="date"
-                  value={invoiceDate}
-                  onChange={(e) => setInvoiceDate(e.target.value)}
-                  className="w-full rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
+                <div className="mb-1.5 text-xs font-medium text-brand-ink-soft">Em qual fatura?</div>
+                <InvoicePicker
+                  cards={cards}
+                  value={invoiceValue}
+                  onChange={setInvoiceValue}
+                  defaultDate={defaultDate}
                 />
-                {duplicateDate && (
-                  <div className="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-brand-coral">
-                    <AlertTriangle size={12} className="flex-shrink-0" />
-                    Você já tem uma fatura salva com essa data de vencimento — confere se não é a
-                    mesma fatura enviada de novo
-                  </div>
-                )}
               </div>
 
               <button

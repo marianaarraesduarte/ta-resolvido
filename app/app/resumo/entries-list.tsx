@@ -19,6 +19,7 @@ import { dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "../entries-actions";
+import { SwipeToDelete } from "../swipe-to-delete";
 
 type Category = { id: string; name: string };
 type EntryRow = {
@@ -35,6 +36,8 @@ export type CardInvoiceRow = {
   invoiceDate: string;
   total: number;
   items: { id: string; description: string; amount: number; categoryName: string | null }[];
+  cardName: string | null;
+  cardColor: string | null;
 };
 
 function CategoryTag({ name, leading = true }: { name: string | null; leading?: boolean }) {
@@ -209,13 +212,14 @@ export function EntriesList({
                   >
                     <div
                       className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
-                      style={{ background: "var(--accent)" }}
+                      style={{ background: invoice.cardColor ?? "var(--accent)" }}
                     >
                       <CreditCard size={16} className="text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[14.5px] font-medium text-brand-ink">
-                        Fatura do cartão · dia {dayOfMonth(invoice.invoiceDate)}
+                        {invoice.cardName ?? "Fatura do cartão"} · dia{" "}
+                        {dayOfMonth(invoice.invoiceDate)}
                       </div>
                       <div className="text-xs text-brand-ink-soft">
                         {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
@@ -331,9 +335,17 @@ export function EntriesList({
                 {content}
               </button>
             ) : (
-              <Link key={d.id} href={`/app/lancamento/${d.id}`} className={rowClass}>
-                {content}
-              </Link>
+              <SwipeToDelete
+                key={d.id}
+                itemLabel={d.description}
+                onTap={() => router.push(`/app/lancamento/${d.id}`)}
+                onDelete={async () => {
+                  await bulkDeleteEntries([d.id]);
+                  router.refresh();
+                }}
+              >
+                <div className={rowClass}>{content}</div>
+              </SwipeToDelete>
             );
           })}
         </div>

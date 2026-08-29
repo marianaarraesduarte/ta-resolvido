@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowDownCircle,
   ArrowUpCircle,
   Camera,
@@ -13,12 +12,13 @@ import {
   Pencil,
   Plus,
 } from "lucide-react";
-import { checkExistingInvoiceDate, createEntry, createCategory } from "./actions";
+import { createEntry, createCategory, type CardWithInvoices } from "./actions";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { iconForCategory } from "@/lib/category-icons";
 import { formatCentsInput } from "@/lib/tokens";
 import { PhotoTab } from "./photo-tab";
 import { ChatTab } from "./chat-tab";
+import { InvoicePicker, type InvoiceValue } from "./invoice-picker";
 
 type Category = { id: string; name: string; icon: string | null };
 
@@ -61,6 +61,7 @@ export function EntryForm({
   fixedExpenses,
   recognitionsRemaining,
   isCompleto,
+  cards,
   sharedPhoto,
   sharedText,
 }: {
@@ -72,6 +73,7 @@ export function EntryForm({
   fixedExpenses: { name: string; expected_amount: number }[];
   recognitionsRemaining: number | null;
   isCompleto: boolean;
+  cards: CardWithInvoices[];
   sharedPhoto?: { dataUrl: string; isPdf: boolean } | null;
   sharedText?: string | null;
 }) {
@@ -84,23 +86,8 @@ export function EntryForm({
   const [categoryTouched, setCategoryTouched] = useState(false);
   const [incomeType, setIncomeType] = useState<"salario" | "outra">("salario");
   const [isCreditCard, setIsCreditCard] = useState(false);
-  const [dueDate, setDueDate] = useState(defaultDate);
-  const [duplicateDueDate, setDuplicateDueDate] = useState(false);
+  const [invoiceValue, setInvoiceValue] = useState<InvoiceValue | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!isCreditCard || !isCompleto) {
-      setDuplicateDueDate(false);
-      return;
-    }
-    let cancelled = false;
-    checkExistingInvoiceDate(dueDate).then((dup) => {
-      if (!cancelled) setDuplicateDueDate(dup);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isCreditCard, isCompleto, dueDate]);
 
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -169,6 +156,7 @@ export function EntryForm({
           fixedExpenses={fixedExpenses}
           categories={categories}
           recognitionsRemaining={recognitionsRemaining}
+          cards={cards}
           sharedPhoto={sharedPhoto}
         />
       ) : mode === "chat" ? (
@@ -178,6 +166,7 @@ export function EntryForm({
           salaryPatterns={salaryPatterns}
           recognitionsRemaining={recognitionsRemaining}
           isCompleto={isCompleto}
+          cards={cards}
           initialText={sharedText}
         />
       ) : (
@@ -198,6 +187,7 @@ export function EntryForm({
               onClick={() => {
                 setType("receita");
                 setIsCreditCard(false);
+                setInvoiceValue(null);
               }}
               icon={<ArrowUpCircle size={15} />}
               label="Entrou (receita)"
@@ -366,7 +356,10 @@ export function EntryForm({
         <div className="mb-4">
           <button
             type="button"
-            onClick={() => setIsCreditCard((v) => !v)}
+            onClick={() => {
+              setIsCreditCard((v) => !v);
+              setInvoiceValue(null);
+            }}
             className={
               isCreditCard
                 ? "flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum px-3.5 py-2 text-sm font-medium text-white"
@@ -382,28 +375,29 @@ export function EntryForm({
       <div className="mb-1">
         {isCreditCard && isCompleto ? (
           <>
-            <label
-              className="mb-1.5 block text-xs font-medium text-brand-ink-soft"
-              htmlFor="due_date"
-            >
-              Vencimento da fatura
-            </label>
-            <input
-              id="due_date"
-              type="date"
-              required
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className={`${inputClass} min-w-0`}
+            <div className="mb-1.5 text-xs font-medium text-brand-ink-soft">Em qual fatura?</div>
+            <InvoicePicker
+              cards={cards}
+              value={invoiceValue}
+              onChange={setInvoiceValue}
+              defaultDate={defaultDate}
             />
-            {duplicateDueDate && (
-              <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
-                <AlertTriangle size={11} className="flex-shrink-0" />
-                Você já tem uma fatura salva com essa data de vencimento
-              </div>
-            )}
-            <input type="hidden" name="due_date" value={dueDate} />
-            <input type="hidden" name="is_credit_card" value="true" />
+            <input type="hidden" name="invoice_kind" value={invoiceValue?.kind ?? ""} />
+            <input
+              type="hidden"
+              name="invoice_id"
+              value={invoiceValue?.kind === "existing" ? invoiceValue.invoiceId : ""}
+            />
+            <input
+              type="hidden"
+              name="card_id"
+              value={invoiceValue?.kind === "new" ? invoiceValue.cardId : ""}
+            />
+            <input
+              type="hidden"
+              name="due_date"
+              value={invoiceValue?.kind === "new" ? invoiceValue.dueDate : ""}
+            />
           </>
         ) : (
           <>
@@ -421,7 +415,6 @@ export function EntryForm({
               defaultValue={defaultDate}
               className={`${inputClass} min-w-0`}
             />
-            <input type="hidden" name="is_credit_card" value="false" />
           </>
         )}
         {isCreditCard && !isCompleto && (

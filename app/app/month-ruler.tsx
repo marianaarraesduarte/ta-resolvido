@@ -22,6 +22,7 @@ import type { AssistantData } from "@/lib/assistant-data";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
+import { deleteCardInvoice } from "./novo/actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
 import { AssistantCard } from "./assistant-card";
@@ -43,6 +44,8 @@ export type CardInvoiceSummary = {
   invoiceDate: string;
   total: number;
   items: { id: string; description: string; amount: number }[];
+  cardName: string | null;
+  cardColor: string | null;
 };
 
 const DAY_WIDTH = 22;
@@ -117,6 +120,23 @@ export function MonthRuler({
   function selectAndReset(next: Selection | null) {
     setSelected(next);
     exitSelection();
+  }
+
+  async function handleDeleteInvoice(invoiceId: string) {
+    const confirmed = await confirm("Excluir essa fatura vazia? Essa ação não pode ser desfeita.");
+    if (!confirmed) return;
+
+    setProcessing(true);
+    setBulkError("");
+    try {
+      await deleteCardInvoice(invoiceId);
+      selectAndReset(null);
+      router.refresh();
+    } catch (e) {
+      setBulkError(e instanceof Error ? e.message : "Não deu pra excluir agora.");
+    } finally {
+      setProcessing(false);
+    }
   }
 
   function toggleInvoice(invoiceId: string) {
@@ -382,13 +402,14 @@ export function MonthRuler({
                                       ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
                                       : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
                                   }
-                                  style={{ background: "var(--accent)" }}
+                                  style={{ background: invoice.cardColor ?? "var(--accent)" }}
                                 >
                                   <CreditCard size={8} className="-rotate-12 text-white" />
                                 </span>
                               </button>
                               <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
-                                Fatura · {invoice.items.length}{" "}
+                                {invoice.cardName ? `${invoice.cardName} · ` : "Fatura · "}
+                                {invoice.items.length}{" "}
                                 {invoice.items.length === 1 ? "compra" : "compras"} —{" "}
                                 {currency(invoice.total)}
                               </div>
@@ -450,33 +471,36 @@ export function MonthRuler({
           <AssistantCard data={assistantData} comparisonSentence={comparisonSentence ?? null} dayOfMonth={todayDayOfMonth ?? 1} />
         )}
 
-        {cardInvoices.map((invoice) => (
-          <button
-            key={invoice.id}
-            type="button"
-            onClick={() => toggleInvoice(invoice.id)}
-            className="mb-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
-            style={{ background: "color-mix(in srgb, var(--accent) 16%, #FBFAF6)" }}
-          >
-            <div
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
-              style={{ background: "var(--accent)" }}
+        {cardInvoices.map((invoice) => {
+          const color = invoice.cardColor ?? "var(--accent)";
+          return (
+            <button
+              key={invoice.id}
+              type="button"
+              onClick={() => toggleInvoice(invoice.id)}
+              className="mb-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
+              style={{ background: `color-mix(in srgb, ${color} 16%, #FBFAF6)` }}
             >
-              <CreditCard size={16} className="text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-semibold text-brand-ink">
-                Fatura do cartão · dia {dayOfMonth(invoice.invoiceDate)}
+              <div
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+                style={{ background: color }}
+              >
+                <CreditCard size={16} className="text-white" />
               </div>
-              <div className="text-xs text-brand-ink-soft">
-                {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-semibold text-brand-ink">
+                  {invoice.cardName ?? "Fatura do cartão"} · dia {dayOfMonth(invoice.invoiceDate)}
+                </div>
+                <div className="text-xs text-brand-ink-soft">
+                  {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
+                </div>
               </div>
-            </div>
-            <div className="flex-shrink-0 font-display text-[15px] font-bold text-brand-ink">
-              {currency(invoice.total)}
-            </div>
-          </button>
-        ))}
+              <div className="flex-shrink-0 font-display text-[15px] font-bold text-brand-ink">
+                {currency(invoice.total)}
+              </div>
+            </button>
+          );
+        })}
 
         {selected?.kind === "day" && selectedDayItems.length > 0 && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
@@ -561,23 +585,36 @@ export function MonthRuler({
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-xs text-brand-ink-soft">
-                Fatura do cartão · dia {dayOfMonth(selectedInvoice.invoiceDate)} ·{" "}
-                {selectedInvoice.items.length}{" "}
+                {selectedInvoice.cardName ?? "Fatura do cartão"} · dia{" "}
+                {dayOfMonth(selectedInvoice.invoiceDate)} · {selectedInvoice.items.length}{" "}
                 {selectedInvoice.items.length === 1 ? "compra" : "compras"}
               </div>
-              <button
-                type="button"
-                onClick={() => (selecting ? exitSelection() : setSelecting(true))}
-                className={
-                  selecting
-                    ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
-                    : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
-                }
-              >
-                {selecting ? <X size={12} /> : <ListChecks size={12} />}
-                {selecting ? "Cancelar" : "Selecionar"}
-              </button>
+              {selectedInvoice.items.length === 0 ? (
+                <button
+                  type="button"
+                  disabled={processing}
+                  onClick={() => handleDeleteInvoice(selectedInvoice.id)}
+                  className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-coral px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
+                >
+                  <Trash2 size={12} />
+                  Excluir fatura vazia
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => (selecting ? exitSelection() : setSelecting(true))}
+                  className={
+                    selecting
+                      ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
+                      : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
+                  }
+                >
+                  {selecting ? <X size={12} /> : <ListChecks size={12} />}
+                  {selecting ? "Cancelar" : "Selecionar"}
+                </button>
+              )}
             </div>
+            {bulkError && <p className="mb-2 text-xs text-brand-coral">{bulkError}</p>}
             <div className="flex flex-col gap-2">
               {selectedInvoice.items.map((item) => {
                 const checked = selectedIds.has(item.id);
@@ -711,9 +748,11 @@ export function MonthRuler({
             <div className="flex items-center gap-1.5">
               <div
                 className="h-2 w-2 rotate-12 rounded-[2px]"
-                style={{ background: "var(--accent)" }}
+                style={{ background: TOKENS.inkSoft }}
               />
-              <span className="text-[11.5px] text-brand-ink-soft">fatura do cartão</span>
+              <span className="text-[11.5px] text-brand-ink-soft">
+                fatura do cartão (cor do seu cartão)
+              </span>
             </div>
           </div>
         )}

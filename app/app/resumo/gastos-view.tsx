@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CategoryList, type CategoryTotal } from "../categorias/category-list";
 import { EntriesList, type CardInvoiceRow } from "./entries-list";
+import { EntrySearch } from "./entry-search";
 
 type Category = { id: string; name: string };
 type EntryRow = Parameters<typeof EntriesList>[0]["entries"][number];
@@ -27,6 +28,8 @@ export function GastosView({
 
   return (
     <div>
+      <EntrySearch />
+
       <div className="mb-3.5 flex gap-1.5 rounded-2xl bg-brand-bg p-1.5">
         <button
           type="button"

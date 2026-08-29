@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CreditCard, Receipt } from "lucide-react";
 import { BankStatementReview } from "./bank-statement-review";
 import { CardInvoiceReview } from "./card-invoice-review";
+import type { CardWithInvoices } from "./actions";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
@@ -14,12 +15,14 @@ export function PhotoTab({
   fixedExpenses,
   categories,
   recognitionsRemaining,
+  cards,
   sharedPhoto,
 }: {
   salaryPatterns: string[];
   fixedExpenses: FixedExpense[];
   categories: Category[];
   recognitionsRemaining: number | null;
+  cards: CardWithInvoices[];
   sharedPhoto?: { dataUrl: string; isPdf: boolean } | null;
 }) {
   const [source, setSource] = useState<"extrato" | "fatura">("extrato");
@@ -78,7 +81,7 @@ export function PhotoTab({
           sharedPhoto={sharedPhoto}
         />
       ) : (
-        <CardInvoiceReview fixedExpenses={fixedExpenses} categories={categories} />
+        <CardInvoiceReview fixedExpenses={fixedExpenses} categories={categories} cards={cards} />
       )}
     </div>
   );

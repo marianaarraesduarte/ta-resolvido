@@ -78,3 +78,15 @@ export function dotSizeForAmount(amount: number, averageDespesa: number): number
   const ratio = amount / averageDespesa;
   return Math.min(MAX, Math.round(BASE + (ratio - 1) * 3));
 }
+
+/** Paleta de cores pra escolher num cartão de crédito cadastrado. */
+export const CARD_COLORS = [
+  { label: "Ameixa", hex: "#7A5C7E" },
+  { label: "Azul-petróleo", hex: "#3E6E8E" },
+  { label: "Verde-oliva", hex: "#6F8F6A" },
+  { label: "Terracota", hex: "#C1553D" },
+  { label: "Dourado", hex: "#B8862E" },
+  { label: "Rosa-antigo", hex: "#9C6B70" },
+  { label: "Cinza-chumbo", hex: "#5B5F66" },
+  { label: "Verde-petróleo", hex: "#3E7A6E" },
+] as const;

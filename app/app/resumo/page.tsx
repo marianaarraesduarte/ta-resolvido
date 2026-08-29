@@ -25,7 +25,11 @@ type DespesaRow = {
 };
 
 type FixedExpenseRow = { id: string; name: string; expected_amount: number };
-type CardInvoiceDbRow = { id: string; invoice_date: string };
+type CardInvoiceDbRow = {
+  id: string;
+  invoice_date: string;
+  cards: { name: string; color: string } | null;
+};
 
 export default async function ResumoPage({
   searchParams,
@@ -64,7 +68,7 @@ export default async function ResumoPage({
       supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
       supabase
         .from("card_invoices")
-        .select("id, invoice_date")
+        .select("id, invoice_date, cards(name, color)")
         .eq("user_id", user.id)
         .gte("invoice_date", toDateKey(firstDay))
         .lte("invoice_date", toDateKey(lastDay)),
@@ -103,6 +107,8 @@ export default async function ResumoPage({
         invoiceDate: invoice.invoice_date,
         total: items.reduce((sum, item) => sum + item.amount, 0),
         items,
+        cardName: invoice.cards?.name ?? null,
+        cardColor: invoice.cards?.color ?? null,
       };
     },
   );

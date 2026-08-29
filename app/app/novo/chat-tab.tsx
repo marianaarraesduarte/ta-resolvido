@@ -22,16 +22,22 @@ import { brDateLabel, toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { useAudioRecorder } from "@/lib/use-audio-recorder";
 import {
-  checkExistingInvoiceDate,
   recognizeAudioMessage,
   recognizeChatMessage,
   saveRecognizedItems,
+  type CardWithInvoices,
   type ChatItem,
 } from "./actions";
+import { InvoicePicker, invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
-type ReviewItem = ChatItem & { id: string; isSalary: boolean; amountText: string; dueDate: string };
+type ReviewItem = ChatItem & {
+  id: string;
+  isSalary: boolean;
+  amountText: string;
+  invoiceValue: InvoiceValue | null;
+};
 type ChatEntry =
   | { kind: "user"; id: string; text: string }
   | { kind: "user-audio"; id: string; durationMs: number }
@@ -52,6 +58,7 @@ export function ChatTab({
   salaryPatterns,
   recognitionsRemaining,
   isCompleto,
+  cards,
   initialText,
 }: {
   fixedExpenses: FixedExpense[];
@@ -59,6 +66,7 @@ export function ChatTab({
   salaryPatterns: string[];
   recognitionsRemaining: number | null;
   isCompleto: boolean;
+  cards: CardWithInvoices[];
   initialText?: string | null;
 }) {
   const router = useRouter();
@@ -68,34 +76,7 @@ export function ChatTab({
   const [slowAnalyzing, setSlowAnalyzing] = useState(false);
   const [error, setError] = useState("");
   const [savingBatch, setSavingBatch] = useState<string | null>(null);
-  const [duplicateDates, setDuplicateDates] = useState<Record<string, boolean>>({});
   const recorder = useAudioRecorder();
-
-  const creditItems = isCompleto
-    ? entries.flatMap((e) => (e.kind === "batch" ? e.items : [])).filter(
-        (it) => it.isCreditCard && it.dueDate,
-      )
-    : [];
-  const creditItemsKey = creditItems.map((it) => `${it.id}:${it.dueDate}`).join("|");
-
-  useEffect(() => {
-    if (creditItems.length === 0) return;
-    let cancelled = false;
-    Promise.all(
-      creditItems.map(async (it) => ({ id: it.id, dup: await checkExistingInvoiceDate(it.dueDate) })),
-    ).then((results) => {
-      if (cancelled) return;
-      setDuplicateDates((prev) => {
-        const next = { ...prev };
-        for (const r of results) next[r.id] = r.dup;
-        return next;
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creditItemsKey]);
 
   // Texto compartilhado de outro app (ex: copiar uma mensagem) — já manda
   // pra análise sozinho, sem esperar a pessoa apertar enviar de novo.
@@ -154,9 +135,9 @@ export function ChatTab({
     );
   }
 
-  function updateItemDueDate(batchId: string, itemId: string, dueDate: string) {
+  function updateItemInvoiceValue(batchId: string, itemId: string, invoiceValue: InvoiceValue) {
     updateBatch(batchId, (items) =>
-      items.map((it) => (it.id === itemId ? { ...it, dueDate } : it)),
+      items.map((it) => (it.id === itemId ? { ...it, invoiceValue } : it)),
     );
   }
 
@@ -193,7 +174,7 @@ export function ChatTab({
         isSalary:
           item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
         amountText: item.amount !== null ? amountToInputValue(item.amount) : "",
-        dueDate: item.isCreditCard ? toDateKey(new Date()) : "",
+        invoiceValue: null,
       }));
       setEntries((prev) => [...prev, { kind: "batch", id: `b-${Date.now()}`, items, origin: "chat" }]);
     } catch (err) {
@@ -233,7 +214,7 @@ export function ChatTab({
         isSalary:
           item.type === "receita" && salaryPatterns.includes(item.description.trim().toLowerCase()),
         amountText: item.amount !== null ? amountToInputValue(item.amount) : "",
-        dueDate: item.isCreditCard ? toDateKey(new Date()) : "",
+        invoiceValue: null,
       }));
       setEntries((prev) => [
         ...prev,
@@ -253,9 +234,9 @@ export function ChatTab({
       return;
     }
 
-    const missingDueDate = isCompleto && items.some((it) => it.isCreditCard && !it.dueDate);
-    if (missingDueDate) {
-      setError("Completa a data de vencimento da fatura antes de salvar.");
+    const missingInvoice = isCompleto && items.some((it) => it.isCreditCard && !it.invoiceValue);
+    if (missingInvoice) {
+      setError("Escolhe em qual fatura entra a compra no crédito antes de salvar.");
       return;
     }
 
@@ -263,15 +244,15 @@ export function ChatTab({
     setError("");
     try {
       await saveRecognizedItems(
-        items.map(({ description, amount, type, isSalary, date, category, isCreditCard, dueDate }) => ({
+        items.map(({ description, amount, type, isSalary, date, category, isCreditCard, invoiceValue }) => ({
           description,
           amount: amount as number,
           type,
           isSalary,
           date,
           category,
-          isCreditCard: isCompleto && isCreditCard,
-          dueDate: isCompleto && isCreditCard ? dueDate : null,
+          creditSelection:
+            isCompleto && isCreditCard ? invoiceValueToSelection(invoiceValue) : null,
         })),
         origin,
       );
@@ -456,24 +437,16 @@ export function ChatTab({
                             )}
                         </div>
                         {item.isCreditCard && isCompleto && (
-                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            <span className="text-[10.5px] font-semibold uppercase tracking-wide text-brand-ink-soft">
-                              Vencimento
-                            </span>
-                            <input
-                              id={`due-date-${item.id}`}
-                              type="date"
-                              value={item.dueDate}
-                              onChange={(e) => updateItemDueDate(entry.id, item.id, e.target.value)}
-                              aria-label="Vencimento da fatura"
-                              className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink outline-none focus:ring-1 focus:ring-brand-ink"
+                          <div className="mt-1.5">
+                            <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-wide text-brand-ink-soft">
+                              Em qual fatura?
+                            </div>
+                            <InvoicePicker
+                              cards={cards}
+                              value={item.invoiceValue}
+                              onChange={(v) => updateItemInvoiceValue(entry.id, item.id, v)}
+                              defaultDate={toDateKey(new Date())}
                             />
-                          </div>
-                        )}
-                        {item.isCreditCard && isCompleto && duplicateDates[item.id] && (
-                          <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
-                            <AlertTriangle size={11} className="flex-shrink-0" />
-                            Fatura já cadastrada nessa data
                           </div>
                         )}
                         {item.isCreditCard && !isCompleto && (

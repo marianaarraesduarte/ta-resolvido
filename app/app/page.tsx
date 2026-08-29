@@ -60,7 +60,7 @@ export default async function AppHomePage({
       .order("entry_date", { ascending: true }),
     supabase
       .from("card_invoices")
-      .select("id, invoice_date")
+      .select("id, invoice_date, cards(name, color)")
       .eq("user_id", user.id)
       .gte("invoice_date", toDateKey(firstDay))
       .lte("invoice_date", toDateKey(lastDay)),
@@ -104,7 +104,13 @@ export default async function AppHomePage({
     comparisonSentence = comparison ? periodComparisonSentence(comparison) : null;
   }
 
-  const cardInvoices: CardInvoiceSummary[] = (cardInvoicesData ?? []).map((invoice) => {
+  const cardInvoices: CardInvoiceSummary[] = (
+    (cardInvoicesData as unknown as {
+      id: string;
+      invoice_date: string;
+      cards: { name: string; color: string } | null;
+    }[]) ?? []
+  ).map((invoice) => {
     const items = entries
       .filter((e) => e.card_invoice_id === invoice.id)
       .map((e) => ({ id: e.id, description: e.description, amount: e.amount }));
@@ -113,6 +119,8 @@ export default async function AppHomePage({
       invoiceDate: invoice.invoice_date,
       total: items.reduce((sum, item) => sum + item.amount, 0),
       items,
+      cardName: invoice.cards?.name ?? null,
+      cardColor: invoice.cards?.color ?? null,
     };
   });
 

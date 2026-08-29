@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
 import { isCompleto, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
 import { EntryForm } from "./entry-form";
+import { listCardsWithInvoices } from "./actions";
 
 export default async function NovoLancamentoPage({
   searchParams,
@@ -42,6 +43,7 @@ export default async function NovoLancamentoPage({
     { data: salaryPatterns },
     { data: fixedExpenses },
     { count: recognitionsUsed },
+    cards,
   ] = await Promise.all([
     supabase
       .from("categories")
@@ -56,6 +58,7 @@ export default async function NovoLancamentoPage({
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .gte("created_at", firstDayOfMonth.toISOString()),
+    listCardsWithInvoices(),
   ]);
 
   const recognitionsRemaining = isCompleto(profile?.plan)
@@ -84,6 +87,7 @@ export default async function NovoLancamentoPage({
           fixedExpenses={fixedExpenses ?? []}
           recognitionsRemaining={recognitionsRemaining}
           isCompleto={isCompleto(profile?.plan)}
+          cards={cards}
           sharedPhoto={sharedPhoto}
           sharedText={sharedText}
         />
