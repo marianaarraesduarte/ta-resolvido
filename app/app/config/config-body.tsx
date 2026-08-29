@@ -12,8 +12,11 @@ const THEME_OPTIONS: { key: ThemePreference; label: string }[] = [
   { key: "dark", label: "Escuro" },
 ];
 
+// "Âmbar" saiu das opções: era o mesmo tom usado pra marcar "gasto médio" na
+// régua, e virava confundível com o marcador de "hoje" quando escolhido como
+// destaque. Quem já tinha essa cor selecionada foi migrado pra "Ameixa" (ver
+// migrations/0018).
 const ACCENT_COLORS = [
-  { key: "amber", label: "Âmbar", hex: "#D9A441" },
   { key: "sage", label: "Verde-oliva", hex: "#6F8F6A" },
   { key: "coral", label: "Terracota", hex: "#C1553D" },
   { key: "azul", label: "Azul-petróleo", hex: "#3E6E8E" },

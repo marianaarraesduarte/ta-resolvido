@@ -270,15 +270,16 @@ export function MonthRuler({
 
         <>
           <div className="mb-1.5 text-[13px] font-semibold text-brand-ink">Régua do mês</div>
-          <div
-            className="mb-4 overflow-x-auto rounded-[20px] bg-brand-card p-3.5"
-            style={{
-              backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${TOKENS.sage} 14%, transparent), transparent 65%)`,
-            }}
-          >
-            {hasEntries && (
-              <div className="mb-0.5 text-[10px] font-semibold text-brand-sage">↑ entrou</div>
-            )}
+          <div className="relative mb-4">
+            <div
+              className="overflow-x-auto rounded-[20px] bg-brand-card p-3.5"
+              style={{
+                backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${TOKENS.sage} 14%, transparent), transparent 65%)`,
+              }}
+            >
+              {hasEntries && (
+                <div className="mb-0.5 text-[12px] font-semibold text-brand-sage">↑ entrou</div>
+              )}
             <div className="relative" style={{ minWidth: daysInMonth * DAY_WIDTH, height: 76 }}>
               <div
                 className="absolute left-0 right-0 bg-brand-line"
@@ -321,12 +322,16 @@ export function MonthRuler({
                               type="button"
                               onClick={() => selectAndReset({ kind: "day", day, type: "receita" })}
                               aria-label={`Entradas do dia ${day}`}
-                              className={
-                                isSelectedReceita
-                                  ? "h-4 w-4 rounded-full bg-brand-sage shadow-md ring-2 ring-brand-ink"
-                                  : "h-3 w-3 rounded-full bg-brand-sage shadow-md"
-                              }
-                            />
+                              className="flex h-6 w-6 items-center justify-center"
+                            >
+                              <span
+                                className={
+                                  isSelectedReceita
+                                    ? "h-4 w-4 rounded-full bg-brand-sage shadow-md ring-2 ring-brand-ink"
+                                    : "h-3 w-3 rounded-full bg-brand-sage shadow-md"
+                                }
+                              />
+                            </button>
                             <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                               {tooltipLabel(bucket.receitas, receitaTotal)}
                             </div>
@@ -342,14 +347,14 @@ export function MonthRuler({
                     <div
                       className={
                         isToday
-                          ? "mt-0.5 text-[10px] font-bold text-brand-ink"
-                          : "mt-0.5 text-[10px] text-brand-ink-soft"
+                          ? "mt-0.5 text-[12px] font-bold text-brand-ink"
+                          : "mt-0.5 text-[12px] text-brand-ink-soft"
                       }
                     >
                       {day}
                     </div>
                     {!hasEntries && isToday && (
-                      <div className="mt-0.5 whitespace-nowrap text-[8.5px] font-bold text-[var(--accent)]">
+                      <div className="mt-0.5 whitespace-nowrap text-[12px] font-bold text-[var(--accent)]">
                         HOJE
                       </div>
                     )}
@@ -365,14 +370,18 @@ export function MonthRuler({
                                 type="button"
                                 onClick={() => toggleInvoice(invoice.id)}
                                 aria-label={`Fatura do cartão do dia ${day}`}
-                                className={
-                                  isSelectedInvoice
-                                    ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
-                                    : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
-                                }
-                                style={{ background: "var(--accent)" }}
+                                className="flex h-6 w-6 items-center justify-center"
                               >
-                                <CreditCard size={8} className="-rotate-12 text-white" />
+                                <span
+                                  className={
+                                    isSelectedInvoice
+                                      ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
+                                      : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
+                                  }
+                                  style={{ background: "var(--accent)" }}
+                                >
+                                  <CreditCard size={8} className="-rotate-12 text-white" />
+                                </span>
                               </button>
                               <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                                 Fatura · {invoice.items.length}{" "}
@@ -388,17 +397,21 @@ export function MonthRuler({
                               type="button"
                               onClick={() => selectAndReset({ kind: "day", day, type: "despesa" })}
                               aria-label={`Gastos do dia ${day}`}
-                              className={
-                                isSelectedDespesa
-                                  ? "rounded-full bg-brand-coral shadow-md ring-2 ring-brand-ink"
-                                  : "rounded-full bg-brand-coral shadow-md"
-                              }
-                              style={(() => {
-                                const size =
-                                  dotSizeForAmount(despesaTotal, despesaAvg) + (isSelectedDespesa ? 4 : 0);
-                                return { width: size, height: size };
-                              })()}
-                            />
+                              className="flex h-6 w-6 items-center justify-center"
+                            >
+                              <span
+                                className={
+                                  isSelectedDespesa
+                                    ? "rounded-full bg-brand-coral shadow-md ring-2 ring-brand-ink"
+                                    : "rounded-full bg-brand-coral shadow-md"
+                                }
+                                style={(() => {
+                                  const size =
+                                    dotSizeForAmount(despesaTotal, despesaAvg) + (isSelectedDespesa ? 4 : 0);
+                                  return { width: size, height: size };
+                                })()}
+                              />
+                            </button>
                             <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                               {tooltipLabel(bucket!.despesas, despesaTotal)}
                             </div>
@@ -409,10 +422,19 @@ export function MonthRuler({
                   </div>
                 );
               })}
+              </div>
+              {hasEntries && (
+                <div className="mt-0.5 text-[12px] font-semibold text-brand-coral">↓ saiu</div>
+              )}
             </div>
-            {hasEntries && (
-              <div className="mt-0.5 text-[10px] font-semibold text-brand-coral">↓ saiu</div>
-            )}
+            <div
+              className="pointer-events-none absolute inset-y-3.5 left-0 w-6 rounded-l-[20px]"
+              style={{ background: `linear-gradient(90deg, ${TOKENS.card}, transparent)` }}
+            />
+            <div
+              className="pointer-events-none absolute inset-y-3.5 right-0 w-6 rounded-r-[20px]"
+              style={{ background: `linear-gradient(270deg, ${TOKENS.card}, transparent)` }}
+            />
           </div>
         </>
 
@@ -450,36 +472,80 @@ export function MonthRuler({
 
         {selected?.kind === "day" && selectedDayItems.length > 0 && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
-            <div className="mb-2 text-xs text-brand-ink-soft">
-              Dia {selected.day} · {selected.type === "receita" ? "entrada" : "saída"}
-              {selectedDayItems.length > 1 ? ` · ${selectedDayItems.length} lançamentos` : ""}
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-xs text-brand-ink-soft">
+                Dia {selected.day} · {selected.type === "receita" ? "entrada" : "saída"}
+                {selectedDayItems.length > 1 ? ` · ${selectedDayItems.length} lançamentos` : ""}
+              </div>
+              {selected.type === "despesa" && selectedDayItems.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => (selecting ? exitSelection() : setSelecting(true))}
+                  className={
+                    selecting
+                      ? "flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
+                      : "flex flex-shrink-0 items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
+                  }
+                >
+                  {selecting ? <X size={12} /> : <ListChecks size={12} />}
+                  {selecting ? "Cancelar" : "Selecionar"}
+                </button>
+              )}
             </div>
             <div className="flex flex-col gap-2">
-              {selectedDayItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/app/lancamento/${item.id}`}
-                  className="flex items-center justify-between gap-3"
-                >
-                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-brand-ink">
-                    {item.description}
-                  </span>
-                  <span
-                    className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold"
-                    style={{
-                      color:
-                        selected.type === "receita"
-                          ? TOKENS.sage
-                          : LEVEL_COLOR[levelFor(item.amount, despesaAvg)],
-                    }}
+              {selectedDayItems.map((item) => {
+                const checked = selectedIds.has(item.id);
+                const content = (
+                  <>
+                    {selecting &&
+                      (checked ? (
+                        <SquareCheck
+                          size={17}
+                          className="flex-shrink-0"
+                          style={{ color: "var(--accent)" }}
+                        />
+                      ) : (
+                        <Square size={17} className="flex-shrink-0 text-brand-ink-soft" />
+                      ))}
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-brand-ink">
+                      {item.description}
+                    </span>
+                    <span
+                      className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold"
+                      style={{
+                        color:
+                          selected.type === "receita"
+                            ? TOKENS.sage
+                            : LEVEL_COLOR[levelFor(item.amount, despesaAvg)],
+                      }}
+                    >
+                      {selected.type === "receita" ? "+" : "-"}
+                      {currency(item.amount)}
+                    </span>
+                    {!selecting && <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />}
+                  </>
+                );
+                return selecting ? (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleOne(item.id)}
+                    className="flex items-center gap-3 text-left"
                   >
-                    {selected.type === "receita" ? "+" : "-"}
-                    {currency(item.amount)}
-                  </span>
-                  <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />
-                </Link>
-              ))}
+                    {content}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.id}
+                    href={`/app/lancamento/${item.id}`}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    {content}
+                  </Link>
+                );
+              })}
             </div>
+            {bulkError && <p className="mt-2 text-xs text-brand-coral">{bulkError}</p>}
           </div>
         )}
 

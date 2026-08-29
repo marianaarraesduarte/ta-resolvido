@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { amountToInputValue, currency, formatCentsInput, LEVEL_COLOR, parseCentsInput, TOKENS } from "@/lib/tokens";
 import { iconForCategory } from "@/lib/category-icons";
 import { setCategoryLimit } from "./actions";
@@ -75,9 +76,10 @@ export function CategoryLimitRow({
         </div>
         <div className="text-right">
           <div
-            className="text-[13.5px] font-semibold"
+            className="flex items-center justify-end gap-1 text-[13.5px] font-semibold"
             style={{ color: over ? TOKENS.coral : TOKENS.ink }}
           >
+            {over && <AlertTriangle size={12} className="flex-shrink-0" />}
             {currency(spent)}
           </div>
           {!editing && (

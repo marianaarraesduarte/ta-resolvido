@@ -49,8 +49,8 @@ export function NavLinks() {
               <span
                 className={
                   active
-                    ? "text-center text-[9px] font-semibold leading-tight text-brand-ink"
-                    : "text-center text-[9px] font-medium leading-tight text-brand-ink-soft"
+                    ? "text-center text-[12px] font-semibold leading-tight text-brand-ink"
+                    : "text-center text-[12px] font-medium leading-tight text-brand-ink-soft"
                 }
               >
                 {link.label}
