@@ -4,7 +4,7 @@ import { isPossibleDuplicate } from "./duplicate-check";
 describe("isPossibleDuplicate", () => {
   const existing = [{ entry_date: "2026-08-15", amount: 45.9, description: "Mercado Uau" }];
 
-  it("é duplicata quando data, valor e nome (parecido) batem", () => {
+  it("é duplicata quando data e valor batem, com o mesmo nome", () => {
     expect(
       isPossibleDuplicate(
         { date: "2026-08-15", amount: 45.9, description: "Mercado Uau" },
@@ -13,7 +13,7 @@ describe("isPossibleDuplicate", () => {
     ).toBe(true);
   });
 
-  it("nome parecido (não idêntico) ainda conta como duplicata", () => {
+  it("é duplicata quando data e valor batem, mesmo com nome parecido", () => {
     expect(
       isPossibleDuplicate(
         { date: "2026-08-15", amount: 45.9, description: "Mercado Uau - compra" },
@@ -40,13 +40,13 @@ describe("isPossibleDuplicate", () => {
     ).toBe(false);
   });
 
-  it("nome sem nenhuma relação não é duplicata, mesmo com data e valor iguais", () => {
+  it("é duplicata quando data e valor batem, mesmo com nome sem nenhuma relação (ex: lançado na mão com um nome e depois reconhecido por foto com outro)", () => {
     expect(
       isPossibleDuplicate(
         { date: "2026-08-15", amount: 45.9, description: "Farmácia" },
         existing,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("tolera diferença de centavo por arredondamento", () => {
