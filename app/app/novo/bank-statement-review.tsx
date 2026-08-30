@@ -211,6 +211,16 @@ export function BankStatementReview({
             </div>
           )}
 
+          <button
+            type="button"
+            disabled={analyzing}
+            onClick={() => fileInputRef.current?.click()}
+            className="mb-3.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-brand-plum disabled:opacity-60"
+          >
+            <ImagePlus size={13} />
+            Escolher outra foto ou PDF
+          </button>
+
           {analyzing && (
             <p className="mb-3 text-[13px] text-brand-ink-soft">
               {slowAnalyzing
