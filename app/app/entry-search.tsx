@@ -34,7 +34,7 @@ export function EntrySearch() {
   }, [query]);
 
   return (
-    <div className="mt-4 border-t border-brand-line/60 pt-3">
+    <div className="relative">
       <div className="relative">
         <Search
           size={15}
@@ -58,8 +58,10 @@ export function EntrySearch() {
         )}
       </div>
 
+      {/* Cresce pra cima, não pra baixo — a barra fica colada no rodapé,
+          bem em cima do menu, e não tem espaço embaixo pros resultados. */}
       {query.trim().length >= 2 && (
-        <div className="mt-2 overflow-hidden rounded-2xl border border-brand-line bg-brand-card">
+        <div className="absolute inset-x-0 bottom-full z-10 mb-2 max-h-64 overflow-y-auto overscroll-contain rounded-2xl border border-brand-line bg-brand-card shadow-lg">
           {searching ? (
             <p className="px-4 py-3.5 text-[13px] text-brand-ink-soft">Buscando...</p>
           ) : results && results.length > 0 ? (

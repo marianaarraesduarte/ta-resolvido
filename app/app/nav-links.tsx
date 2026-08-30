@@ -17,7 +17,7 @@ export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-brand-line bg-brand-card pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5">
+    <nav className="border-t border-brand-line bg-brand-card pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5">
       <div className="relative mx-auto flex max-w-sm items-start justify-around px-2">
         <div className="pointer-events-none absolute inset-x-3 top-3 h-px bg-brand-line" />
         {LINKS.map((link) => {

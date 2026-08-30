@@ -10,6 +10,8 @@ import { getSelectedMonthKey } from "@/lib/month-cookie";
 import { resolveViewedMonth, saldoEndDate as computeSaldoEndDate } from "@/lib/viewed-month";
 import { SaldoBadge } from "./saldo-badge";
 import { NavLinks } from "./nav-links";
+import { BottomSearchBar } from "./bottom-search-bar";
+import { MainContent } from "./main-content";
 import { Toast } from "./toast";
 import { ConfirmDialogProvider } from "./confirm-dialog";
 
@@ -114,8 +116,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
         <Toast />
-        <main>{children}</main>
-        <NavLinks />
+        <MainContent>{children}</MainContent>
+        <div className="fixed inset-x-0 bottom-0 z-20">
+          <BottomSearchBar />
+          <NavLinks />
+        </div>
       </div>
     </ConfirmDialogProvider>
   );

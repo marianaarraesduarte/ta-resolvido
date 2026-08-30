@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeftRight,
   Check,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -29,7 +29,6 @@ import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
 import { AssistantCard } from "./assistant-card";
 import { FrequentExpenseChips } from "./frequent-expense-chips";
-import { EntrySearch } from "./entry-search";
 
 export type Entry = {
   id: string;
@@ -60,7 +59,8 @@ type DayBucket = { despesas: Entry[]; receitas: Entry[] };
 
 type Selection =
   | { kind: "day"; day: number; type: "despesa" | "receita" }
-  | { kind: "invoice"; invoiceId: string };
+  | { kind: "invoice"; invoiceId: string }
+  | { kind: "dayInvoices"; day: number };
 
 function tooltipLabel(items: Entry[], total: number): string {
   if (items.length === 1) return `${items[0].description} — ${currency(items[0].amount)}`;
@@ -166,6 +166,11 @@ export function MonthRuler({
   function toggleInvoice(invoiceId: string) {
     const isSame = selected?.kind === "invoice" && selected.invoiceId === invoiceId;
     selectAndReset(isSame ? null : { kind: "invoice", invoiceId });
+  }
+
+  function toggleDayInvoices(day: number) {
+    const isSame = selected?.kind === "dayInvoices" && selected.day === day;
+    selectAndReset(isSame ? null : { kind: "dayInvoices", day });
   }
 
   function toggleOne(id: string) {
@@ -395,57 +400,75 @@ export function MonthRuler({
                     )}
 
                     <div
-                      className={isToday ? "relative z-10 rounded-full bg-[var(--accent)]" : "w-px bg-brand-line"}
+                      className={
+                        isToday
+                          ? "relative z-10 flex-shrink-0 rounded-full bg-[var(--accent)]"
+                          : "w-px flex-shrink-0 bg-brand-line"
+                      }
                       style={isToday ? { width: 3, height: 16 } : { height: 8 }}
                     />
                     <div
                       className={
                         isToday
-                          ? "mt-0.5 text-[12px] font-bold text-brand-ink"
-                          : "mt-0.5 text-[12px] text-brand-ink-soft"
+                          ? "mt-0.5 flex-shrink-0 text-[12px] font-bold text-brand-ink"
+                          : "mt-0.5 flex-shrink-0 text-[12px] text-brand-ink-soft"
                       }
                     >
                       {day}
                     </div>
                     {!hasEntries && isToday && (
-                      <div className="mt-0.5 whitespace-nowrap text-[12px] font-bold text-[var(--accent)]">
+                      <div className="mt-0.5 flex-shrink-0 whitespace-nowrap text-[12px] font-bold text-[var(--accent)]">
                         HOJE
                       </div>
                     )}
 
                     {hasEntries && (
                       <div className="mt-1 flex flex-1 flex-col items-center gap-1">
-                        {dayInvoices.map((invoice) => {
-                          const isSelectedInvoice =
-                            selected?.kind === "invoice" && selected.invoiceId === invoice.id;
-                          return (
-                            <div key={invoice.id} className="group relative">
-                              <button
-                                type="button"
-                                onClick={() => toggleInvoice(invoice.id)}
-                                aria-label={`Fatura do cartão do dia ${day}`}
-                                className="flex h-6 w-6 items-center justify-center"
-                              >
-                                <span
-                                  className={
-                                    isSelectedInvoice
-                                      ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
-                                      : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
+                        {dayInvoices.length > 0 &&
+                          (() => {
+                            const first = dayInvoices[0];
+                            const isCluster = dayInvoices.length > 1;
+                            const isSelected = isCluster
+                              ? selected?.kind === "dayInvoices" && selected.day === day
+                              : selected?.kind === "invoice" && selected.invoiceId === first.id;
+                            return (
+                              <div className="group relative">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    isCluster ? toggleDayInvoices(day) : toggleInvoice(first.id)
                                   }
-                                  style={{ background: invoice.cardColor ?? "var(--accent)" }}
+                                  aria-label={
+                                    isCluster
+                                      ? `${dayInvoices.length} faturas do dia ${day}`
+                                      : `Fatura do cartão do dia ${day}`
+                                  }
+                                  className="flex h-6 w-6 items-center justify-center"
                                 >
-                                  <CreditCard size={8} className="-rotate-12 text-white" />
-                                </span>
-                              </button>
-                              <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
-                                {invoice.cardName ? `${invoice.cardName} · ` : "Fatura · "}
-                                {invoice.items.length}{" "}
-                                {invoice.items.length === 1 ? "compra" : "compras"} —{" "}
-                                {currency(invoice.total)}
+                                  <span
+                                    className={
+                                      isSelected
+                                        ? "flex h-3.5 w-3.5 rotate-12 items-center justify-center rounded-[4px] ring-2 ring-brand-ink"
+                                        : "flex h-3 w-3 rotate-12 items-center justify-center rounded-[3px]"
+                                    }
+                                    style={{ background: first.cardColor ?? "var(--accent)" }}
+                                  >
+                                    <CreditCard size={8} className="-rotate-12 text-white" />
+                                  </span>
+                                </button>
+                                {isCluster && (
+                                  <span className="pointer-events-none absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-brand-ink-solid text-[9px] font-bold text-white">
+                                    {dayInvoices.length}
+                                  </span>
+                                )}
+                                <div className="pointer-events-none absolute top-full left-1/2 z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-ink-solid px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                  {isCluster
+                                    ? `${dayInvoices.length} faturas — toque pra ver`
+                                    : `${first.cardName ? `${first.cardName} · ` : "Fatura · "}${first.items.length} ${first.items.length === 1 ? "compra" : "compras"} — ${currency(first.total)}`}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })()}
                         {hasDespesa ? (
                           <div className="group relative">
                             <button
@@ -598,19 +621,43 @@ export function MonthRuler({
           </div>
         )}
 
+        {selected?.kind === "dayInvoices" && (
+          <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
+            <div className="mb-2 text-xs text-brand-ink-soft">
+              Dia {selected.day} · {(invoicesByDay.get(selected.day) ?? []).length} faturas
+            </div>
+            <div className="flex flex-col gap-2">
+              {(invoicesByDay.get(selected.day) ?? []).map((invoice) => (
+                <button
+                  key={invoice.id}
+                  type="button"
+                  onClick={() => selectAndReset({ kind: "invoice", invoiceId: invoice.id })}
+                  className="flex items-center gap-2.5 rounded-xl bg-brand-bg px-3 py-2.5 text-left"
+                >
+                  <span
+                    className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                    style={{ background: invoice.cardColor ?? "var(--accent)" }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-brand-ink">
+                    {invoice.cardName ?? "Fatura do cartão"}
+                  </span>
+                  <span className="flex-shrink-0 text-[13px] font-semibold text-brand-ink-soft">
+                    {currency(invoice.total)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {selectedInvoice && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
-            <div className="mb-2 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setSwitchingCard((prev) => !prev)}
-                className="flex items-center gap-1 text-xs text-brand-ink-soft"
-              >
+            <div className="mb-2.5 flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1 text-xs text-brand-ink-soft">
                 {selectedInvoice.cardName ?? "Fatura do cartão"} · dia{" "}
                 {dayOfMonth(selectedInvoice.invoiceDate)} · {selectedInvoice.items.length}{" "}
                 {selectedInvoice.items.length === 1 ? "compra" : "compras"}
-                <ChevronDown size={12} className="flex-shrink-0" />
-              </button>
+              </div>
               {selectedInvoice.items.length === 0 ? (
                 <button
                   type="button"
@@ -636,6 +683,18 @@ export function MonthRuler({
                 </button>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => setSwitchingCard((prev) => !prev)}
+              className={
+                switchingCard
+                  ? "mb-2.5 flex items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
+                  : "mb-2.5 flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[12px] font-semibold text-brand-plum"
+              }
+            >
+              <ArrowLeftRight size={12} />
+              Trocar cartão dessa fatura
+            </button>
             {switchingCard && (
               <div className="mb-2.5 rounded-xl bg-brand-bg px-3 py-2.5">
                 <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink-soft">
@@ -838,8 +897,6 @@ export function MonthRuler({
           <Plus size={16} />
           Marcar lançamento
         </Link>
-
-        <EntrySearch />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeftRight,
   Check,
   ChevronDown,
   CreditCard,
@@ -258,15 +259,16 @@ export function EntriesList({
                       }
                     />
                   </button>
-                  <div className="-mt-2.5 px-4 pb-2 pl-16">
+                  <div className="-mt-2.5 px-4 pb-2.5 pl-16">
                     <button
                       type="button"
                       onClick={() =>
                         setSwitchingInvoiceId((prev) => (prev === invoice.id ? null : invoice.id))
                       }
-                      className="text-[11.5px] font-medium text-brand-ink-soft underline underline-offset-2"
+                      className="flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[11.5px] font-semibold text-brand-plum"
                     >
-                      Trocar cartão
+                      <ArrowLeftRight size={11} />
+                      Trocar cartão dessa fatura
                     </button>
                   </div>
                   {switchingInvoiceId === invoice.id && (
