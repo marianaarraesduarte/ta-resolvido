@@ -6,6 +6,12 @@ import { isCompleto, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
 import { EntryForm } from "./entry-form";
 import { listCardsWithInvoices } from "./actions";
 
+// As server actions dessa tela chamam o Gemini com foto/PDF. Sem isso a
+// Vercel corta a função no limite padrão (bem menor que a análise precisa) e
+// a usuária recebe um erro sem mensagem nenhuma, no meio do "Analisando...".
+// O orçamento interno de lib/gemini.ts é menor que esse teto de propósito.
+export const maxDuration = 60;
+
 export default async function NovoLancamentoPage({
   searchParams,
 }: {

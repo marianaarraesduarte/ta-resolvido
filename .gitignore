@@ -27,3 +27,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# link local pro preview do outro projeto (Lista de Mercado)
+/lista-mercado-app
+
+# link local pro preview do outro projeto (Quadro do Box)
+/quadro-do-box

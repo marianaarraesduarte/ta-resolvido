@@ -7,6 +7,10 @@ import { InsightThread } from "./insight-thread";
 import { PartialInsightButton } from "./partial-insight-button";
 import { Upsell } from "../upsell";
 
+// A análise mensal também passa pelo Gemini — mesmo motivo do maxDuration
+// em app/app/novo/page.tsx.
+export const maxDuration = 60;
+
 type InsightRow = {
   id: string;
   month_start: string;

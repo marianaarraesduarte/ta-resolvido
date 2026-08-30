@@ -8,7 +8,12 @@ import { isCompleto, isRecognitionLimitReached, FREE_RECOGNITION_LIMIT } from "@
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
 import { matchCategoryPattern } from "@/lib/category-pattern-match";
 import { parseInstallmentInfo } from "@/lib/installment-detect";
-import { extractFromDocument, extractFromText, Type } from "@/lib/gemini";
+import {
+  extractFromDocument,
+  extractFromText,
+  recognitionErrorMessage,
+  Type,
+} from "@/lib/gemini";
 
 async function enforceRecognitionLimit(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -582,7 +587,7 @@ export async function recognizeStatement(fileDataUrl: string): Promise<Recognize
     });
   } catch (err) {
     console.error("recognizeStatement falhou:", err);
-    throw new Error("Não deu pra analisar esse arquivo agora.");
+    throw recognitionErrorMessage(err, "Não deu pra analisar esse arquivo agora.");
   }
 }
 
@@ -732,7 +737,7 @@ export async function recognizeChatMessage(message: string): Promise<ChatItem[]>
     });
   } catch (err) {
     console.error("recognizeChatMessage falhou:", err);
-    throw new Error("Não deu pra entender essa mensagem agora.");
+    throw recognitionErrorMessage(err, "Não deu pra entender essa mensagem agora.");
   }
 }
 
@@ -810,7 +815,7 @@ export async function recognizeAudioMessage(
     // Feature nova (áudio) — loga a causa real enquanto valida em produção,
     // já que a mensagem pra usuária precisa continuar genérica.
     console.error("recognizeAudioMessage falhou:", err);
-    throw new Error("Não deu pra entender esse áudio agora.");
+    throw recognitionErrorMessage(err, "Não deu pra entender esse áudio agora.");
   }
 }
 
@@ -1043,7 +1048,7 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
     });
   } catch (err) {
     console.error("recognizeCardInvoice falhou:", err);
-    throw new Error("Não deu pra analisar esse arquivo agora.");
+    throw recognitionErrorMessage(err, "Não deu pra analisar esse arquivo agora.");
   }
 }
 
