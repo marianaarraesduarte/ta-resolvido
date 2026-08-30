@@ -6,6 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 const TAB_ORDER = ["/app", "/app/resumo", "/app/mais"];
 const SWIPE_THRESHOLD = 70;
 const DIRECTION_LOCK_THRESHOLD = 10;
+// Perto da borda o celular já entende como "voltar" (gesto do sistema) — se a
+// gente também reagir aí, os dois gestos brigam e a navegação parece "voltar
+// sozinha" logo depois de trocar de aba.
+const EDGE_MARGIN = 24;
 
 /**
  * Em "Meu mês" o rodapé fixo ganha uma barra de busca em cima do menu, então
@@ -28,6 +32,7 @@ export function MainContent({ children }: { children: React.ReactNode }) {
   function handlePointerDown(e: React.PointerEvent) {
     if (isHome) return;
     if ((e.target as HTMLElement).closest("[data-swipe-exempt]")) return;
+    if (e.clientX < EDGE_MARGIN || e.clientX > window.innerWidth - EDGE_MARGIN) return;
     start.current = { x: e.clientX, y: e.clientY };
     locked.current = null;
   }

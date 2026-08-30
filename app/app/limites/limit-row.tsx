@@ -33,6 +33,7 @@ export function CategoryLimitRow({
   const limitPct = receita > 0 ? Math.round((limit / receita) * 100) : null;
   const pct = Math.min(100, Math.round((spent / limit) * 100));
   const over = spent > limit;
+  const near = !over && pct >= 75;
   const barColor = over ? LEVEL_COLOR.coral : pct > 75 ? LEVEL_COLOR.amber : LEVEL_COLOR.sage;
 
   function handleValueChange(raw: string) {
@@ -146,11 +147,22 @@ export function CategoryLimitRow({
           )}
         </div>
       ) : (
-        <div className="h-1.5 overflow-hidden rounded-full bg-brand-bg">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${pct}%`, background: barColor }}
-          />
+        <div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-brand-bg">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${pct}%`, background: barColor }}
+            />
+          </div>
+          {near && (
+            <div
+              className="mt-1.5 flex items-center gap-1 text-[11.5px] font-medium"
+              style={{ color: TOKENS.amber }}
+            >
+              <AlertTriangle size={11} className="flex-shrink-0" />
+              Perto do limite — já foi {pct}%
+            </div>
+          )}
         </div>
       )}
       {error && <p className="mt-1.5 text-xs text-brand-coral">{error}</p>}

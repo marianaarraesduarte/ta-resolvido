@@ -125,6 +125,9 @@ export function MonthRuler({
   // régua em si (data-swipe-exempt) fica de fora, já que ela rola sozinha.
   function handleSwipeStart(e: React.PointerEvent) {
     if ((e.target as HTMLElement).closest("[data-swipe-exempt]")) return;
+    // Perto da borda o celular entende como "voltar" (gesto do sistema) — se a
+    // gente também reagir aí, os dois gestos brigam.
+    if (e.clientX < 24 || e.clientX > window.innerWidth - 24) return;
     swipeStart.current = { x: e.clientX, y: e.clientY };
     swipeLocked.current = null;
   }
