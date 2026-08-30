@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   CreditCard,
+  Layers,
   ListChecks,
   Pencil,
   Square,
@@ -17,11 +18,11 @@ import {
   X,
 } from "lucide-react";
 import { currency, TOKENS } from "@/lib/tokens";
-import { dayOfMonth } from "@/lib/date";
+import { brDateLabel, dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "../entries-actions";
-import { updateInvoiceCard } from "../novo/actions";
+import { markInvoicePaid, updateInvoiceCard } from "../novo/actions";
 import { SwipeToDelete } from "../swipe-to-delete";
 
 type Category = { id: string; name: string };
@@ -42,6 +43,7 @@ export type CardInvoiceRow = {
   cardId: string | null;
   cardName: string | null;
   cardColor: string | null;
+  paidAt: string | null;
 };
 export type CardOption = { id: string; name: string; color: string };
 
@@ -89,6 +91,19 @@ export function EntriesList({
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não deu pra trocar o cartão agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleTogglePaid(invoiceId: string, paid: boolean) {
+    setProcessing(true);
+    setError("");
+    try {
+      await markInvoicePaid(invoiceId, paid);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não deu pra atualizar essa fatura agora.");
     } finally {
       setProcessing(false);
     }
@@ -260,16 +275,58 @@ export function EntriesList({
                     />
                   </button>
                   <div className="-mt-2.5 px-4 pb-2.5 pl-16">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSwitchingInvoiceId((prev) => (prev === invoice.id ? null : invoice.id))
-                      }
-                      className="flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[11.5px] font-semibold text-brand-plum"
-                    >
-                      <ArrowLeftRight size={11} />
-                      Trocar cartão dessa fatura
-                    </button>
+                    <div className="mb-2 flex items-center justify-between gap-2 rounded-xl bg-brand-bg px-3 py-2">
+                      <div
+                        className="flex items-center gap-1.5 text-[11.5px] font-semibold"
+                        style={{ color: invoice.paidAt ? TOKENS.sage : TOKENS.amber }}
+                      >
+                        <span
+                          className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                          style={{ background: invoice.paidAt ? TOKENS.sage : TOKENS.amber }}
+                        />
+                        {invoice.paidAt
+                          ? `Paga em ${brDateLabel(invoice.paidAt.slice(0, 10))}`
+                          : "Ainda não marcada como paga"}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={processing}
+                        onClick={() => handleTogglePaid(invoice.id, !invoice.paidAt)}
+                        className={
+                          invoice.paidAt
+                            ? "flex-shrink-0 text-[11px] font-medium text-brand-ink-soft underline underline-offset-2 disabled:opacity-60"
+                            : "flex flex-shrink-0 items-center gap-1 rounded-full bg-brand-sage px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                        }
+                      >
+                        {invoice.paidAt ? (
+                          "Desmarcar"
+                        ) : (
+                          <>
+                            <Check size={11} />
+                            Marcar como paga
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSwitchingInvoiceId((prev) => (prev === invoice.id ? null : invoice.id))
+                        }
+                        className="flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[11.5px] font-semibold text-brand-plum"
+                      >
+                        <ArrowLeftRight size={11} />
+                        Trocar cartão dessa fatura
+                      </button>
+                      <Link
+                        href="/app/parcelas"
+                        className="flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[11.5px] font-semibold text-brand-ink"
+                      >
+                        <Layers size={11} />
+                        Ver parcelas
+                      </Link>
+                    </div>
                   </div>
                   {switchingInvoiceId === invoice.id && (
                     <div className="mx-4 mb-2.5 rounded-xl bg-brand-bg px-3 py-2.5">

@@ -11,7 +11,14 @@ const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
 ];
 
 // Telas que, quando abertas, mantêm o ícone "Mais" marcado como ativo.
-const MAIS_PATHS = ["/app/mais", "/app/limites", "/app/metas", "/app/insights", "/app/planos"];
+const MAIS_PATHS = [
+  "/app/mais",
+  "/app/limites",
+  "/app/metas",
+  "/app/insights",
+  "/app/planos",
+  "/app/parcelas",
+];
 
 export function NavLinks() {
   const pathname = usePathname();

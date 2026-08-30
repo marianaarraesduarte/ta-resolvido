@@ -7,6 +7,7 @@ import { suggestCategoryName } from "@/lib/category-keywords";
 import { isCompleto, isRecognitionLimitReached, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
 import { matchCategoryPattern } from "@/lib/category-pattern-match";
+import { parseInstallmentInfo } from "@/lib/installment-detect";
 import { extractFromDocument, extractFromText, Type } from "@/lib/gemini";
 
 async function enforceRecognitionLimit(
@@ -80,6 +81,77 @@ async function resolveInvoiceId(
     throw new Error("Não deu pra salvar a fatura agora.");
   }
   return created.id;
+}
+
+// Depois de salvar lançamentos no crédito, vê se a descrição termina com uma
+// marcação de parcela (ex: "3/10") e junta com o grupo certo em
+// installments — reaproveitando um já existente pro mesmo cartão+nome+total,
+// ou criando um novo. Best-effort: nunca bloqueia o salvamento do
+// lançamento em si, só não fica de fora das Parcelas se não der certo.
+async function linkInstallments(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  inserted: {
+    id: string;
+    description: string;
+    amount: number;
+    category_id: string | null;
+    card_invoice_id: string | null | undefined;
+  }[],
+): Promise<void> {
+  try {
+    const candidates = inserted.flatMap((row) => {
+      if (!row.card_invoice_id) return [];
+      const parsed = parseInstallmentInfo(row.description);
+      return parsed ? [{ row, parsed }] : [];
+    });
+    if (candidates.length === 0) return;
+
+    const invoiceIds = [...new Set(candidates.map((c) => c.row.card_invoice_id as string))];
+    const { data: invoiceRows } = await supabase
+      .from("card_invoices")
+      .select("id, card_id")
+      .in("id", invoiceIds);
+    const cardIdByInvoice = new Map((invoiceRows ?? []).map((r) => [r.id, r.card_id as string | null]));
+
+    for (const { row, parsed } of candidates) {
+      const cardId = cardIdByInvoice.get(row.card_invoice_id as string) ?? null;
+
+      let existingQuery = supabase
+        .from("installments")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("description", parsed.baseDescription)
+        .eq("total_installments", parsed.total);
+      existingQuery = cardId ? existingQuery.eq("card_id", cardId) : existingQuery.is("card_id", null);
+      const { data: existingGroup } = await existingQuery.limit(1).maybeSingle();
+
+      let installmentId = existingGroup?.id as string | undefined;
+      if (!installmentId) {
+        const { data: created } = await supabase
+          .from("installments")
+          .insert({
+            user_id: userId,
+            card_id: cardId,
+            description: parsed.baseDescription,
+            total_installments: parsed.total,
+            monthly_amount: row.amount,
+            category_id: row.category_id,
+          })
+          .select("id")
+          .single();
+        if (!created) continue;
+        installmentId = created.id;
+      }
+
+      await supabase
+        .from("entries")
+        .update({ installment_id: installmentId, installment_number: parsed.number })
+        .eq("id", row.id);
+    }
+  } catch (err) {
+    console.error("linkInstallments falhou:", err);
+  }
 }
 
 export type CardWithInvoices = {
@@ -183,6 +255,27 @@ export async function updateInvoiceCard(invoiceId: string, cardId: string): Prom
   }
 }
 
+// Lançar a compra e pagar a fatura são coisas diferentes — isso só marca
+// que o boleto/fatura em si já foi resolvido, sem mexer nas compras dela.
+// É também o gatilho que avança as parcelas que caíram nessa fatura.
+export async function markInvoicePaid(invoiceId: string, paid: boolean): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { error } = await supabase
+    .from("card_invoices")
+    .update({ paid_at: paid ? new Date().toISOString() : null })
+    .eq("id", invoiceId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error("Não deu pra atualizar essa fatura agora.");
+  }
+}
+
 export async function createEntry(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -259,10 +352,26 @@ export async function createEntry(formData: FormData) {
     payload.income_type = formData.get("income_type") === "salario" ? "salario" : "outra";
   }
 
-  const { error } = await supabase.from("entries").insert(payload);
+  const { data: insertedEntry, error } = await supabase
+    .from("entries")
+    .insert(payload)
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !insertedEntry) {
     redirect("/app/novo?error=1");
+  }
+
+  if (payload.card_invoice_id) {
+    await linkInstallments(supabase, user.id, [
+      {
+        id: insertedEntry.id,
+        description: payload.description,
+        amount: payload.amount,
+        category_id: payload.category_id ?? null,
+        card_invoice_id: payload.card_invoice_id,
+      },
+    ]);
   }
 
   let categoryName = "";
@@ -810,11 +919,26 @@ export async function saveRecognizedItems(
     };
   });
 
-  const { error } = await supabase.from("entries").insert(rows);
+  const { data: insertedRows, error } = await supabase.from("entries").insert(rows).select("id");
   if (error) {
     console.error("saveRecognizedItems: insert em entries falhou:", error);
     throw new Error("Não deu pra salvar os lançamentos agora.");
   }
+
+  const cardRows = rows.flatMap((r, i) =>
+    r.type === "despesa" && "card_invoice_id" in r && insertedRows?.[i]
+      ? [
+          {
+            id: insertedRows[i].id,
+            description: r.description,
+            amount: r.amount,
+            category_id: r.category_id,
+            card_invoice_id: r.card_invoice_id,
+          },
+        ]
+      : [],
+  );
+  if (cardRows.length > 0) await linkInstallments(supabase, user.id, cardRows);
 
   const categoryPatterns = rows
     .filter((r) => r.type === "despesa" && r.category_id)
@@ -872,6 +996,8 @@ Para cada compra, extraia:
 - description: descrição curta (nome do estabelecimento)
 - amount: valor em reais, sempre um número positivo
 - category: escolha a categoria que melhor descreve o estabelecimento entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Use seu conhecimento geral sobre o tipo de estabelecimento pra decidir, mesmo que o nome seja abreviado ou tenha código (ex: "UBER *TRIP", "IFD*IFOOD"). Se nenhuma categoria se encaixar bem, use "${NO_CATEGORY}".
+
+Se a compra for parcelada (a fatura mostrar algo como "3/10", "PARC 3/10" ou "3 de 10" junto do nome), mantenha essa marcação exatamente como aparece, no final de description — não invente parcelamento que não estiver escrito na fatura.
 
 Se não conseguir identificar nenhuma compra, retorne uma lista vazia.`;
 }
@@ -971,11 +1097,26 @@ export async function saveCardInvoice(
     };
   });
 
-  const { error } = await supabase.from("entries").insert(rows);
+  const { data: insertedRows, error } = await supabase.from("entries").insert(rows).select("id");
   if (error) {
     console.error("saveCardInvoice: insert em entries falhou:", error);
     throw new Error("Não deu pra salvar os lançamentos agora.");
   }
+
+  const cardRows = rows.flatMap((r, i) =>
+    insertedRows?.[i]
+      ? [
+          {
+            id: insertedRows[i].id,
+            description: r.description,
+            amount: r.amount,
+            category_id: r.category_id,
+            card_invoice_id: r.card_invoice_id,
+          },
+        ]
+      : [],
+  );
+  if (cardRows.length > 0) await linkInstallments(supabase, user.id, cardRows);
 
   const categoryPatterns = rows
     .filter((r) => r.category_id)

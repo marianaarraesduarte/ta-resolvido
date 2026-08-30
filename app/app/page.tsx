@@ -61,7 +61,7 @@ export default async function AppHomePage({
       .order("entry_date", { ascending: true }),
     supabase
       .from("card_invoices")
-      .select("id, invoice_date, card_id, cards(name, color)")
+      .select("id, invoice_date, card_id, paid_at, cards(name, color)")
       .eq("user_id", user.id)
       .gte("invoice_date", toDateKey(firstDay))
       .lte("invoice_date", toDateKey(lastDay)),
@@ -111,6 +111,7 @@ export default async function AppHomePage({
       id: string;
       invoice_date: string;
       card_id: string | null;
+      paid_at: string | null;
       cards: { name: string; color: string } | null;
     }[]) ?? []
   ).map((invoice) => {
@@ -125,6 +126,7 @@ export default async function AppHomePage({
       cardId: invoice.card_id,
       cardName: invoice.cards?.name ?? null,
       cardColor: invoice.cards?.color ?? null,
+      paidAt: invoice.paid_at,
     };
   });
 

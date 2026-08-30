@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Layers,
   ListChecks,
   Pencil,
   Plus,
@@ -19,12 +20,12 @@ import {
   X,
 } from "lucide-react";
 import { currency, dotSizeForAmount, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
-import { dayOfMonth } from "@/lib/date";
+import { brDateLabel, dayOfMonth } from "@/lib/date";
 import type { AssistantData } from "@/lib/assistant-data";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
-import { deleteCardInvoice, updateInvoiceCard } from "./novo/actions";
+import { deleteCardInvoice, markInvoicePaid, updateInvoiceCard } from "./novo/actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
 import { AssistantCard } from "./assistant-card";
@@ -49,6 +50,7 @@ export type CardInvoiceSummary = {
   cardId: string | null;
   cardName: string | null;
   cardColor: string | null;
+  paidAt: string | null;
 };
 
 export type CardOption = { id: string; name: string; color: string };
@@ -185,6 +187,19 @@ export function MonthRuler({
       router.refresh();
     } catch (e) {
       setBulkError(e instanceof Error ? e.message : "Não deu pra trocar o cartão agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleTogglePaid(invoiceId: string, paid: boolean) {
+    setProcessing(true);
+    setBulkError("");
+    try {
+      await markInvoicePaid(invoiceId, paid);
+      router.refresh();
+    } catch (e) {
+      setBulkError(e instanceof Error ? e.message : "Não deu pra atualizar essa fatura agora.");
     } finally {
       setProcessing(false);
     }
@@ -734,18 +749,62 @@ export function MonthRuler({
                 </button>
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => setSwitchingCard((prev) => !prev)}
-              className={
-                switchingCard
-                  ? "mb-2.5 flex items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
-                  : "mb-2.5 flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[12px] font-semibold text-brand-plum"
-              }
-            >
-              <ArrowLeftRight size={12} />
-              Trocar cartão dessa fatura
-            </button>
+
+            <div className="mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-brand-bg px-3 py-2.5">
+              <div
+                className="flex items-center gap-1.5 text-[12px] font-semibold"
+                style={{ color: selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber }}
+              >
+                <span
+                  className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                  style={{ background: selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber }}
+                />
+                {selectedInvoice.paidAt
+                  ? `Paga em ${brDateLabel(selectedInvoice.paidAt.slice(0, 10))}`
+                  : "Ainda não marcada como paga"}
+              </div>
+              <button
+                type="button"
+                disabled={processing}
+                onClick={() => handleTogglePaid(selectedInvoice.id, !selectedInvoice.paidAt)}
+                className={
+                  selectedInvoice.paidAt
+                    ? "flex-shrink-0 text-[11.5px] font-medium text-brand-ink-soft underline underline-offset-2 disabled:opacity-60"
+                    : "flex flex-shrink-0 items-center gap-1 rounded-full bg-brand-sage px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
+                }
+              >
+                {selectedInvoice.paidAt ? (
+                  "Desmarcar"
+                ) : (
+                  <>
+                    <Check size={12} />
+                    Marcar como paga
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="mb-2.5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSwitchingCard((prev) => !prev)}
+                className={
+                  switchingCard
+                    ? "flex items-center gap-1.5 rounded-full bg-brand-ink-solid px-3 py-1.5 text-[12px] font-semibold text-white"
+                    : "flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[12px] font-semibold text-brand-plum"
+                }
+              >
+                <ArrowLeftRight size={12} />
+                Trocar cartão dessa fatura
+              </button>
+              <Link
+                href="/app/parcelas"
+                className="flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
+              >
+                <Layers size={12} />
+                Ver parcelas
+              </Link>
+            </div>
             {switchingCard && (
               <div className="mb-2.5 rounded-xl bg-brand-bg px-3 py-2.5">
                 <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink-soft">

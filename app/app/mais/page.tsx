@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, ChevronRight, Gauge, Lock, Sparkles, Target } from "lucide-react";
+import { Bell, ChevronRight, Gauge, Layers, Lock, Sparkles, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function MaisPage() {
@@ -24,6 +24,13 @@ export default async function MaisPage() {
       label: "Quanto posso gastar",
       desc: "Defina quanto gastar por categoria",
       icon: Gauge,
+      locked: isFree,
+    },
+    {
+      href: "/app/parcelas",
+      label: "Parcelas",
+      desc: "Compras parceladas em aberto",
+      icon: Layers,
       locked: isFree,
     },
     {
