@@ -39,8 +39,21 @@ export default async function ConfigPage() {
 
         <div className="mt-2 overflow-hidden rounded-2xl bg-brand-card">
           <Link
-            href="/app/config/saldo-inicial"
+            href="/app/config/cartoes"
             className="flex items-center justify-between px-[18px] py-4"
+          >
+            <div>
+              <div className="text-[14.5px] font-medium text-brand-ink">Meus cartões</div>
+              <div className="mt-0.5 text-xs text-brand-ink-soft">
+                Nomeie e escolha uma cor pra cada cartão de crédito
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-brand-ink-soft" />
+          </Link>
+
+          <Link
+            href="/app/config/saldo-inicial"
+            className="flex items-center justify-between border-t border-brand-bg px-[18px] py-4"
           >
             <div>
               <div className="text-[14.5px] font-medium text-brand-ink">Saldo inicial</div>

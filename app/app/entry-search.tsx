@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { currency } from "@/lib/tokens";
 import { brDateLabel } from "@/lib/date";
-import { searchEntries, type SearchedEntry } from "./actions";
+import { searchEntries, type SearchedEntry } from "./resumo/actions";
 
 export function EntrySearch() {
   const [query, setQuery] = useState("");
@@ -34,7 +34,7 @@ export function EntrySearch() {
   }, [query]);
 
   return (
-    <div className="mb-3.5">
+    <div className="mt-6 border-t border-brand-line pt-5">
       <div className="relative">
         <Search
           size={15}

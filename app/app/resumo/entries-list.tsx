@@ -296,8 +296,8 @@ export function EntriesList({
             const checked = selectedIds.has(d.id);
             const rowClass =
               i === 0
-                ? "flex items-center gap-3 px-4 py-3.5"
-                : "flex items-center gap-3 border-t border-brand-bg px-4 py-3.5";
+                ? "flex items-center gap-3 bg-brand-card px-4 py-3.5"
+                : "flex items-center gap-3 border-t border-brand-bg bg-brand-card px-4 py-3.5";
             const content = (
               <>
                 {selecting &&

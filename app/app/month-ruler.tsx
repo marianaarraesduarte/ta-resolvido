@@ -27,6 +27,7 @@ import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
 import { AssistantCard } from "./assistant-card";
 import { FrequentExpenseChips } from "./frequent-expense-chips";
+import { EntrySearch } from "./entry-search";
 
 export type Entry = {
   id: string;
@@ -479,7 +480,7 @@ export function MonthRuler({
               type="button"
               onClick={() => toggleInvoice(invoice.id)}
               className="mb-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
-              style={{ background: `color-mix(in srgb, ${color} 16%, #FBFAF6)` }}
+              style={{ background: `color-mix(in srgb, ${color} 16%, ${TOKENS.card})` }}
             >
               <div
                 className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
@@ -766,6 +767,8 @@ export function MonthRuler({
           <Plus size={16} />
           Marcar lançamento
         </Link>
+
+        <EntrySearch />
       </div>
     </div>
   );
