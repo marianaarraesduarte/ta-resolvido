@@ -112,12 +112,47 @@ export function MonthRuler({
   const [bulkError, setBulkError] = useState("");
   const [switchingCard, setSwitchingCard] = useState(false);
   const todayRef = useRef<HTMLDivElement>(null);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const swipeLocked = useRef<"h" | "v" | null>(null);
 
   // A régua abre rolada pro dia 1 por padrão — sem isso, quem entra dia 20
   // teria que arrastar a tela toda vez só pra ver onde está hoje.
   useEffect(() => {
     todayRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
   }, []);
+
+  // Arrastar a tela pro lado troca de mês (além das setas e do seletor) — a
+  // régua em si (data-swipe-exempt) fica de fora, já que ela rola sozinha.
+  function handleSwipeStart(e: React.PointerEvent) {
+    if ((e.target as HTMLElement).closest("[data-swipe-exempt]")) return;
+    swipeStart.current = { x: e.clientX, y: e.clientY };
+    swipeLocked.current = null;
+  }
+
+  function handleSwipeMove(e: React.PointerEvent) {
+    if (!swipeStart.current) return;
+    const dx = e.clientX - swipeStart.current.x;
+    const dy = e.clientY - swipeStart.current.y;
+    if (!swipeLocked.current) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      swipeLocked.current = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+    }
+  }
+
+  function handleSwipeEnd(e: React.PointerEvent) {
+    if (!swipeStart.current || swipeLocked.current !== "h") {
+      swipeStart.current = null;
+      return;
+    }
+    const dx = e.clientX - swipeStart.current.x;
+    swipeStart.current = null;
+    if (Math.abs(dx) < 70) return;
+    void goToMonth("/app", dx < 0 ? nextMonthKey : prevMonthKey);
+  }
+
+  function handleSwipeCancel() {
+    swipeStart.current = null;
+  }
 
   function exitSelection() {
     setSelecting(false);
@@ -258,7 +293,13 @@ export function MonthRuler({
     selected?.kind === "invoice" ? (cardInvoices.find((i) => i.id === selected.invoiceId) ?? null) : null;
 
   return (
-    <div className="flex justify-center px-3 pt-7 pb-2">
+    <div
+      className="flex justify-center px-3 pt-7 pb-2"
+      onPointerDown={handleSwipeStart}
+      onPointerMove={handleSwipeMove}
+      onPointerUp={handleSwipeEnd}
+      onPointerCancel={handleSwipeCancel}
+    >
       <div className="w-full max-w-sm">
         <div className="mb-5">
           <div className="font-display text-xs font-bold uppercase tracking-wide text-brand-ink opacity-55">
@@ -327,6 +368,7 @@ export function MonthRuler({
           <div className="mb-1.5 text-[13px] font-semibold text-brand-ink">Régua do mês</div>
           <div className="relative mb-4">
             <div
+              data-swipe-exempt
               className="overflow-x-auto rounded-[20px] bg-brand-card p-3.5"
               style={{
                 backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${TOKENS.sage} 14%, transparent), transparent 65%)`,

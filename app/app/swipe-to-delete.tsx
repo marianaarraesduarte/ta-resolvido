@@ -92,7 +92,7 @@ export function SwipeToDelete({
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden" data-swipe-exempt>
       <div className="absolute inset-y-0 right-0 flex" style={{ width: REVEAL_WIDTH }}>
         <button
           type="button"

@@ -1,13 +1,76 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
+const TAB_ORDER = ["/app", "/app/resumo", "/app/mais"];
+const SWIPE_THRESHOLD = 70;
+const DIRECTION_LOCK_THRESHOLD = 10;
 
 /**
  * Em "Meu mês" o rodapé fixo ganha uma barra de busca em cima do menu, então
  * o conteúdo da página precisa de um respiro a mais embaixo pra não ficar
  * escondido atrás dela — só nessa tela.
+ *
+ * Arrastar a tela pro lado troca de aba (Meu mês / Quanto gastei / Mais),
+ * além de tocar no menu — mas só nas 3 telas principais, e não em "Meu mês"
+ * (lá o arrasto lateral já troca de mês, é a régua quem cuida disso).
+ * Elementos marcados com data-swipe-exempt (a régua rolável, as linhas com
+ * swipe-pra-excluir) ficam de fora pra não brigar com o próprio gesto deles.
  */
 export function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  return <main className={pathname === "/app" ? "pb-16" : undefined}>{children}</main>;
+  const router = useRouter();
+  const isHome = pathname === "/app";
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const locked = useRef<"h" | "v" | null>(null);
+
+  function handlePointerDown(e: React.PointerEvent) {
+    if (isHome) return;
+    if ((e.target as HTMLElement).closest("[data-swipe-exempt]")) return;
+    start.current = { x: e.clientX, y: e.clientY };
+    locked.current = null;
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!start.current) return;
+    const dx = e.clientX - start.current.x;
+    const dy = e.clientY - start.current.y;
+    if (!locked.current) {
+      if (Math.abs(dx) < DIRECTION_LOCK_THRESHOLD && Math.abs(dy) < DIRECTION_LOCK_THRESHOLD) return;
+      locked.current = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+    }
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    if (!start.current || locked.current !== "h") {
+      start.current = null;
+      return;
+    }
+    const dx = e.clientX - start.current.x;
+    start.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+
+    const index = TAB_ORDER.indexOf(pathname);
+    if (index === -1) return;
+    const nextIndex = dx < 0 ? index + 1 : index - 1;
+    if (nextIndex < 0 || nextIndex >= TAB_ORDER.length) return;
+    router.push(TAB_ORDER[nextIndex]);
+  }
+
+  function handlePointerCancel() {
+    start.current = null;
+  }
+
+  return (
+    <main
+      className={isHome ? "pb-16" : undefined}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+    >
+      {children}
+    </main>
+  );
 }
