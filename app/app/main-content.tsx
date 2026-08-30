@@ -28,9 +28,14 @@ export function MainContent({ children }: { children: React.ReactNode }) {
   const isHome = pathname === "/app";
   const start = useRef<{ x: number; y: number } | null>(null);
   const locked = useRef<"h" | "v" | null>(null);
+  const cooldownUntil = useRef(0);
 
   function handlePointerDown(e: React.PointerEvent) {
     if (isHome) return;
+    // Sem isso, um segundo arrasto disparado rápido demais (antes do pathname
+    // atualizar de verdade) calculava o próximo índice em cima da aba antiga,
+    // e podia "repetir" a mesma tela em vez de avançar.
+    if (Date.now() < cooldownUntil.current) return;
     if ((e.target as HTMLElement).closest("[data-swipe-exempt]")) return;
     if (e.clientX < EDGE_MARGIN || e.clientX > window.innerWidth - EDGE_MARGIN) return;
     start.current = { x: e.clientX, y: e.clientY };
@@ -60,6 +65,7 @@ export function MainContent({ children }: { children: React.ReactNode }) {
     if (index === -1) return;
     const nextIndex = dx < 0 ? index + 1 : index - 1;
     if (nextIndex < 0 || nextIndex >= TAB_ORDER.length) return;
+    cooldownUntil.current = Date.now() + 700;
     router.push(TAB_ORDER[nextIndex]);
   }
 

@@ -114,6 +114,7 @@ export function MonthRuler({
   const todayRef = useRef<HTMLDivElement>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const swipeLocked = useRef<"h" | "v" | null>(null);
+  const swipeCooldownUntil = useRef(0);
 
   // A régua abre rolada pro dia 1 por padrão — sem isso, quem entra dia 20
   // teria que arrastar a tela toda vez só pra ver onde está hoje.
@@ -124,6 +125,10 @@ export function MonthRuler({
   // Arrastar a tela pro lado troca de mês (além das setas e do seletor) — a
   // régua em si (data-swipe-exempt) fica de fora, já que ela rola sozinha.
   function handleSwipeStart(e: React.PointerEvent) {
+    // Sem isso, um segundo arrasto disparado rápido demais (antes da troca de
+    // mês anterior terminar) lia prevMonthKey/nextMonthKey desatualizados e
+    // podia navegar pro lado errado, ou repetir o mês que já estava.
+    if (Date.now() < swipeCooldownUntil.current) return;
     if ((e.target as HTMLElement).closest("[data-swipe-exempt]")) return;
     // Perto da borda o celular entende como "voltar" (gesto do sistema) — se a
     // gente também reagir aí, os dois gestos brigam.
@@ -150,6 +155,7 @@ export function MonthRuler({
     const dx = e.clientX - swipeStart.current.x;
     swipeStart.current = null;
     if (Math.abs(dx) < 70) return;
+    swipeCooldownUntil.current = Date.now() + 700;
     void goToMonth("/app", dx < 0 ? nextMonthKey : prevMonthKey);
   }
 
