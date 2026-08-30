@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -22,7 +24,7 @@ import type { AssistantData } from "@/lib/assistant-data";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
-import { deleteCardInvoice } from "./novo/actions";
+import { deleteCardInvoice, updateInvoiceCard } from "./novo/actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthPicker } from "./month-picker";
 import { AssistantCard } from "./assistant-card";
@@ -45,9 +47,12 @@ export type CardInvoiceSummary = {
   invoiceDate: string;
   total: number;
   items: { id: string; description: string; amount: number }[];
+  cardId: string | null;
   cardName: string | null;
   cardColor: string | null;
 };
+
+export type CardOption = { id: string; name: string; color: string };
 
 const DAY_WIDTH = 22;
 
@@ -72,6 +77,7 @@ export function MonthRuler({
   daysInMonth,
   entries,
   cardInvoices,
+  cards,
   categories,
   comparisonSentence,
   prevMonthKey,
@@ -87,6 +93,7 @@ export function MonthRuler({
   daysInMonth: number;
   entries: Entry[];
   cardInvoices: CardInvoiceSummary[];
+  cards: CardOption[];
   categories: Category[];
   comparisonSentence?: string | null;
   prevMonthKey: string;
@@ -103,6 +110,7 @@ export function MonthRuler({
   const [pickingCategory, setPickingCategory] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [bulkError, setBulkError] = useState("");
+  const [switchingCard, setSwitchingCard] = useState(false);
   const todayRef = useRef<HTMLDivElement>(null);
 
   // A régua abre rolada pro dia 1 por padrão — sem isso, quem entra dia 20
@@ -121,6 +129,21 @@ export function MonthRuler({
   function selectAndReset(next: Selection | null) {
     setSelected(next);
     exitSelection();
+    setSwitchingCard(false);
+  }
+
+  async function handleSwitchCard(invoiceId: string, cardId: string) {
+    setProcessing(true);
+    setBulkError("");
+    try {
+      await updateInvoiceCard(invoiceId, cardId);
+      setSwitchingCard(false);
+      router.refresh();
+    } catch (e) {
+      setBulkError(e instanceof Error ? e.message : "Não deu pra trocar o cartão agora.");
+    } finally {
+      setProcessing(false);
+    }
   }
 
   async function handleDeleteInvoice(invoiceId: string) {
@@ -152,6 +175,12 @@ export function MonthRuler({
       else next.add(id);
       return next;
     });
+  }
+
+  function toggleAllIds(ids: string[]) {
+    setSelectedIds((prev) =>
+      ids.length > 0 && ids.every((id) => prev.has(id)) ? new Set() : new Set(ids),
+    );
   }
 
   async function handleBulkDelete() {
@@ -224,7 +253,7 @@ export function MonthRuler({
     selected?.kind === "invoice" ? (cardInvoices.find((i) => i.id === selected.invoiceId) ?? null) : null;
 
   return (
-    <div className="flex justify-center px-3 py-7">
+    <div className="flex justify-center px-3 pt-7 pb-2">
       <div className="w-full max-w-sm">
         <div className="mb-5">
           <div className="font-display text-xs font-bold uppercase tracking-wide text-brand-ink opacity-55">
@@ -472,37 +501,6 @@ export function MonthRuler({
           <AssistantCard data={assistantData} comparisonSentence={comparisonSentence ?? null} dayOfMonth={todayDayOfMonth ?? 1} />
         )}
 
-        {cardInvoices.map((invoice) => {
-          const color = invoice.cardColor ?? "var(--accent)";
-          return (
-            <button
-              key={invoice.id}
-              type="button"
-              onClick={() => toggleInvoice(invoice.id)}
-              className="mb-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
-              style={{ background: `color-mix(in srgb, ${color} 16%, ${TOKENS.card})` }}
-            >
-              <div
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
-                style={{ background: color }}
-              >
-                <CreditCard size={16} className="text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-semibold text-brand-ink">
-                  {invoice.cardName ?? "Fatura do cartão"} · dia {dayOfMonth(invoice.invoiceDate)}
-                </div>
-                <div className="text-xs text-brand-ink-soft">
-                  {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
-                </div>
-              </div>
-              <div className="flex-shrink-0 font-display text-[15px] font-bold text-brand-ink">
-                {currency(invoice.total)}
-              </div>
-            </button>
-          );
-        })}
-
         {selected?.kind === "day" && selectedDayItems.length > 0 && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
             <div className="mb-2 flex items-center justify-between">
@@ -525,6 +523,24 @@ export function MonthRuler({
                 </button>
               )}
             </div>
+            {selecting && (
+              <button
+                type="button"
+                onClick={() => toggleAllIds(selectedDayItems.map((it) => it.id))}
+                className="mb-2 flex items-center gap-2 text-[12px] font-medium text-brand-ink-soft"
+              >
+                {selectedDayItems.length > 0 &&
+                selectedDayItems.every((it) => selectedIds.has(it.id)) ? (
+                  <SquareCheck size={15} style={{ color: "var(--accent)" }} />
+                ) : (
+                  <Square size={15} />
+                )}
+                {selectedDayItems.length > 0 &&
+                selectedDayItems.every((it) => selectedIds.has(it.id))
+                  ? "Desmarcar tudo"
+                  : "Selecionar tudo"}
+              </button>
+            )}
             <div className="flex flex-col gap-2">
               {selectedDayItems.map((item) => {
                 const checked = selectedIds.has(item.id);
@@ -585,11 +601,16 @@ export function MonthRuler({
         {selectedInvoice && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-xs text-brand-ink-soft">
+              <button
+                type="button"
+                onClick={() => setSwitchingCard((prev) => !prev)}
+                className="flex items-center gap-1 text-xs text-brand-ink-soft"
+              >
                 {selectedInvoice.cardName ?? "Fatura do cartão"} · dia{" "}
                 {dayOfMonth(selectedInvoice.invoiceDate)} · {selectedInvoice.items.length}{" "}
                 {selectedInvoice.items.length === 1 ? "compra" : "compras"}
-              </div>
+                <ChevronDown size={12} className="flex-shrink-0" />
+              </button>
               {selectedInvoice.items.length === 0 ? (
                 <button
                   type="button"
@@ -615,6 +636,56 @@ export function MonthRuler({
                 </button>
               )}
             </div>
+            {switchingCard && (
+              <div className="mb-2.5 rounded-xl bg-brand-bg px-3 py-2.5">
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink-soft">
+                  Mudar para qual cartão?
+                </div>
+                {cards.length === 0 ? (
+                  <p className="text-[12.5px] text-brand-ink-soft">
+                    Você ainda não tem outro cartão cadastrado.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {cards.map((c) => {
+                      const isCurrent = c.id === selectedInvoice.cardId;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          disabled={processing || isCurrent}
+                          onClick={() => handleSwitchCard(selectedInvoice.id, c.id)}
+                          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] font-medium text-brand-ink disabled:opacity-60"
+                        >
+                          <span
+                            className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                            style={{ background: c.color }}
+                          />
+                          <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                          {isCurrent && <Check size={13} className="flex-shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            {selecting && (
+              <button
+                type="button"
+                onClick={() => toggleAllIds(selectedInvoice.items.map((it) => it.id))}
+                className="mb-2 flex items-center gap-2 text-[12px] font-medium text-brand-ink-soft"
+              >
+                {selectedInvoice.items.every((it) => selectedIds.has(it.id)) ? (
+                  <SquareCheck size={15} style={{ color: "var(--accent)" }} />
+                ) : (
+                  <Square size={15} />
+                )}
+                {selectedInvoice.items.every((it) => selectedIds.has(it.id))
+                  ? "Desmarcar tudo"
+                  : "Selecionar tudo"}
+              </button>
+            )}
             {bulkError && <p className="mb-2 text-xs text-brand-coral">{bulkError}</p>}
             <div className="flex flex-col gap-2">
               {selectedInvoice.items.map((item) => {

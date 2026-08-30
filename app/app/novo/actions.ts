@@ -163,6 +163,26 @@ export async function deleteCardInvoice(id: string): Promise<void> {
   }
 }
 
+// Pra quando a pessoa escolheu o cartão errado na hora de lançar — muda a
+// fatura de cartão sem mexer nas compras dela.
+export async function updateInvoiceCard(invoiceId: string, cardId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { error } = await supabase
+    .from("card_invoices")
+    .update({ card_id: cardId })
+    .eq("id", invoiceId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error("Não deu pra trocar o cartão dessa fatura agora.");
+  }
+}
+
 export async function createEntry(formData: FormData) {
   const supabase = await createClient();
   const {

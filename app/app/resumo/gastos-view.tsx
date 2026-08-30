@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CategoryList, type CategoryTotal } from "../categorias/category-list";
-import { EntriesList, type CardInvoiceRow } from "./entries-list";
+import { EntriesList, type CardInvoiceRow, type CardOption } from "./entries-list";
 
 type Category = { id: string; name: string };
 type EntryRow = Parameters<typeof EntriesList>[0]["entries"][number];
@@ -13,12 +13,14 @@ export function GastosView({
   entries,
   categories,
   cardInvoices,
+  cards,
   categoryTotals,
   initialView,
 }: {
   entries: EntryRow[];
   categories: Category[];
   cardInvoices: CardInvoiceRow[];
+  cards: CardOption[];
   categoryTotals: CategoryTotal[];
   initialView: View;
 }) {
@@ -53,7 +55,7 @@ export function GastosView({
       </div>
 
       {view === "data" ? (
-        <EntriesList entries={entries} categories={categories} cardInvoices={cardInvoices} />
+        <EntriesList entries={entries} categories={categories} cardInvoices={cardInvoices} cards={cards} />
       ) : categoryTotals.length === 0 ? (
         <div className="rounded-2xl border border-brand-line bg-brand-card p-5">
           <div className="text-[15.5px] font-medium leading-snug text-brand-ink">

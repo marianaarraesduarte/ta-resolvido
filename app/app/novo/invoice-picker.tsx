@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, CreditCard, Plus, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, Check, CreditCard, Plus, Settings } from "lucide-react";
 import { brDateLabel } from "@/lib/date";
+import { CARD_COLORS, TOKENS } from "@/lib/tokens";
 import { checkExistingInvoiceDate, type CardWithInvoices, type CreditSelection } from "./actions";
+import { createCard } from "../config/cartoes/actions";
 
 export type InvoiceValue =
   | { kind: "existing"; invoiceId: string }
@@ -33,14 +36,40 @@ export function InvoicePicker({
   onChange: (value: InvoiceValue) => void;
   defaultDate: string;
 }) {
+  const router = useRouter();
   const [creatingForCard, setCreatingForCard] = useState<string | null>(null);
   const [draftDate, setDraftDate] = useState(defaultDate);
   const [duplicateWarning, setDuplicateWarning] = useState(false);
+  const [addingCard, setAddingCard] = useState(false);
+  const [newCardName, setNewCardName] = useState("");
+  const [newCardColor, setNewCardColor] = useState<string>(CARD_COLORS[0].hex);
+  const [creatingCard, setCreatingCard] = useState(false);
+  const [cardError, setCardError] = useState("");
 
   function startCreating(cardId: string) {
     setCreatingForCard(cardId);
     setDraftDate(defaultDate);
     setDuplicateWarning(false);
+  }
+
+  async function handleCreateCard() {
+    if (!newCardName.trim()) return;
+    setCreatingCard(true);
+    setCardError("");
+    try {
+      await createCard(newCardName, newCardColor);
+      setNewCardName("");
+      setNewCardColor(CARD_COLORS[0].hex);
+      setAddingCard(false);
+      // Só recarrega os dados do servidor (a lista de cartões) — o resto do
+      // formulário/análise já em andamento continua exatamente como estava,
+      // sem perder nada por causa de uma navegação de página.
+      router.refresh();
+    } catch {
+      setCardError("Não deu pra criar esse cartão agora.");
+    } finally {
+      setCreatingCard(false);
+    }
   }
 
   async function handleDraftDateChange(cardId: string, date: string) {
@@ -54,13 +83,79 @@ export function InvoicePicker({
     setCreatingForCard(null);
   }
 
+  const addCardBlock = addingCard ? (
+    <div className="rounded-2xl bg-brand-bg px-3.5 py-3">
+      <input
+        autoFocus
+        value={newCardName}
+        onChange={(e) => setNewCardName(e.target.value)}
+        placeholder="Nome do cartão (ex: Nubank)"
+        className="mb-2.5 w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleCreateCard();
+          }
+        }}
+      />
+      <div className="flex flex-wrap gap-2">
+        {CARD_COLORS.map((c) => {
+          const isSelected = newCardColor === c.hex;
+          return (
+            <button
+              key={c.hex}
+              type="button"
+              onClick={() => setNewCardColor(c.hex)}
+              aria-label={c.label}
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full"
+              style={{
+                background: c.hex,
+                border: isSelected ? `2px solid ${TOKENS.ink}` : "2px solid transparent",
+              }}
+            >
+              {isSelected && <Check size={12} className="text-white" />}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-2.5 flex gap-2">
+        <button
+          type="button"
+          disabled={creatingCard}
+          onClick={handleCreateCard}
+          className="flex-1 rounded-xl bg-brand-ink-solid py-2 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {creatingCard ? "..." : "Adicionar cartão"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAddingCard(false);
+            setCardError("");
+          }}
+          className="rounded-xl border border-brand-line px-3.5 text-sm font-medium text-brand-ink-soft"
+        >
+          Cancelar
+        </button>
+      </div>
+      {cardError && <p className="mt-1.5 text-xs text-brand-coral">{cardError}</p>}
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setAddingCard(true)}
+      className="flex items-center gap-1.5 text-[12px] font-semibold text-brand-plum"
+    >
+      <Plus size={13} />
+      Novo cartão
+    </button>
+  );
+
   if (cards.length === 0) {
     return (
       <div className="rounded-2xl bg-brand-plum/10 px-3.5 py-3 text-[13px] leading-snug text-brand-plum">
-        Você ainda não tem nenhum cartão cadastrado.{" "}
-        <Link href="/app/config/cartoes" className="font-semibold underline underline-offset-2">
-          Cadastrar cartão
-        </Link>
+        <p className="mb-2.5">Você ainda não tem nenhum cartão cadastrado.</p>
+        {addCardBlock}
       </div>
     );
   }
@@ -136,12 +231,13 @@ export function InvoicePicker({
           )}
         </div>
       ))}
+      {addCardBlock}
       <Link
         href="/app/config/cartoes"
         className="flex items-center gap-1.5 text-[12px] font-medium text-brand-ink-soft underline underline-offset-2"
       >
         <Settings size={12} />
-        Gerenciar cartões
+        Editar cartões existentes
       </Link>
     </div>
   );

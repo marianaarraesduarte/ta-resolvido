@@ -34,7 +34,7 @@ export function EntrySearch() {
   }, [query]);
 
   return (
-    <div className="mt-6 border-t border-brand-line pt-5">
+    <div className="mt-4 border-t border-brand-line/60 pt-3">
       <div className="relative">
         <Search
           size={15}

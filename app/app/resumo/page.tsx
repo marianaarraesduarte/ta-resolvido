@@ -28,6 +28,7 @@ type FixedExpenseRow = { id: string; name: string; expected_amount: number };
 type CardInvoiceDbRow = {
   id: string;
   invoice_date: string;
+  card_id: string | null;
   cards: { name: string; color: string } | null;
 };
 
@@ -48,31 +49,37 @@ export default async function ResumoPage({
   const { firstDay, lastDay, isCurrentMonth, prevMonthKey, nextMonthKey } = viewed;
   const viewedFirstDay = firstDay;
 
-  const [{ data }, { data: fixedExpensesData }, { data: categoriesData }, { data: invoicesData }] =
-    await Promise.all([
-      supabase
-        .from("entries")
-        .select(
-          "id, description, amount, entry_date, payment_method, category_id, card_invoice_id, categories(name, icon)",
-        )
-        .eq("user_id", user.id)
-        .eq("type", "despesa")
-        .gte("entry_date", toDateKey(firstDay))
-        .lte("entry_date", toDateKey(lastDay))
-        .order("entry_date", { ascending: false }),
-      supabase
-        .from("fixed_expenses")
-        .select("id, name, expected_amount")
-        .eq("user_id", user.id)
-        .order("name", { ascending: true }),
-      supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
-      supabase
-        .from("card_invoices")
-        .select("id, invoice_date, cards(name, color)")
-        .eq("user_id", user.id)
-        .gte("invoice_date", toDateKey(firstDay))
-        .lte("invoice_date", toDateKey(lastDay)),
-    ]);
+  const [
+    { data },
+    { data: fixedExpensesData },
+    { data: categoriesData },
+    { data: invoicesData },
+    { data: allCardsData },
+  ] = await Promise.all([
+    supabase
+      .from("entries")
+      .select(
+        "id, description, amount, entry_date, payment_method, category_id, card_invoice_id, categories(name, icon)",
+      )
+      .eq("user_id", user.id)
+      .eq("type", "despesa")
+      .gte("entry_date", toDateKey(firstDay))
+      .lte("entry_date", toDateKey(lastDay))
+      .order("entry_date", { ascending: false }),
+    supabase
+      .from("fixed_expenses")
+      .select("id, name, expected_amount")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true }),
+    supabase.from("categories").select("id, name").eq("user_id", user.id).order("name"),
+    supabase
+      .from("card_invoices")
+      .select("id, invoice_date, card_id, cards(name, color)")
+      .eq("user_id", user.id)
+      .gte("invoice_date", toDateKey(firstDay))
+      .lte("invoice_date", toDateKey(lastDay)),
+    supabase.from("cards").select("id, name, color").eq("user_id", user.id).order("name"),
+  ]);
 
   const allDespesas = (data as unknown as DespesaRow[]) ?? [];
   const total = allDespesas.reduce((sum, d) => sum + d.amount, 0);
@@ -107,6 +114,7 @@ export default async function ResumoPage({
         invoiceDate: invoice.invoice_date,
         total: items.reduce((sum, item) => sum + item.amount, 0),
         items,
+        cardId: invoice.card_id,
         cardName: invoice.cards?.name ?? null,
         cardColor: invoice.cards?.color ?? null,
       };
@@ -194,6 +202,7 @@ export default async function ResumoPage({
           entries={despesas}
           categories={categoriesData ?? []}
           cardInvoices={cardInvoices}
+          cards={allCardsData ?? []}
           categoryTotals={categoryTotals}
           initialView={view === "categoria" ? "categoria" : "data"}
         />

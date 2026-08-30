@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Check,
   ChevronDown,
   CreditCard,
   ListChecks,
@@ -19,6 +20,7 @@ import { dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "../entries-actions";
+import { updateInvoiceCard } from "../novo/actions";
 import { SwipeToDelete } from "../swipe-to-delete";
 
 type Category = { id: string; name: string };
@@ -36,9 +38,11 @@ export type CardInvoiceRow = {
   invoiceDate: string;
   total: number;
   items: { id: string; description: string; amount: number; categoryName: string | null }[];
+  cardId: string | null;
   cardName: string | null;
   cardColor: string | null;
 };
+export type CardOption = { id: string; name: string; color: string };
 
 function CategoryTag({ name, leading = true }: { name: string | null; leading?: boolean }) {
   const separator = leading ? " · " : "";
@@ -58,10 +62,12 @@ export function EntriesList({
   entries,
   categories,
   cardInvoices,
+  cards,
 }: {
   entries: EntryRow[];
   categories: Category[];
   cardInvoices: CardInvoiceRow[];
+  cards: CardOption[];
 }) {
   const router = useRouter();
   const [selecting, setSelecting] = useState(false);
@@ -70,7 +76,22 @@ export function EntriesList({
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<Set<string>>(new Set());
+  const [switchingInvoiceId, setSwitchingInvoiceId] = useState<string | null>(null);
   const confirm = useConfirm();
+
+  async function handleSwitchCard(invoiceId: string, cardId: string) {
+    setProcessing(true);
+    setError("");
+    try {
+      await updateInvoiceCard(invoiceId, cardId);
+      setSwitchingInvoiceId(null);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não deu pra trocar o cartão agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
 
   function toggleInvoiceExpanded(id: string) {
     setExpandedInvoiceIds((prev) => {
@@ -237,6 +258,48 @@ export function EntriesList({
                       }
                     />
                   </button>
+                  <div className="-mt-2.5 px-4 pb-2 pl-16">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSwitchingInvoiceId((prev) => (prev === invoice.id ? null : invoice.id))
+                      }
+                      className="text-[11.5px] font-medium text-brand-ink-soft underline underline-offset-2"
+                    >
+                      Trocar cartão
+                    </button>
+                  </div>
+                  {switchingInvoiceId === invoice.id && (
+                    <div className="mx-4 mb-2.5 rounded-xl bg-brand-bg px-3 py-2.5">
+                      {cards.length === 0 ? (
+                        <p className="text-[12.5px] text-brand-ink-soft">
+                          Você ainda não tem outro cartão cadastrado.
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-1.5">
+                          {cards.map((c) => {
+                            const isCurrent = c.id === invoice.cardId;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                disabled={processing || isCurrent}
+                                onClick={() => handleSwitchCard(invoice.id, c.id)}
+                                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] font-medium text-brand-ink disabled:opacity-60"
+                              >
+                                <span
+                                  className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                                  style={{ background: c.color }}
+                                />
+                                <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                                {isCurrent && <Check size={13} className="flex-shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {expanded && (
                     <div className="bg-brand-bg/60 px-4 pb-2">
                       {invoice.items.map((item) => {
@@ -313,7 +376,7 @@ export function EntriesList({
                   <div className="truncate text-[14.5px] font-medium text-brand-ink">
                     {d.description}
                   </div>
-                  <div className="text-xs text-brand-ink-soft">
+                  <div className="truncate text-xs text-brand-ink-soft">
                     Dia {dayOfMonth(d.entry_date)}
                     <CategoryTag name={d.categories?.name ?? null} />
                   </div>

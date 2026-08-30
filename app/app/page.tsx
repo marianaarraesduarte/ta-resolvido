@@ -48,6 +48,7 @@ export default async function AppHomePage({
     { data: categoriesData },
     { data: recentDespesasData },
     { data: fixedExpensesData },
+    { data: allCardsData },
   ] = await Promise.all([
     supabase
       .from("entries")
@@ -60,7 +61,7 @@ export default async function AppHomePage({
       .order("entry_date", { ascending: true }),
     supabase
       .from("card_invoices")
-      .select("id, invoice_date, cards(name, color)")
+      .select("id, invoice_date, card_id, cards(name, color)")
       .eq("user_id", user.id)
       .gte("invoice_date", toDateKey(firstDay))
       .lte("invoice_date", toDateKey(lastDay)),
@@ -85,6 +86,7 @@ export default async function AppHomePage({
     isCurrentMonth
       ? supabase.from("fixed_expenses").select("name, expected_amount").eq("user_id", user.id)
       : Promise.resolve({ data: [] }),
+    supabase.from("cards").select("id, name, color").eq("user_id", user.id).order("name"),
   ]);
 
   const entriesWithCategory = (entriesData as unknown as EntryWithCategory[]) ?? [];
@@ -108,6 +110,7 @@ export default async function AppHomePage({
     (cardInvoicesData as unknown as {
       id: string;
       invoice_date: string;
+      card_id: string | null;
       cards: { name: string; color: string } | null;
     }[]) ?? []
   ).map((invoice) => {
@@ -119,6 +122,7 @@ export default async function AppHomePage({
       invoiceDate: invoice.invoice_date,
       total: items.reduce((sum, item) => sum + item.amount, 0),
       items,
+      cardId: invoice.card_id,
       cardName: invoice.cards?.name ?? null,
       cardColor: invoice.cards?.color ?? null,
     };
@@ -142,6 +146,7 @@ export default async function AppHomePage({
       daysInMonth={daysInMonth(viewedFirstDay)}
       entries={entries}
       cardInvoices={cardInvoices}
+      cards={allCardsData ?? []}
       categories={categoriesData ?? []}
       comparisonSentence={comparisonSentence}
       prevMonthKey={prevMonthKey}
