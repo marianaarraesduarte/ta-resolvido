@@ -15,6 +15,13 @@ import { MainContent } from "./main-content";
 import { Toast } from "./toast";
 import { ConfirmDialogProvider } from "./confirm-dialog";
 
+// A análise mensal roda aqui via after(). Mesmo saindo depois da resposta, o
+// trabalho do after() continua contando no tempo da função — sem este teto a
+// Vercel cortava a geração no limite padrão, e como a falha é engolida de
+// propósito (ensureMonthlyInsight tem catch vazio pra tentar de novo na
+// próxima visita), isso falharia em silêncio toda vez.
+export const maxDuration = 60;
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
