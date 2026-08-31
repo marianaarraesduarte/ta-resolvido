@@ -79,6 +79,7 @@ export function EntriesList({
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<Set<string>>(new Set());
+  const [expandedOptionsIds, setExpandedOptionsIds] = useState<Set<string>>(new Set());
   const [switchingInvoiceId, setSwitchingInvoiceId] = useState<string | null>(null);
   const confirm = useConfirm();
 
@@ -111,6 +112,15 @@ export function EntriesList({
 
   function toggleInvoiceExpanded(id: string) {
     setExpandedInvoiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleOptionsExpanded(id: string) {
+    setExpandedOptionsIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -240,6 +250,7 @@ export function EntriesList({
             if (row.kind === "invoice") {
               const invoice = row.invoice;
               const expanded = expandedInvoiceIds.has(invoice.id);
+              const optionsExpanded = expandedOptionsIds.has(invoice.id);
               return (
                 <div key={`invoice-${invoice.id}`} className={borderClass}>
                   <button
@@ -308,25 +319,42 @@ export function EntriesList({
                         )}
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSwitchingInvoiceId((prev) => (prev === invoice.id ? null : invoice.id))
+                    <button
+                      type="button"
+                      onClick={() => toggleOptionsExpanded(invoice.id)}
+                      className="flex items-center gap-1 text-[11px] font-medium text-brand-ink-soft"
+                    >
+                      <ChevronDown
+                        size={11}
+                        className={
+                          optionsExpanded
+                            ? "rotate-180 flex-shrink-0 transition-transform"
+                            : "flex-shrink-0 transition-transform"
                         }
-                        className="flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[11.5px] font-semibold text-brand-plum"
-                      >
-                        <ArrowLeftRight size={11} />
-                        Trocar cartão dessa fatura
-                      </button>
-                      <Link
-                        href="/app/parcelas"
-                        className="flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[11.5px] font-semibold text-brand-ink"
-                      >
-                        <Layers size={11} />
-                        Ver parcelas
-                      </Link>
-                    </div>
+                      />
+                      {optionsExpanded ? "Menos opções" : "Mais opções"}
+                    </button>
+                    {optionsExpanded && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSwitchingInvoiceId((prev) => (prev === invoice.id ? null : invoice.id))
+                          }
+                          className="flex items-center gap-1.5 rounded-full border border-brand-plum bg-brand-plum/10 px-3 py-1.5 text-[11.5px] font-semibold text-brand-plum"
+                        >
+                          <ArrowLeftRight size={11} />
+                          Trocar cartão dessa fatura
+                        </button>
+                        <Link
+                          href="/app/parcelas"
+                          className="flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[11.5px] font-semibold text-brand-ink"
+                        >
+                          <Layers size={11} />
+                          Ver parcelas
+                        </Link>
+                      </div>
+                    )}
                   </div>
                   {switchingInvoiceId === invoice.id && (
                     <div className="mx-4 mb-2.5 rounded-xl bg-brand-bg px-3 py-2.5">
