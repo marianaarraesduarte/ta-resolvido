@@ -49,6 +49,7 @@ export default async function NovoLancamentoPage({
     { data: salaryPatterns },
     { data: fixedExpenses },
     { count: recognitionsUsed },
+    { count: entriesCount },
     cards,
   ] = await Promise.all([
     supabase
@@ -56,7 +57,11 @@ export default async function NovoLancamentoPage({
       .select("id, name, icon")
       .eq("user_id", user.id)
       .order("name", { ascending: true }),
-    supabase.from("profiles").select("separate_by_account, plan").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("separate_by_account, plan, experience_level, guide_active")
+      .eq("id", user.id)
+      .single(),
     supabase.from("salary_patterns").select("description_pattern").eq("user_id", user.id),
     supabase.from("fixed_expenses").select("name, expected_amount").eq("user_id", user.id),
     supabase
@@ -64,6 +69,7 @@ export default async function NovoLancamentoPage({
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .gte("created_at", firstDayOfMonth.toISOString()),
+    supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     listCardsWithInvoices(),
   ]);
 
@@ -96,6 +102,9 @@ export default async function NovoLancamentoPage({
           cards={cards}
           sharedPhoto={sharedPhoto}
           sharedText={sharedText}
+          guideActive={profile?.guide_active ?? false}
+          experienceLevel={profile?.experience_level ?? null}
+          hasEntries={(entriesCount ?? 0) > 0}
         />
       </div>
     </div>

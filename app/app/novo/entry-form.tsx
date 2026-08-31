@@ -64,6 +64,9 @@ export function EntryForm({
   cards,
   sharedPhoto,
   sharedText,
+  guideActive,
+  experienceLevel,
+  hasEntries,
 }: {
   categories: Category[];
   defaultDate: string;
@@ -76,9 +79,12 @@ export function EntryForm({
   cards: CardWithInvoices[];
   sharedPhoto?: { dataUrl: string; isPdf: boolean } | null;
   sharedText?: string | null;
+  guideActive: boolean;
+  experienceLevel: string | null;
+  hasEntries: boolean;
 }) {
   const [mode, setMode] = useState<"manual" | "foto" | "chat">(
-    sharedPhoto ? "foto" : sharedText ? "chat" : "manual",
+    sharedPhoto ? "foto" : sharedText ? "chat" : guideActive ? "chat" : "manual",
   );
   const [type, setType] = useState<"despesa" | "receita">("despesa");
   const [categories, setCategories] = useState(initialCategories);
@@ -168,6 +174,9 @@ export function EntryForm({
           isCompleto={isCompleto}
           cards={cards}
           initialText={sharedText}
+          guideActive={guideActive}
+          experienceLevel={experienceLevel}
+          hasEntries={hasEntries}
         />
       ) : (
         <form

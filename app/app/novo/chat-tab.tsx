@@ -14,14 +14,19 @@ import {
   MessageCircle,
   Repeat,
   Send,
+  Sparkles,
   Square,
   Trash2,
 } from "lucide-react";
-import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
+import { amountToInputValue, CARD_COLORS, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { brDateLabel, toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { useAudioRecorder } from "@/lib/use-audio-recorder";
+import { setGuideActive } from "../config/actions";
+import { createCard } from "../config/cartoes/actions";
+import { createFixedExpense } from "../resumo/actions";
 import {
+  createCategory,
   recognizeAudioMessage,
   recognizeChatMessage,
   saveRecognizedItems,
@@ -29,6 +34,34 @@ import {
   type ChatItem,
 } from "./actions";
 import { InvoicePicker, invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
+
+const CATEGORY_SUGGESTIONS = ["Mercado", "Transporte", "Casa", "Lazer", "Saúde"];
+const FIXED_EXPENSE_SUGGESTIONS = ["Aluguel", "Internet", "Água", "Luz"];
+
+type GuideStepKey = "categorias" | "fixos" | "cartoes" | "primeiro";
+const GUIDE_STEPS: GuideStepKey[] = ["categorias", "fixos", "cartoes", "primeiro"];
+const GUIDE_COPY: Record<GuideStepKey, { iniciante: string; padrao: string }> = {
+  categorias: {
+    iniciante:
+      'Categoria é só um jeito de agrupar gastos parecidos — tipo "Mercado", "Transporte"... ajuda a ver pra onde o dinheiro tá indo. Bora criar as suas?',
+    padrao: "Vamos criar suas categorias de gasto?",
+  },
+  fixos: {
+    iniciante:
+      "Gasto fixo é aquele que se repete todo mês, sempre o mesmo valor — tipo aluguel ou internet. Quer marcar os seus?",
+    padrao: "Quais são seus gastos fixos do mês?",
+  },
+  cartoes: {
+    iniciante:
+      'Se você usa cartão de crédito, dá pra nomear ele aqui (tipo "Nubank") e escolher uma cor — fica fácil identificar as faturas depois. Não usa? Pode pular.',
+    padrao: "Usa cartão de crédito? Cadastra ele aqui.",
+  },
+  primeiro: {
+    iniciante:
+      "Última coisa: bora marcar um gasto de verdade, só pra você ver como funciona? Pode ser até um cafezinho de hoje — usa o campo de mensagem aqui embaixo.",
+    padrao: "Marca seu primeiro gasto aqui embaixo pra já começar a régua.",
+  },
+};
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
@@ -60,6 +93,9 @@ export function ChatTab({
   isCompleto,
   cards,
   initialText,
+  guideActive,
+  experienceLevel,
+  hasEntries,
 }: {
   fixedExpenses: FixedExpense[];
   categories: Category[];
@@ -68,6 +104,9 @@ export function ChatTab({
   isCompleto: boolean;
   cards: CardWithInvoices[];
   initialText?: string | null;
+  guideActive: boolean;
+  experienceLevel: string | null;
+  hasEntries: boolean;
 }) {
   const router = useRouter();
   const [entries, setEntries] = useState<ChatEntry[]>([]);
@@ -77,6 +116,86 @@ export function ChatTab({
   const [error, setError] = useState("");
   const [savingBatch, setSavingBatch] = useState<string | null>(null);
   const recorder = useAudioRecorder();
+
+  // O guia é derivado dos dados reais (tem categoria? gasto fixo? cartão?
+  // já lançou algo?) em vez de guardar progresso à parte — assim nunca
+  // desincroniza, e some sozinho quando os 4 passos já estão feitos.
+  const [guideOn, setGuideOn] = useState(guideActive);
+  const [skippedSteps, setSkippedSteps] = useState<Set<GuideStepKey>>(new Set());
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [newFixedName, setNewFixedName] = useState("");
+  const [newFixedAmount, setNewFixedAmount] = useState("");
+  const [creatingFixed, setCreatingFixed] = useState(false);
+  const [newCardName, setNewCardName] = useState("");
+  const [newCardColor, setNewCardColor] = useState<string>(CARD_COLORS[0].hex);
+  const [creatingCard, setCreatingCard] = useState(false);
+  const [guideError, setGuideError] = useState("");
+
+  const stepDone: Record<GuideStepKey, boolean> = {
+    categorias: categories.length > 0,
+    fixos: fixedExpenses.length > 0,
+    cartoes: cards.length > 0,
+    primeiro: hasEntries || entries.some((e) => e.kind === "saved"),
+  };
+  const currentGuideStep =
+    GUIDE_STEPS.find((key) => !stepDone[key] && !skippedSteps.has(key)) ?? null;
+  const isIniciante = experienceLevel !== "avancado" && experienceLevel !== "intermediario";
+
+  function exitGuide() {
+    setGuideOn(false);
+    void setGuideActive(false);
+  }
+
+  async function handleGuideCreateCategory(name: string) {
+    if (!name.trim()) return;
+    setCreatingCategory(true);
+    setGuideError("");
+    try {
+      await createCategory(name);
+      setNewCategoryName("");
+      router.refresh();
+    } catch {
+      setGuideError("Não deu pra criar essa categoria agora.");
+    } finally {
+      setCreatingCategory(false);
+    }
+  }
+
+  async function handleGuideCreateFixed() {
+    const amount = parseCentsInput(newFixedAmount);
+    if (!newFixedName.trim() || !amount || amount <= 0) {
+      setGuideError("Preenche nome e valor esperado.");
+      return;
+    }
+    setCreatingFixed(true);
+    setGuideError("");
+    try {
+      await createFixedExpense(newFixedName, amount);
+      setNewFixedName("");
+      setNewFixedAmount("");
+      router.refresh();
+    } catch {
+      setGuideError("Não deu pra salvar esse gasto fixo agora.");
+    } finally {
+      setCreatingFixed(false);
+    }
+  }
+
+  async function handleGuideCreateCard() {
+    if (!newCardName.trim()) return;
+    setCreatingCard(true);
+    setGuideError("");
+    try {
+      await createCard(newCardName, newCardColor);
+      setNewCardName("");
+      router.refresh();
+    } catch {
+      setGuideError("Não deu pra criar esse cartão agora.");
+    } finally {
+      setCreatingCard(false);
+    }
+  }
 
   // Texto compartilhado de outro app (ex: copiar uma mensagem) — já manda
   // pra análise sozinho, sem esperar a pessoa apertar enviar de novo.
@@ -288,7 +407,137 @@ export function ChatTab({
           </p>
         ))}
 
-      {entries.length === 0 && (
+      {guideOn && currentGuideStep && (
+        <div className="mb-3.5 rounded-2xl rounded-bl-sm bg-brand-plum/10 p-3.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wide text-brand-plum">
+              <Sparkles size={11} />
+              Te guiando · Passo {GUIDE_STEPS.indexOf(currentGuideStep) + 1} de {GUIDE_STEPS.length}
+            </div>
+            <button
+              type="button"
+              onClick={exitGuide}
+              className="flex-shrink-0 text-[11px] font-semibold text-brand-ink-soft"
+            >
+              Sair do modo guiado
+            </button>
+          </div>
+
+          <p className="text-[13px] leading-snug text-brand-ink">
+            {GUIDE_COPY[currentGuideStep][isIniciante ? "iniciante" : "padrao"]}
+          </p>
+
+          {currentGuideStep === "categorias" && (
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {CATEGORY_SUGGESTIONS.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  disabled={creatingCategory}
+                  onClick={() => handleGuideCreateCategory(name)}
+                  className="rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[12px] font-medium text-brand-ink disabled:opacity-60"
+                >
+                  + {name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {currentGuideStep === "fixos" && (
+            <>
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {FIXED_EXPENSE_SUGGESTIONS.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setNewFixedName(name)}
+                    className={
+                      newFixedName === name
+                        ? "rounded-full border border-brand-plum bg-brand-plum/15 px-3 py-1.5 text-[12px] font-semibold text-brand-plum"
+                        : "rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[12px] font-medium text-brand-ink"
+                    }
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 flex gap-1.5">
+                <input
+                  value={newFixedName}
+                  onChange={(e) => setNewFixedName(e.target.value)}
+                  placeholder="Nome"
+                  className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                />
+                <input
+                  value={newFixedAmount}
+                  onChange={(e) => setNewFixedAmount(formatCentsInput(e.target.value))}
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  className="w-20 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                />
+                <button
+                  type="button"
+                  disabled={creatingFixed}
+                  onClick={handleGuideCreateFixed}
+                  className="flex-shrink-0 rounded-xl bg-brand-ink-solid px-3 text-[12.5px] font-semibold text-white disabled:opacity-60"
+                >
+                  {creatingFixed ? "..." : "Adicionar"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {currentGuideStep === "cartoes" && (
+            <div className="mt-2.5">
+              <input
+                value={newCardName}
+                onChange={(e) => setNewCardName(e.target.value)}
+                placeholder="Nome do cartão (ex: Nubank)"
+                className="mb-2 w-full rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+              />
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {CARD_COLORS.map((c) => (
+                  <button
+                    key={c.hex}
+                    type="button"
+                    onClick={() => setNewCardColor(c.hex)}
+                    aria-label={c.label}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      background: c.hex,
+                      border: newCardColor === c.hex ? "2px solid rgb(var(--color-brand-ink))" : "2px solid transparent",
+                    }}
+                  >
+                    {newCardColor === c.hex && <Check size={11} className="text-white" />}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={creatingCard}
+                onClick={handleGuideCreateCard}
+                className="rounded-xl bg-brand-ink-solid px-3 py-2 text-[12.5px] font-semibold text-white disabled:opacity-60"
+              >
+                {creatingCard ? "..." : "Adicionar cartão"}
+              </button>
+            </div>
+          )}
+
+          {guideError && <p className="mt-2 text-[11.5px] text-brand-coral">{guideError}</p>}
+
+          {currentGuideStep !== "primeiro" && (
+            <button
+              type="button"
+              onClick={() => setSkippedSteps((prev) => new Set(prev).add(currentGuideStep))}
+              className="mt-2.5 text-[11.5px] font-semibold text-brand-ink-soft"
+            >
+              Pular essa etapa
+            </button>
+          )}
+        </div>
+      )}
+
+      {entries.length === 0 && !(guideOn && currentGuideStep) && (
         <div className="mb-3.5 rounded-2xl border-2 border-dashed border-brand-line bg-brand-card py-9 text-center">
           <MessageCircle size={26} className="mx-auto mb-2 text-brand-ink" />
           <p className="mx-auto max-w-[240px] text-[13.5px] font-medium text-brand-ink-soft">

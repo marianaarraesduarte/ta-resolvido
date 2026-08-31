@@ -14,7 +14,7 @@ export default async function ConfigPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("separate_by_account, accent_color, monthly_insights_enabled, initial_balance")
+    .select("separate_by_account, accent_color, monthly_insights_enabled, initial_balance, guide_active")
     .eq("id", user.id)
     .single();
 
@@ -35,6 +35,7 @@ export default async function ConfigPage() {
           initialSeparateByAccount={profile?.separate_by_account ?? false}
           initialAccentColor={profile?.accent_color ?? "#7A5C7E"}
           initialMonthlyInsightsEnabled={profile?.monthly_insights_enabled ?? true}
+          initialGuideActive={profile?.guide_active ?? false}
         />
 
         <div className="mt-2 overflow-hidden rounded-2xl bg-brand-card">

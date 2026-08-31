@@ -32,6 +32,16 @@ export async function setAccentColor(hex: string): Promise<void> {
   revalidatePath("/app", "layout");
 }
 
+export async function setGuideActive(value: boolean): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ guide_active: value })
+    .eq("id", user.id);
+  if (error) throw new Error("Não deu pra salvar agora.");
+  revalidatePath("/app", "layout");
+}
+
 export async function setMonthlyInsightsEnabled(value: boolean): Promise<void> {
   const { supabase, user } = await requireUser();
   const { error } = await supabase

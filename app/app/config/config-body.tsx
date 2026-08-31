@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { TOKENS } from "@/lib/tokens";
 import { useThemePreference, type ThemePreference } from "@/lib/use-theme-preference";
-import { setAccentColor, setMonthlyInsightsEnabled, setSeparateByAccount } from "./actions";
+import { setAccentColor, setGuideActive, setMonthlyInsightsEnabled, setSeparateByAccount } from "./actions";
 
 const THEME_OPTIONS: { key: ThemePreference; label: string }[] = [
   { key: "system", label: "Sistema" },
@@ -46,10 +46,12 @@ export function ConfigBody({
   initialSeparateByAccount,
   initialAccentColor,
   initialMonthlyInsightsEnabled,
+  initialGuideActive,
 }: {
   initialSeparateByAccount: boolean;
   initialAccentColor: string;
   initialMonthlyInsightsEnabled: boolean;
+  initialGuideActive: boolean;
 }) {
   const { preference: themePreference, setPreference: setThemePreference } = useThemePreference();
   const [separateByAccount, setSeparateByAccountState] = useState(initialSeparateByAccount);
@@ -57,6 +59,13 @@ export function ConfigBody({
   const [monthlyInsightsEnabled, setMonthlyInsightsEnabledState] = useState(
     initialMonthlyInsightsEnabled,
   );
+  const [guideActive, setGuideActiveState] = useState(initialGuideActive);
+
+  function handleToggleGuide() {
+    const next = !guideActive;
+    setGuideActiveState(next);
+    setGuideActive(next).catch(() => {});
+  }
 
   function handleToggleAccount() {
     const next = !separateByAccount;
@@ -155,6 +164,18 @@ export function ConfigBody({
           </div>
         </div>
         <Toggle on={monthlyInsightsEnabled} onClick={handleToggleMonthlyInsights} />
+      </div>
+
+      <div className="mb-2 mt-6 text-[13px] font-semibold text-brand-ink">Guia inicial</div>
+      <div className="flex items-center justify-between rounded-2xl bg-brand-card px-[18px] py-4">
+        <div className="pr-4">
+          <div className="text-[14.5px] font-medium text-brand-ink">Me guiar pelos primeiros passos</div>
+          <div className="mt-0.5 text-xs leading-snug text-brand-ink-soft">
+            No chat de novo lançamento, mostra o que falta configurar (categorias, gastos fixos,
+            cartão) até você terminar ou desligar.
+          </div>
+        </div>
+        <Toggle on={guideActive} onClick={handleToggleGuide} />
       </div>
     </>
   );
