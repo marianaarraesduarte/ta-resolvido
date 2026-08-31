@@ -1,16 +1,10 @@
-import { Skeleton } from "./skeleton";
+import { LoadingLogo } from "../loading-logo";
 
-export default function Loading() {
-  return (
-    <div className="flex justify-center px-3 py-7">
-      <div className="w-full max-w-sm">
-        <div className="mb-5">
-          <Skeleton className="mb-2 h-3 w-24" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-        <Skeleton className="mb-4 h-[190px] w-full" />
-        <Skeleton className="h-14 w-full" />
-      </div>
-    </div>
-  );
+// Cobre toda troca de tela dentro de /app (Meu mês, Quanto gastei, Mais,
+// Configurações, Parcelas...) — sem esse arquivo aqui, só a primeira
+// entrada em /app ganhava a logo; trocar de página depois, com o layout já
+// montado, ficava com tela em branco (ou quase preta no escuro) até os
+// dados da próxima tela chegarem.
+export default function AppLoading() {
+  return <LoadingLogo />;
 }
