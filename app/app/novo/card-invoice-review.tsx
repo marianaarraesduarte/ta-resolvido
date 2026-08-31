@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowDownCircle,
   Check,
   FileText,
@@ -20,8 +21,14 @@ import { amountToInputValue, currency, formatCentsInput, parseCentsInput } from 
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
-import { recognizeCardInvoice, saveCardInvoice, type CardWithInvoices, type RecognizedCardItem } from "./actions";
-import { InvoicePicker, invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
+import {
+  checkCardInvoiceDuplicates,
+  recognizeCardInvoice,
+  saveCardInvoice,
+  type CardWithInvoices,
+  type RecognizedCardItem,
+} from "./actions";
+import { InvoicePicker, invoiceValueToDate, invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
@@ -65,6 +72,32 @@ export function CardInvoiceReview({
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pickingCategory, setPickingCategory] = useState(false);
+  const [duplicateIds, setDuplicateIds] = useState<Set<string>>(new Set());
+
+  // Uma fatura inteira não tem data por item — só dá pra checar duplicata
+  // depois que a pessoa escolhe em qual fatura essas compras entram.
+  useEffect(() => {
+    const date = invoiceValueToDate(invoiceValue, cards);
+    if (!date || !items || items.length === 0) {
+      setDuplicateIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    checkCardInvoiceDuplicates(
+      date,
+      items.map((it) => ({ amount: it.amount, description: it.description })),
+    ).then((flags) => {
+      if (cancelled) return;
+      const next = new Set<string>();
+      items.forEach((it, i) => {
+        if (flags[i]) next.add(it.id);
+      });
+      setDuplicateIds(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [invoiceValue, items, cards]);
 
   function exitSelection() {
     setSelecting(false);
@@ -244,7 +277,14 @@ export function CardInvoiceReview({
 
               <div className="mb-3.5 divide-y divide-brand-line/70 overflow-hidden rounded-2xl border border-brand-line">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-start gap-2.5 px-3.5 py-3.5">
+                  <div
+                    key={item.id}
+                    className={
+                      duplicateIds.has(item.id)
+                        ? "flex items-start gap-2.5 border-l-[3px] border-l-brand-coral py-3.5 pl-3 pr-3.5"
+                        : "flex items-start gap-2.5 px-3.5 py-3.5"
+                    }
+                  >
                     {selecting && (
                       <button
                         type="button"
@@ -290,6 +330,12 @@ export function CardInvoiceReview({
                           </span>
                         )}
                       </div>
+                      {duplicateIds.has(item.id) && (
+                        <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
+                          <AlertTriangle size={11} className="flex-shrink-0" />
+                          Pode ser repetido nessa fatura
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-ink">
                       -

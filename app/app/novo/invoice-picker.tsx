@@ -21,6 +21,24 @@ export function invoiceValueToSelection(value: InvoiceValue | null): CreditSelec
 }
 
 /**
+ * Data que essa fatura vai ter — direto do valor escolhido se for "nova", ou
+ * procurada entre as faturas já existentes se for "existing". É o que falta
+ * pra checar duplicidade antes de escolher a fatura ter uma data conhecida.
+ */
+export function invoiceValueToDate(
+  value: InvoiceValue | null,
+  cards: CardWithInvoices[],
+): string | null {
+  if (!value) return null;
+  if (value.kind === "new") return value.dueDate;
+  for (const card of cards) {
+    const invoice = card.invoices.find((inv) => inv.id === value.invoiceId);
+    if (invoice) return invoice.dueDate;
+  }
+  return null;
+}
+
+/**
  * Escolher em qual fatura uma compra no crédito entra: uma lista das
  * faturas já existentes, agrupadas por cartão, mais um atalho pra criar
  * uma nova sob um cartão específico.

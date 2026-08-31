@@ -1052,6 +1052,35 @@ export async function recognizeCardInvoice(fileDataUrl: string): Promise<Recogni
   }
 }
 
+// Diferente das outras análises, uma fatura inteira não vem com data própria
+// por item — todos os itens caem na data da fatura, que só se sabe depois
+// que a pessoa escolhe em qual fatura entram. Por isso o duplicado-check
+// aqui é uma chamada separada, feita quando essa escolha muda, em vez de já
+// vir pronto junto do reconhecimento.
+export async function checkCardInvoiceDuplicates(
+  entryDate: string,
+  items: { amount: number; description: string }[],
+): Promise<boolean[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return items.map(() => false);
+
+  const { data: existing } = await supabase
+    .from("entries")
+    .select("amount, entry_date, description")
+    .eq("user_id", user.id)
+    .eq("entry_date", entryDate);
+
+  return items.map((item) =>
+    isPossibleDuplicate(
+      { date: entryDate, amount: item.amount, description: item.description },
+      existing ?? [],
+    ),
+  );
+}
+
 export async function saveCardInvoice(
   items: { description: string; amount: number; category: string | null }[],
   selection: CreditSelection,
