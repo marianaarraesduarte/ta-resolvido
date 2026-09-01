@@ -1,16 +1,23 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { monthKey } from "@/lib/date";
 import { TOKENS } from "@/lib/tokens";
 import { goToMonth } from "./month-actions";
 import { MonthPicker, MONTH_ABBRS } from "./month-picker";
 
-const WINDOW = 3;
+// 12 pra cada lado dá mais de 2 anos de fita — dá pra rolar até janeiro (ou
+// bem além) sem precisar navegar mês a mês só pra "abrir" mais opções.
+const WINDOW = 12;
 
 /**
- * Fita horizontal com os meses vizinhos — o atual vira um chip destacado
+ * Fita horizontal com os meses ao redor — o atual vira um chip destacado
  * que abre o seletor completo (ano + qualquer mês), os outros pulam direto
- * pro mês tocado. Renderiza mais meses do que cabem na tela (rola pros dois
- * lados) com um desfoque sutil nas bordas, pra ficar óbvio sem escrever
- * nada que tem mais meses ali, não é só aquela lista curta.
+ * pro mês tocado. Renderiza bem mais meses do que cabem na tela (rola pros
+ * dois lados) com um desfoque sutil nas bordas, pra ficar óbvio sem
+ * escrever nada que dá pra ir mais longe — e sempre abre já centralizada no
+ * mês atual, senão a pessoa cairia no meio de uma fita de 2 anos sem saber
+ * pra onde olhar.
  */
 export function MonthStrip({
   path,
@@ -24,6 +31,12 @@ export function MonthStrip({
   /** 0-indexado, igual Date.getMonth() */
   viewedMonth: number;
 }) {
+  const currentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    currentRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [viewedYear, viewedMonth]);
+
   const items = Array.from({ length: WINDOW * 2 + 1 }, (_, i) => {
     const offset = i - WINDOW;
     const date = new Date(viewedYear, viewedMonth + offset, 1);
@@ -35,15 +48,16 @@ export function MonthStrip({
       <div className="flex gap-1.5 overflow-x-auto px-0.5 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item) =>
           item.offset === 0 ? (
-            <MonthPicker
-              key={item.key}
-              path={path}
-              monthName={monthName}
-              shortLabel={item.label}
-              viewedYear={viewedYear}
-              viewedMonth={viewedMonth}
-              size="chip"
-            />
+            <div key={item.key} ref={currentRef} className="flex-shrink-0">
+              <MonthPicker
+                path={path}
+                monthName={monthName}
+                shortLabel={item.label}
+                viewedYear={viewedYear}
+                viewedMonth={viewedMonth}
+                size="chip"
+              />
+            </div>
           ) : (
             <form key={item.key} action={goToMonth.bind(null, path, item.key)}>
               <button
