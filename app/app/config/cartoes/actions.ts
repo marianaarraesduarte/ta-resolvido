@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export type Card = { id: string; name: string; color: string };
 
+// Reaproveita um cartão já existente com o mesmo nome (sem diferenciar
+// maiúscula/minúscula) em vez de criar duplicado — mesma lógica que
+// resolveInvoiceId já usa pra fatura, pra não repetir o problema com
+// cartão (ex: "Nubank" cadastrado de novo sem perceber que já existia).
 export async function createCard(name: string, color: string): Promise<Card> {
   const supabase = await createClient();
   const {
@@ -13,6 +17,16 @@ export async function createCard(name: string, color: string): Promise<Card> {
 
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Digite um nome pro cartão.");
+
+  const { data: existing } = await supabase
+    .from("cards")
+    .select("id, name, color")
+    .eq("user_id", user.id)
+    .ilike("name", trimmed)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return existing;
 
   const { data, error } = await supabase
     .from("cards")
