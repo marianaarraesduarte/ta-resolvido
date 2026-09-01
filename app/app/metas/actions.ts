@@ -18,6 +18,10 @@ export async function setIncomeBasis(basis: "all" | "salary_only"): Promise<void
   if (error) throw new Error("Não deu pra salvar agora.");
 }
 
+// Reaproveita uma meta já existente com o mesmo nome (sem diferenciar
+// maiúscula/minúscula) em vez de criar duplicada — mesma lógica usada em
+// createCard, pra não repetir o problema de duas entidades com o mesmo
+// nome brigando por espaço.
 export async function createInvestmentGoal(
   name: string,
 ): Promise<{ id: string; name: string; percent: number }> {
@@ -29,6 +33,16 @@ export async function createInvestmentGoal(
 
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Digite um nome pra meta.");
+
+  const { data: existing } = await supabase
+    .from("investment_goals")
+    .select("id, name, percent")
+    .eq("user_id", user.id)
+    .ilike("name", trimmed)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return existing;
 
   const { data, error } = await supabase
     .from("investment_goals")
@@ -160,6 +174,8 @@ export async function unconfirmGoalInvestment(goalId: string): Promise<void> {
   if (error) throw new Error("Não deu pra desmarcar agora.");
 }
 
+// Mesma ideia de createInvestmentGoal/createCard — reaproveita uma reserva
+// já existente com o mesmo nome em vez de criar duplicada.
 export async function createReserve(
   name: string,
   targetAmount: number,
@@ -174,6 +190,16 @@ export async function createReserve(
   if (!trimmed || !targetAmount || targetAmount <= 0) {
     throw new Error("Preenche nome e valor alvo.");
   }
+
+  const { data: existing } = await supabase
+    .from("reserves")
+    .select("id, name, target_amount, saved_amount")
+    .eq("user_id", user.id)
+    .ilike("name", trimmed)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return existing;
 
   const { data, error } = await supabase
     .from("reserves")
