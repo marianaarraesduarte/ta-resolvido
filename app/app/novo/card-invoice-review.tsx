@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -168,12 +168,12 @@ export function CardInvoiceReview({
   const [anomaly, setAnomaly] = useState<AnomalyResult | null>(null);
   const [flaggingAnomaly, setFlaggingAnomaly] = useState(false);
   const [flaggedAnomaly, setFlaggedAnomaly] = useState(false);
-  const loggedAnomalyForCardRef = useRef<string | null>(null);
 
   // Compara o total dessa fatura com a média das faturas anteriores desse
   // cartão — pega o tipo de coisa que uma fatura duplicada causa (total bem
-  // maior que o normal) antes de salvar. Só loga uma vez por cartão
-  // escolhido, não a cada edição de valor.
+  // maior que o normal), pra avisar antes de salvar. O registro em si (pra
+  // administradora ver depois) roda no servidor, no momento de salvar de
+  // verdade — aqui é só o aviso na tela, então não precisa logar de novo.
   useEffect(() => {
     const cardId = invoiceValueToCardId(invoiceValue, cards);
     if (!cardId || total <= 0) {
@@ -189,16 +189,6 @@ export function CardInvoiceReview({
       }
       setAnomaly(result);
       setFlaggedAnomaly(false);
-      if (loggedAnomalyForCardRef.current !== cardId) {
-        loggedAnomalyForCardRef.current = cardId;
-        void logAnomalyFlag(
-          "invoice_total",
-          "Fatura acima da média do cartão",
-          total,
-          result.average,
-          false,
-        );
-      }
     });
     return () => {
       cancelled = true;

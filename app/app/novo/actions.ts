@@ -160,6 +160,66 @@ async function linkInstallments(
   }
 }
 
+// Roda depois de QUALQUER caminho que adicione um lançamento a uma fatura
+// de cartão (manual, chat, foto/PDF) — não só na revisão de fatura inteira,
+// que é onde a pessoa vê o aviso na hora. Aqui é o registro que garante que
+// a administradora fica sabendo mesmo quando a compra entrou por um jeito
+// sem tela de revisão própria (ex: lançamento manual).
+async function checkAndLogInvoiceAnomaly(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  cardInvoiceId: string,
+): Promise<void> {
+  try {
+    const { data: invoiceRow } = await supabase
+      .from("card_invoices")
+      .select("card_id")
+      .eq("id", cardInvoiceId)
+      .single();
+    const cardId = invoiceRow?.card_id;
+    if (!cardId) return;
+
+    const { data: cardInvoices } = await supabase
+      .from("card_invoices")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("card_id", cardId);
+    const invoiceIds = (cardInvoices ?? []).map((i) => i.id);
+    if (invoiceIds.length === 0) return;
+
+    const { data: entryRows } = await supabase
+      .from("entries")
+      .select("amount, card_invoice_id")
+      .eq("user_id", userId)
+      .in("card_invoice_id", invoiceIds);
+
+    const totalsByInvoice = new Map<string, number>();
+    for (const e of entryRows ?? []) {
+      if (!e.card_invoice_id) continue;
+      totalsByInvoice.set(e.card_invoice_id, (totalsByInvoice.get(e.card_invoice_id) ?? 0) + e.amount);
+    }
+
+    const currentTotal = totalsByInvoice.get(cardInvoiceId) ?? 0;
+    const pastTotals = [...totalsByInvoice.entries()]
+      .filter(([id]) => id !== cardInvoiceId)
+      .map(([, total]) => total);
+
+    const result = checkAmountAnomaly(currentTotal, pastTotals);
+    if (!result.isAnomalous) return;
+
+    await supabase.from("anomaly_flags").insert({
+      user_id: userId,
+      kind: "invoice_total",
+      description: "Fatura acima da média do cartão",
+      amount: currentTotal,
+      reference_amount: result.average,
+      user_flagged: false,
+    });
+  } catch (err) {
+    console.error("checkAndLogInvoiceAnomaly falhou:", err);
+  }
+}
+
 export type CardWithInvoices = {
   id: string;
   name: string;
@@ -378,6 +438,7 @@ export async function createEntry(formData: FormData) {
         card_invoice_id: payload.card_invoice_id,
       },
     ]);
+    await checkAndLogInvoiceAnomaly(supabase, user.id, payload.card_invoice_id);
   }
 
   let categoryName = "";
@@ -946,6 +1007,13 @@ export async function saveRecognizedItems(
   );
   if (cardRows.length > 0) await linkInstallments(supabase, user.id, cardRows);
 
+  const touchedInvoiceIds = [
+    ...new Set(cardRows.map((r) => r.card_invoice_id).filter((id): id is string => !!id)),
+  ];
+  for (const invoiceId of touchedInvoiceIds) {
+    await checkAndLogInvoiceAnomaly(supabase, user.id, invoiceId);
+  }
+
   const categoryPatterns = rows
     .filter((r) => r.type === "despesa" && r.category_id)
     .map((r) => ({
@@ -1216,6 +1284,7 @@ export async function saveCardInvoice(
       : [],
   );
   if (cardRows.length > 0) await linkInstallments(supabase, user.id, cardRows);
+  await checkAndLogInvoiceAnomaly(supabase, user.id, invoiceId);
 
   const categoryPatterns = rows
     .filter((r) => r.category_id)
