@@ -59,7 +59,13 @@ function Chip({ label, tone }: { label: string; tone: "coral" | "sage" | "amber"
 
 const CATEGORY_TONES: ("coral" | "sage" | "amber")[] = ["coral", "sage", "amber"];
 
-export function InsightThread({ sections }: { sections: MonthlyInsightSections }) {
+export function InsightThread({
+  sections,
+  saldoAtMonthEnd,
+}: {
+  sections: MonthlyInsightSections;
+  saldoAtMonthEnd: number;
+}) {
   const { resumo, categorias, metas, comparacao, sugestao } = sections;
 
   return (
@@ -76,8 +82,9 @@ export function InsightThread({ sections }: { sections: MonthlyInsightSections }
           {currency(Math.abs(resumo.sobrou))}
         </div>
         <p className="mt-1.5 text-[11px] leading-snug text-brand-ink-soft">
-          Isso é só o que entrou menos o que saiu nesse mês — não é o seu saldo total, que pode
-          estar diferente por causa de meses anteriores.
+          Isso é só o que entrou menos o que saiu nesse período. Seu saldo total é{" "}
+          <strong className="font-semibold text-brand-ink">{currency(saldoAtMonthEnd)}</strong> —
+          um pode estar bom mesmo com o outro apertado, por causa de meses anteriores.
         </p>
       </Msg>
 

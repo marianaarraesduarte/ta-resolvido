@@ -10,18 +10,21 @@ import { fetchPartialInsight } from "./actions";
 export function PartialInsightButton() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [sections, setSections] = useState<MonthlyInsightSections | null>(null);
+  const [result, setResult] = useState<{
+    sections: MonthlyInsightSections;
+    saldoAtMonthEnd: number;
+  } | null>(null);
 
   async function handleClick() {
     setLoading(true);
     setError("");
     try {
-      const result = await fetchPartialInsight();
-      if (!result) {
+      const data = await fetchPartialInsight();
+      if (!data) {
         setError("Ainda não tem gasto ou receita marcado esse mês pra analisar.");
         return;
       }
-      setSections(result);
+      setResult(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não deu pra analisar agora.");
     } finally {
@@ -29,16 +32,16 @@ export function PartialInsightButton() {
     }
   }
 
-  if (sections) {
+  if (result) {
     return (
       <div className="mb-6">
         <div className="mb-2.5 flex items-center gap-1.5 text-[13px] font-bold text-brand-ink-soft">
           {monthLabel(new Date())} até agora
         </div>
-        <InsightThread sections={sections} />
+        <InsightThread sections={result.sections} saldoAtMonthEnd={result.saldoAtMonthEnd} />
         <button
           type="button"
-          onClick={() => setSections(null)}
+          onClick={() => setResult(null)}
           className="mt-3 text-[12.5px] font-medium text-brand-ink-soft underline underline-offset-2"
         >
           Fechar
