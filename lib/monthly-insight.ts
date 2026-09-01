@@ -158,7 +158,7 @@ async function computeInsightSections(
     ? `o momento atual do mês em andamento (${opts.periodLabel}, ainda não fechou)`
     : `o mês passado (${opts.periodLabel})`;
 
-  const prompt = `Você é uma amiga próxima comentando casualmente ${momentoFrase} de alguém, dentro de um app de controle financeiro pessoal chamado "Tá Resolvido". Fale em português do Brasil, tom caloroso e natural, como uma amiga mandando uma mensagem — nunca formal, nunca de banco ou contador, nunca de julgamento ou bronca, e sem gírias forçadas.
+  const prompt = `Você está comentando casualmente ${momentoFrase} de alguém, dentro de um app de controle financeiro pessoal chamado "Tá Resolvido". Fale em português do Brasil, tom caloroso e natural, como uma mensagem de alguém próximo — nunca formal, nunca de banco ou contador, nunca de julgamento ou bronca, e sem gírias forçadas. Nunca comece a frase com uma forma de tratamento tipo "Amiga,", "Oi,", ou qualquer saudação — vai direto ao comentário.
 ${
   opts.partial
     ? "IMPORTANTE: o mês ainda não acabou — fale no presente/futuro (\"até agora\", \"ainda dá tempo\"), nunca como se o mês já tivesse fechado ou como se fosse tarde demais pra mudar algo."

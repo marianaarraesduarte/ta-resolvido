@@ -55,22 +55,33 @@ export default async function ParcelasPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("entries")
-      .select("installment_id, card_invoices(paid_at)")
+      .select("installment_id, installment_number, card_invoices(paid_at)")
       .eq("user_id", user.id)
       .not("installment_id", "is", null),
   ]);
 
+  // Uma fatura pode mostrar "7/10" na primeira vez que a gente vê essa
+  // parcela — isso já prova que 6 rodadas aconteceram antes de existir o
+  // registro aqui (senão a numeração não bateria), então entram como base
+  // já paga, mesmo sem fatura marcada. Só a partir daí o "faturas marcadas
+  // como pagas" continua contando as parcelas seguintes.
+  type LinkedEntry = { installment_id: string; installment_number: number | null; card_invoices: { paid_at: string | null } | null };
+  const linkedEntries = (entriesData as unknown as LinkedEntry[] | null) ?? [];
   const paidCountById = new Map<string, number>();
-  for (const e of (entriesData as unknown as
-    | { installment_id: string; card_invoices: { paid_at: string | null } | null }[]
-    | null) ?? []) {
+  const baselineById = new Map<string, number>();
+  for (const e of linkedEntries) {
     if (e.card_invoices?.paid_at) {
       paidCountById.set(e.installment_id, (paidCountById.get(e.installment_id) ?? 0) + 1);
+    }
+    if (e.installment_number != null) {
+      const currentBaseline = baselineById.get(e.installment_id) ?? Infinity;
+      baselineById.set(e.installment_id, Math.min(currentBaseline, e.installment_number - 1));
     }
   }
 
   const installments = ((installmentsData as unknown as InstallmentDbRow[] | null) ?? []).map((inst) => {
-    const paidCount = Math.min(inst.total_installments, paidCountById.get(inst.id) ?? 0);
+    const baseline = Math.max(0, baselineById.get(inst.id) ?? 0);
+    const paidCount = Math.min(inst.total_installments, baseline + (paidCountById.get(inst.id) ?? 0));
     return {
       id: inst.id,
       description: inst.description,

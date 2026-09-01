@@ -71,10 +71,14 @@ export function InsightThread({ sections }: { sections: MonthlyInsightSections }
           style={{ background: resumo.sobrou >= 0 ? TOKENS.sage : TOKENS.coral }}
         >
           <span className="font-sans text-[11px] font-medium opacity-90">
-            {resumo.sobrou >= 0 ? "sobrou" : "faltou"}
+            {resumo.sobrou >= 0 ? "sobrou no mês" : "faltou no mês"}
           </span>
           {currency(Math.abs(resumo.sobrou))}
         </div>
+        <p className="mt-1.5 text-[11px] leading-snug text-brand-ink-soft">
+          Isso é só o que entrou menos o que saiu nesse mês — não é o seu saldo total, que pode
+          estar diferente por causa de meses anteriores.
+        </p>
       </Msg>
 
       <Msg icon={<ShoppingBag size={14} />} color={TOKENS.amber} eyebrow="Onde foi o dinheiro">

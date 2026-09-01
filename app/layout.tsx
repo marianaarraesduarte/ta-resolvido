@@ -10,6 +10,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Tá Resolvido",
+    // Tela de abertura do iOS antes do app carregar (fora do nosso
+    // controle depois disso — nenhuma tela de espera nossa aparece antes
+    // disso, é o próprio sistema quem mostra).
+    startupImage: "/icon-512.png",
   },
   icons: {
     icon: "/icon-512.png",
