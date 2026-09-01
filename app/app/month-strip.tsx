@@ -6,18 +6,14 @@ import { TOKENS } from "@/lib/tokens";
 import { goToMonth } from "./month-actions";
 import { MonthPicker, MONTH_ABBRS } from "./month-picker";
 
-// 12 pra cada lado dá mais de 2 anos de fita — dá pra rolar até janeiro (ou
-// bem além) sem precisar navegar mês a mês só pra "abrir" mais opções.
-const WINDOW = 12;
-
 /**
- * Fita horizontal com os meses ao redor — o atual vira um chip destacado
- * que abre o seletor completo (ano + qualquer mês), os outros pulam direto
- * pro mês tocado. Renderiza bem mais meses do que cabem na tela (rola pros
- * dois lados) com um desfoque sutil nas bordas, pra ficar óbvio sem
- * escrever nada que dá pra ir mais longe — e sempre abre já centralizada no
- * mês atual, senão a pessoa cairia no meio de uma fita de 2 anos sem saber
- * pra onde olhar.
+ * Fita horizontal com os 12 meses do ano em exibição, só — nunca passa pra
+ * outro ano dentro da fita, porque aí a abreviação repetiria (janeiro de
+ * 2026 e de 2027 apareceriam iguais, sem nada dizendo qual é qual). Trocar
+ * de ano é sempre pelo seletor completo, tocando no chip do mês atual.
+ * Ele vira um chip destacado que abre esse seletor; os outros pulam direto
+ * pro mês tocado. Desfoque sutil nas bordas avisa sem escrever nada que dá
+ * pra rolar mais — sempre abre já centralizada no mês atual.
  */
 export function MonthStrip({
   path,
@@ -37,17 +33,17 @@ export function MonthStrip({
     currentRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
   }, [viewedYear, viewedMonth]);
 
-  const items = Array.from({ length: WINDOW * 2 + 1 }, (_, i) => {
-    const offset = i - WINDOW;
-    const date = new Date(viewedYear, viewedMonth + offset, 1);
-    return { offset, date, key: monthKey(date), label: MONTH_ABBRS[date.getMonth()] };
-  });
+  const items = Array.from({ length: 12 }, (_, monthIndex) => ({
+    monthIndex,
+    key: monthKey(new Date(viewedYear, monthIndex, 1)),
+    label: MONTH_ABBRS[monthIndex],
+  }));
 
   return (
     <div className="relative">
       <div className="flex gap-1.5 overflow-x-auto px-0.5 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item) =>
-          item.offset === 0 ? (
+          item.monthIndex === viewedMonth ? (
             <div key={item.key} ref={currentRef} className="flex-shrink-0">
               <MonthPicker
                 path={path}
