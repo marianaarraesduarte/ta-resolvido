@@ -38,6 +38,20 @@ export function invoiceValueToDate(
   return null;
 }
 
+/** Mesma ideia de invoiceValueToDate, mas pro cartão — usado pra comparar o
+ * total dessa fatura com a média das faturas anteriores desse mesmo cartão. */
+export function invoiceValueToCardId(
+  value: InvoiceValue | null,
+  cards: CardWithInvoices[],
+): string | null {
+  if (!value) return null;
+  if (value.kind === "new") return value.cardId;
+  for (const card of cards) {
+    if (card.invoices.some((inv) => inv.id === value.invoiceId)) return card.id;
+  }
+  return null;
+}
+
 /**
  * Escolher em qual fatura uma compra no crédito entra: uma lista das
  * faturas já existentes, agrupadas por cartão, mais um atalho pra criar

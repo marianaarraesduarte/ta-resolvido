@@ -8,6 +8,7 @@ import { isCompleto, isRecognitionLimitReached, FREE_RECOGNITION_LIMIT } from "@
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
 import { matchCategoryPattern } from "@/lib/category-pattern-match";
 import { parseInstallmentInfo } from "@/lib/installment-detect";
+import { checkAmountAnomaly, type AnomalyResult } from "@/lib/anomaly-check";
 import {
   extractFromDocument,
   extractFromText,
@@ -1079,6 +1080,70 @@ export async function checkCardInvoiceDuplicates(
       existing ?? [],
     ),
   );
+}
+
+// Compara o total dessa fatura em revisão com a média das faturas
+// anteriores desse mesmo cartão — pra pegar o tipo de coisa que a fatura
+// duplicada do Nubank causou (total bem maior que o normal), antes de
+// salvar, não só depois de já ter acontecido.
+export async function checkInvoiceTotalAnomaly(
+  cardId: string,
+  currentTotal: number,
+): Promise<AnomalyResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { isAnomalous: false, average: 0 };
+
+  const { data: cardInvoices } = await supabase
+    .from("card_invoices")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("card_id", cardId);
+
+  const invoiceIds = (cardInvoices ?? []).map((i) => i.id);
+  if (invoiceIds.length === 0) return { isAnomalous: false, average: 0 };
+
+  const { data: entryRows } = await supabase
+    .from("entries")
+    .select("amount, card_invoice_id")
+    .eq("user_id", user.id)
+    .in("card_invoice_id", invoiceIds);
+
+  const totalsByInvoice = new Map<string, number>();
+  for (const e of entryRows ?? []) {
+    if (!e.card_invoice_id) continue;
+    totalsByInvoice.set(e.card_invoice_id, (totalsByInvoice.get(e.card_invoice_id) ?? 0) + e.amount);
+  }
+
+  return checkAmountAnomaly(currentTotal, [...totalsByInvoice.values()]);
+}
+
+// Registro simples de "isso ficou estranho" — só escrita, ninguém lê de
+// volta por aqui (quem revisa é a administradora, em /admin, com acesso
+// direto ao banco).
+export async function logAnomalyFlag(
+  kind: string,
+  description: string,
+  amount: number,
+  referenceAmount: number,
+  userFlagged: boolean,
+): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("anomaly_flags").insert({
+    user_id: user.id,
+    kind,
+    description,
+    amount,
+    reference_amount: referenceAmount,
+    user_flagged: userFlagged,
+  });
 }
 
 export async function saveCardInvoice(

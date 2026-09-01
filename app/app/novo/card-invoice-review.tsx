@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -20,15 +20,24 @@ import {
 import { amountToInputValue, currency, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { toDateKey } from "@/lib/date";
 import { matchFixedExpense } from "@/lib/fixed-expense-match";
+import type { AnomalyResult } from "@/lib/anomaly-check";
 import { usePhotoRecognition } from "@/lib/use-photo-recognition";
 import {
   checkCardInvoiceDuplicates,
+  checkInvoiceTotalAnomaly,
+  logAnomalyFlag,
   recognizeCardInvoice,
   saveCardInvoice,
   type CardWithInvoices,
   type RecognizedCardItem,
 } from "./actions";
-import { InvoicePicker, invoiceValueToDate, invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
+import {
+  InvoicePicker,
+  invoiceValueToCardId,
+  invoiceValueToDate,
+  invoiceValueToSelection,
+  type InvoiceValue,
+} from "./invoice-picker";
 
 type Category = { id: string; name: string };
 type FixedExpense = { name: string; expected_amount: number };
@@ -155,6 +164,63 @@ export function CardInvoiceReview({
   }
 
   const total = (items ?? []).reduce((sum, it) => sum + it.amount, 0);
+
+  const [anomaly, setAnomaly] = useState<AnomalyResult | null>(null);
+  const [flaggingAnomaly, setFlaggingAnomaly] = useState(false);
+  const [flaggedAnomaly, setFlaggedAnomaly] = useState(false);
+  const loggedAnomalyForCardRef = useRef<string | null>(null);
+
+  // Compara o total dessa fatura com a média das faturas anteriores desse
+  // cartão — pega o tipo de coisa que uma fatura duplicada causa (total bem
+  // maior que o normal) antes de salvar. Só loga uma vez por cartão
+  // escolhido, não a cada edição de valor.
+  useEffect(() => {
+    const cardId = invoiceValueToCardId(invoiceValue, cards);
+    if (!cardId || total <= 0) {
+      setAnomaly(null);
+      return;
+    }
+    let cancelled = false;
+    checkInvoiceTotalAnomaly(cardId, total).then((result) => {
+      if (cancelled) return;
+      if (!result.isAnomalous) {
+        setAnomaly(null);
+        return;
+      }
+      setAnomaly(result);
+      setFlaggedAnomaly(false);
+      if (loggedAnomalyForCardRef.current !== cardId) {
+        loggedAnomalyForCardRef.current = cardId;
+        void logAnomalyFlag(
+          "invoice_total",
+          "Fatura acima da média do cartão",
+          total,
+          result.average,
+          false,
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [invoiceValue, total, cards]);
+
+  async function handleFlagAnomaly() {
+    if (!anomaly) return;
+    setFlaggingAnomaly(true);
+    try {
+      await logAnomalyFlag(
+        "invoice_total",
+        "Fatura acima da média do cartão (marcada pela usuária)",
+        total,
+        anomaly.average,
+        true,
+      );
+      setFlaggedAnomaly(true);
+    } finally {
+      setFlaggingAnomaly(false);
+    }
+  }
 
   async function handleSave() {
     if (!items || items.length === 0) return;
@@ -432,6 +498,27 @@ export function CardInvoiceReview({
                   defaultDate={defaultDate}
                 />
               </div>
+
+              {anomaly && (
+                <div className="mb-4 rounded-2xl border border-brand-amber/40 bg-brand-amber/10 px-4 py-3.5">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-brand-amber" />
+                    <p className="text-[13px] leading-snug text-brand-ink">
+                      Essa fatura ({currency(total)}) tá bem acima da média das suas últimas
+                      faturas desse cartão ({currency(anomaly.average)}). Confere se não tem algo
+                      duplicado antes de salvar.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={flaggingAnomaly || flaggedAnomaly}
+                    onClick={handleFlagAnomaly}
+                    className="mt-2 text-[12px] font-semibold text-brand-amber underline underline-offset-2 disabled:opacity-60"
+                  >
+                    {flaggedAnomaly ? "Marcado — obrigada!" : "Isso não parece certo, quero avisar"}
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"
