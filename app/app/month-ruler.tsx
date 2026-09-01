@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeftRight,
   Check,
-  ChevronLeft,
-  ChevronRight,
   CreditCard,
   Layers,
   ListChecks,
@@ -27,7 +25,7 @@ import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
 import { deleteCardInvoice, markInvoicePaid, updateInvoiceCard } from "./novo/actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
-import { MonthPicker } from "./month-picker";
+import { MonthStrip } from "./month-strip";
 import { AssistantCard } from "./assistant-card";
 import { FrequentExpenseChips } from "./frequent-expense-chips";
 
@@ -329,31 +327,13 @@ export function MonthRuler({
           <div className="font-display text-xs font-bold uppercase tracking-wide text-brand-ink opacity-55">
             Tá Resolvido
           </div>
-          <div className="mt-0.5 flex items-center gap-2">
-            <form action={goToMonth.bind(null, "/app", prevMonthKey)}>
-              <button
-                type="submit"
-                aria-label="Mês anterior"
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-              >
-                <ChevronLeft size={18} />
-              </button>
-            </form>
-            <MonthPicker
+          <div className="mt-1">
+            <MonthStrip
               path="/app"
               monthName={monthName}
               viewedYear={viewedYear}
               viewedMonth={viewedMonth}
             />
-            <form action={goToMonth.bind(null, "/app", nextMonthKey)}>
-              <button
-                type="submit"
-                aria-label="Próximo mês"
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </form>
           </div>
           {!isCurrentMonth && (
             <form action={clearMonthSelection.bind(null, "/app")}>
