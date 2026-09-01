@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { monthKey } from "@/lib/date";
 import { goToMonth } from "./month-actions";
 
@@ -20,22 +20,21 @@ export const MONTH_ABBRS = [
   "Dez",
 ];
 
+/** Chip do mês atual dentro da MonthStrip — toca pra abrir o seletor completo. */
 export function MonthPicker({
   path,
   monthName,
   shortLabel,
   viewedYear,
   viewedMonth,
-  size = "lg",
 }: {
   path: string;
   monthName: string;
-  /** Só pra size="chip" — abreviação de 3 letras (ex: "Set"). */
+  /** Abreviação de 3 letras (ex: "Set") — o que aparece no chip. */
   shortLabel?: string;
   viewedYear: number;
   /** 0-indexado, igual Date.getMonth() */
   viewedMonth: number;
-  size?: "lg" | "sm" | "chip";
 }) {
   const [open, setOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(viewedYear);
@@ -50,27 +49,12 @@ export function MonthPicker({
       <button
         type="button"
         onClick={openPicker}
-        className={
-          size === "chip"
-            ? "flex flex-shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-left"
-            : "flex min-w-0 flex-1 items-center gap-1.5 rounded-xl border border-brand-line bg-brand-card py-1 pl-2.5 pr-2 text-left"
-        }
-        style={size === "chip" ? { background: "var(--accent)" } : undefined}
+        className="flex flex-shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-left"
+        style={{ background: "var(--accent)" }}
       >
-        <span
-          className={
-            size === "lg"
-              ? "min-w-0 flex-1 truncate font-display text-3xl font-bold text-brand-ink"
-              : size === "chip"
-                ? "font-display text-[13px] font-semibold text-white"
-                : "min-w-0 flex-1 truncate font-display text-xl font-bold text-brand-ink"
-          }
-        >
-          {size === "chip" ? (shortLabel ?? monthName) : monthName}
+        <span className="font-display text-[13px] font-semibold text-white">
+          {shortLabel ?? monthName}
         </span>
-        {size !== "chip" && (
-          <ChevronDown size={18} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "var(--accent)" }} />
-        )}
       </button>
 
       {open && (

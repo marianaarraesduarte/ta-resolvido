@@ -7,7 +7,7 @@ import { resolveViewedMonth } from "@/lib/viewed-month";
 import { currency } from "@/lib/tokens";
 import { namesMatch } from "@/lib/text-match";
 import { clearMonthSelection, goToMonth } from "../month-actions";
-import { MonthPicker } from "../month-picker";
+import { MonthStrip } from "../month-strip";
 import { FixedExpensesSection } from "./fixed-expenses-section";
 import { type CardInvoiceRow } from "./entries-list";
 import { GastosView } from "./gastos-view";
@@ -146,20 +146,13 @@ export default async function ResumoPage({
   return (
     <div className="flex justify-center px-3 py-7">
       <div className="w-full max-w-sm">
-        <div className={isCurrentMonth ? "mb-5 flex items-center gap-2.5" : "mb-1.5 flex items-center gap-2.5"}>
+        <div className="mb-2.5 flex items-center justify-between">
           <Link
             href="/app"
             className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-card text-brand-ink"
           >
             <ChevronLeft size={18} />
           </Link>
-          <MonthPicker
-            path="/app/resumo"
-            monthName={monthLabel(viewedFirstDay)}
-            viewedYear={viewedFirstDay.getFullYear()}
-            viewedMonth={viewedFirstDay.getMonth()}
-            size="sm"
-          />
           <Link
             href="/app/config/categorias"
             aria-label="Editar categorias"
@@ -167,6 +160,14 @@ export default async function ResumoPage({
           >
             <Pencil size={16} />
           </Link>
+        </div>
+        <div className={isCurrentMonth ? "mb-5" : "mb-1.5"}>
+          <MonthStrip
+            path="/app/resumo"
+            monthName={monthLabel(viewedFirstDay)}
+            viewedYear={viewedFirstDay.getFullYear()}
+            viewedMonth={viewedFirstDay.getMonth()}
+          />
         </div>
         {!isCurrentMonth && (
           <form action={clearMonthSelection.bind(null, "/app/resumo")}>

@@ -51,7 +51,6 @@ export function MonthStrip({
                 shortLabel={item.label}
                 viewedYear={viewedYear}
                 viewedMonth={viewedMonth}
-                size="chip"
               />
             </div>
           ) : (
