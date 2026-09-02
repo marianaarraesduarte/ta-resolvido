@@ -11,6 +11,31 @@ const FREE_FEATURES = [
   "3 fotos/PDFs reconhecidos por mês",
 ];
 
+// Cada plano da Hotmart tem seu próprio código de oferta, e é ele que decide
+// o valor cobrado — o link sem "?off=" cai no preço base antigo. Os dois
+// abaixo foram conferidos abrindo o checkout: ovndqugz cobra R$24,90/mês e
+// ltbr4n7d cobra R$199,00/ano.
+const CHECKOUT_URL = "https://pay.hotmart.com/S107243172M";
+
+const CHECKOUT_OPTIONS = [
+  {
+    id: "anual",
+    label: "Anual",
+    note: "R$16,58 por mês, à vista",
+    price: "R$199",
+    href: `${CHECKOUT_URL}?off=ltbr4n7d`,
+    highlight: true,
+  },
+  {
+    id: "mensal",
+    label: "Mensal",
+    note: "Cancela quando quiser",
+    price: "R$24,90",
+    href: `${CHECKOUT_URL}?off=ovndqugz`,
+    highlight: false,
+  },
+];
+
 const PAID_FEATURES = [
   "Fotos/PDFs sem limite (extrato e fatura)",
   "Reconhecimento automático de salário e gastos fixos recorrentes",
@@ -83,10 +108,7 @@ export default async function PlanosPage() {
                 </span>
               )}
             </div>
-            <div className="mb-1 font-display text-3xl font-bold text-white">
-              R$29,90<span className="text-[15px] font-medium text-white/70">/mês</span>
-            </div>
-            <div className="mb-5 text-[12.5px] text-white/70">Tudo do plano grátis, mais:</div>
+            <div className="mb-5 mt-1 text-[12.5px] text-white/70">Tudo do plano grátis, mais:</div>
             <ul className="mb-6 flex flex-col gap-2.5">
               {PAID_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-[13.5px] text-white/85">
@@ -96,14 +118,31 @@ export default async function PlanosPage() {
               ))}
             </ul>
             {plan !== "completo" && (
-              <a
-                href="https://pay.hotmart.com/S107243172M"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center rounded-2xl bg-brand-plum py-3.5 font-display text-[14.5px] font-semibold text-white"
-              >
-                Assinar o Plano Completo
-              </a>
+              <div className="flex flex-col gap-2.5">
+                {CHECKOUT_OPTIONS.map((option) => (
+                  <a
+                    key={option.id}
+                    href={option.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={
+                      option.highlight
+                        ? "flex items-center justify-between rounded-2xl bg-brand-plum px-5 py-3.5"
+                        : "flex items-center justify-between rounded-2xl border border-white/20 px-5 py-3.5"
+                    }
+                  >
+                    <div>
+                      <div className="font-display text-[14.5px] font-semibold text-white">
+                        {option.label}
+                      </div>
+                      <div className="text-[11.5px] text-white/65">{option.note}</div>
+                    </div>
+                    <div className="font-display text-[17px] font-bold text-white">
+                      {option.price}
+                    </div>
+                  </a>
+                ))}
+              </div>
             )}
             {plan === "completo" && <CancelButton />}
           </div>
