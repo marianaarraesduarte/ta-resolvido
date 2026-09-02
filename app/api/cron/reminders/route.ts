@@ -49,6 +49,17 @@ export async function GET(request: Request) {
 
   const supabase = createAdminClient();
 
+  // Sobras do "Compartilhar": no caminho normal, a tela de novo lançamento
+  // busca a imagem e apaga na mesma hora. Quando a pessoa desiste no meio, a
+  // linha ficava no banco pra sempre — e ela guarda o print do extrato inteiro
+  // em base64. Apagar o que passou de um dia é o que torna verdadeira a
+  // promessa da política de privacidade de que a imagem não fica guardada.
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: discardedShares } = await supabase
+    .from("pending_shares")
+    .delete({ count: "exact" })
+    .lt("created_at", oneDayAgo);
+
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select("id, reminder_frequency, last_reminder_sent_at, created_at")
@@ -92,5 +103,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ checked: due.length, sent });
+  return NextResponse.json({ checked: due.length, sent, discardedShares: discardedShares ?? 0 });
 }

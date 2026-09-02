@@ -111,6 +111,15 @@ export default async function MaisPage() {
             <ChevronRight size={16} className="text-brand-ink-soft" />
           </Link>
         )}
+
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 pb-2 pt-1 text-[12px] text-brand-ink-soft">
+          <Link href="/termos" className="underline underline-offset-2">
+            Termos de Uso
+          </Link>
+          <Link href="/privacidade" className="underline underline-offset-2">
+            Política de Privacidade
+          </Link>
+        </div>
       </div>
     </div>
   );

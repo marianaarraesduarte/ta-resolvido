@@ -675,8 +675,16 @@ export default async function RootPage() {
         </div>
       </section>
 
-      <footer className="px-5 pb-10 text-center text-[12.5px] text-brand-ink-soft sm:px-10">
-        Tá Resolvido — taresolvido.app
+      <footer className="flex flex-col items-center gap-3 px-5 pb-10 text-center text-[12.5px] text-brand-ink-soft sm:px-10">
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+          <Link href="/termos" className="underline underline-offset-2">
+            Termos de Uso
+          </Link>
+          <Link href="/privacidade" className="underline underline-offset-2">
+            Política de Privacidade
+          </Link>
+        </div>
+        <div>Tá Resolvido — taresolvido.app</div>
       </footer>
     </div>
   );
