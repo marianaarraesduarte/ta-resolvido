@@ -553,8 +553,13 @@ export default async function RootPage() {
                 Mais popular
               </div>
               <div className="font-display text-[15px] font-bold opacity-75">Plano Completo</div>
-              <div className="my-1.5 font-display text-[34px] font-extrabold">
+              <div className="mt-1.5 font-display text-[34px] font-extrabold">
                 R$24,90<span className="text-[15px] font-medium opacity-65">/mês</span>
+              </div>
+              {/* Oferta real, conferida no checkout — diferente do antigo banner
+                  de "preço fundador", que prometia um desconto que não existia. */}
+              <div className="mb-1.5 mt-1 text-[13px] font-medium text-brand-amber">
+                Primeiro mês por R$14,90
               </div>
               <ul className="mb-5 mt-5 flex flex-col gap-1.5">
                 {PAID_FEATURES.map((f) => (

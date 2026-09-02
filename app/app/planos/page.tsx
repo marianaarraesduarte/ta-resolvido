@@ -11,10 +11,11 @@ const FREE_FEATURES = [
   "3 fotos/PDFs reconhecidos por mês",
 ];
 
-// Cada plano da Hotmart tem seu próprio código de oferta, e é ele que decide
-// o valor cobrado — o link sem "?off=" cai no preço base antigo. Os dois
-// abaixo foram conferidos abrindo o checkout: ovndqugz cobra R$24,90/mês e
-// ltbr4n7d cobra R$199,00/ano.
+// Cada oferta da Hotmart tem seu próprio código, e é ele que decide o valor
+// cobrado — o link sem "?off=" cai no preço base antigo. Os três abaixo foram
+// conferidos abrindo o checkout de verdade, não só o painel: o painel chegou a
+// mostrar um valor novo enquanto o checkout ainda cobrava o antigo, por cache.
+// Ao mexer em preço aqui, abra o link e confira o que ele cobra antes de subir.
 const CHECKOUT_URL = "https://pay.hotmart.com/S107243172M";
 
 const CHECKOUT_OPTIONS = [
@@ -27,11 +28,14 @@ const CHECKOUT_OPTIONS = [
     highlight: true,
   },
   {
+    // Oferta FOUNDER10: R$14,90 só na primeira cobrança, R$24,90 nas
+    // seguintes. O código na URL já aplica o desconto — a pessoa não precisa
+    // digitar cupom nenhum.
     id: "mensal",
     label: "Mensal",
-    note: "Cancela quando quiser",
-    price: "R$24,90",
-    href: `${CHECKOUT_URL}?off=ovndqugz`,
+    note: "Primeiro mês, depois R$24,90",
+    price: "R$14,90",
+    href: `${CHECKOUT_URL}?off=9b56cfpa`,
     highlight: false,
   },
 ];
