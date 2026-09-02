@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { parseCentsInput } from "@/lib/tokens";
 import { suggestCategoryName } from "@/lib/category-keywords";
-import { isCompleto, isRecognitionLimitReached, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
+import { isCompleto, isRecognitionLimitReached, recognitionAllowance } from "@/lib/plan";
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
 import { matchCategoryPattern } from "@/lib/category-pattern-match";
 import { parseInstallmentInfo } from "@/lib/installment-detect";
@@ -22,24 +22,26 @@ async function enforceRecognitionLimit(
 ): Promise<void> {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, created_at")
     .eq("id", userId)
     .single();
   if (isCompleto(profile?.plan)) return;
 
-  const firstDay = new Date();
-  firstDay.setDate(1);
-  firstDay.setHours(0, 0, 0, 0);
+  // A cota e a janela de contagem andam juntas: nos primeiros 30 dias são 10,
+  // contados desde a criação da conta; depois, 3 por mês do calendário.
+  const allowance = recognitionAllowance(profile?.created_at);
 
   const { count } = await supabase
     .from("photo_recognitions")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
-    .gte("created_at", firstDay.toISOString());
+    .gte("created_at", allowance.countFrom.toISOString());
 
-  if (isRecognitionLimitReached(profile?.plan, count ?? 0)) {
+  if (isRecognitionLimitReached(profile?.plan, count ?? 0, allowance.limit)) {
     throw new Error(
-      `Você já usou seus ${FREE_RECOGNITION_LIMIT} reconhecimentos por IA grátis desse mês. Assine o Completo pra reconhecer sem limite.`,
+      allowance.isFirstMonth
+        ? `Você já usou seus ${allowance.limit} reconhecimentos por IA do primeiro mês. Assine o Completo pra reconhecer sem limite.`
+        : `Você já usou seus ${allowance.limit} reconhecimentos por IA grátis desse mês. Assine o Completo pra reconhecer sem limite.`,
     );
   }
 }

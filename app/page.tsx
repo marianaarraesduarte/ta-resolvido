@@ -63,7 +63,7 @@ const FREE_FEATURES = [
   "Lançamento manual de gastos e receitas",
   "Régua do mês",
   "Quanto gastei, por categoria",
-  "3 reconhecimentos por mês (foto, PDF, áudio ou frase)",
+  "10 reconhecimentos por IA no primeiro mês, 3 por mês depois",
 ];
 
 const PAID_FEATURES = [

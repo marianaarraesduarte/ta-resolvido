@@ -394,12 +394,12 @@ export function ChatTab({
         (recognitionsRemaining > 0 ? (
           <p className="mb-3.5 text-[12.5px] text-brand-ink-soft">
             Você ainda tem {recognitionsRemaining}{" "}
-            {recognitionsRemaining === 1 ? "reconhecimento grátis" : "reconhecimentos grátis"} esse
-            mês (foto, chat ou áudio).
+            {recognitionsRemaining === 1 ? "reconhecimento grátis" : "reconhecimentos grátis"}{" "}
+            (foto, chat ou áudio).
           </p>
         ) : (
           <p className="mb-3.5 text-[12.5px] font-medium text-brand-coral">
-            Você já usou seus reconhecimentos grátis desse mês.{" "}
+            Você já usou seus reconhecimentos grátis.{" "}
             <Link href="/app/planos" className="underline underline-offset-2">
               Assine o Completo
             </Link>{" "}

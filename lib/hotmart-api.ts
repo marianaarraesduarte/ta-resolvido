@@ -31,12 +31,23 @@ async function getAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+export type CancelableSubscription = {
+  subscriberCode: string;
+  /**
+   * Data da próxima cobrança — é até quando o período já pago vai. Nula
+   * quando a Hotmart não devolve o campo.
+   */
+  paidUntil: Date | null;
+};
+
 /**
- * Busca o subscriber_code da assinatura ativa (ou atrasada) desse e-mail.
- * Retorna null se não achar nenhuma — ex: quem ganhou o Completo manualmente,
- * sem ter comprado de verdade na Hotmart.
+ * Busca a assinatura ativa (ou atrasada) desse e-mail. Retorna null se não
+ * achar nenhuma — ex: quem ganhou o Completo manualmente, sem ter comprado de
+ * verdade na Hotmart.
  */
-export async function findCancelableSubscriberCode(email: string): Promise<string | null> {
+export async function findCancelableSubscription(
+  email: string,
+): Promise<CancelableSubscription | null> {
   const token = await getAccessToken();
   const statusParams = CANCELABLE_STATUSES.map((s) => `status=${s}`).join("&");
   const url = `${API_BASE}/subscriptions?subscriber_email=${encodeURIComponent(email)}&${statusParams}`;
@@ -49,8 +60,17 @@ export async function findCancelableSubscriberCode(email: string): Promise<strin
     throw new Error("Não deu pra consultar a assinatura na Hotmart agora.");
   }
 
-  const data = (await res.json()) as { items?: { subscriber_code: string }[] };
-  return data.items?.[0]?.subscriber_code ?? null;
+  const data = (await res.json()) as {
+    items?: { subscriber_code: string; date_next_charge?: number }[];
+  };
+  const subscription = data.items?.[0];
+  if (!subscription) return null;
+
+  const nextCharge = subscription.date_next_charge;
+  const paidUntil =
+    typeof nextCharge === "number" && Number.isFinite(nextCharge) ? new Date(nextCharge) : null;
+
+  return { subscriberCode: subscription.subscriber_code, paidUntil };
 }
 
 export async function cancelHotmartSubscription(subscriberCode: string): Promise<void> {

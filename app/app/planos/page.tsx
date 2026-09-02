@@ -8,7 +8,7 @@ const FREE_FEATURES = [
   "Régua do mês",
   "Quanto gastei",
   "Categorias",
-  "3 fotos/PDFs reconhecidos por mês",
+  "10 reconhecimentos por IA no primeiro mês, 3 por mês depois",
 ];
 
 // Cada oferta da Hotmart tem seu próprio código, e é ele que decide o valor

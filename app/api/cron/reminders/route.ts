@@ -60,6 +60,16 @@ export async function GET(request: Request) {
     .delete({ count: "exact" })
     .lt("created_at", oneDayAgo);
 
+  // Cancelamentos agendados: o plano segue "completo" até o fim do período já
+  // pago (ver app/app/planos/actions.ts) e a virada acontece aqui, uma vez por
+  // dia. Assim nenhuma tela precisou aprender uma regra nova de acesso — quem
+  // lê `plan` continua lendo a verdade.
+  const { count: downgraded } = await supabase
+    .from("profiles")
+    .update({ plan: "free", access_until: null }, { count: "exact" })
+    .not("access_until", "is", null)
+    .lte("access_until", new Date().toISOString());
+
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select("id, reminder_frequency, last_reminder_sent_at, created_at")
@@ -103,5 +113,10 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ checked: due.length, sent, discardedShares: discardedShares ?? 0 });
+  return NextResponse.json({
+    checked: due.length,
+    sent,
+    discardedShares: discardedShares ?? 0,
+    downgraded: downgraded ?? 0,
+  });
 }

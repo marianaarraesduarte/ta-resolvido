@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planForHotmartEvent } from "./hotmart-webhook";
+import { isScheduledCancellation, planForHotmartEvent } from "./hotmart-webhook";
 
 describe("planForHotmartEvent", () => {
   it("libera o Completo numa compra aprovada", () => {
@@ -24,8 +24,14 @@ describe("planForHotmartEvent", () => {
     expect(planForHotmartEvent("PURCHASE_EXPIRED")).toBe("free");
   });
 
-  it("tira o Completo quando a pessoa cancela a assinatura direto (evento próprio, não é PURCHASE_*)", () => {
-    expect(planForHotmartEvent("SUBSCRIPTION_CANCELLATION")).toBe("free");
+  it("cancelamento de assinatura não tira o acesso na hora — o mês já pago continua valendo", () => {
+    expect(planForHotmartEvent("SUBSCRIPTION_CANCELLATION")).toBeNull();
+    expect(isScheduledCancellation("SUBSCRIPTION_CANCELLATION")).toBe(true);
+  });
+
+  it("só o fim do período (PURCHASE_EXPIRED) derruba o acesso de quem cancelou", () => {
+    expect(planForHotmartEvent("PURCHASE_EXPIRED")).toBe("free");
+    expect(isScheduledCancellation("PURCHASE_EXPIRED")).toBe(false);
   });
 
   it("ignora eventos que não decidem nada sozinhos (boleto impresso, atraso, contestação)", () => {

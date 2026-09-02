@@ -6,11 +6,22 @@ const DOWNGRADE_EVENTS = new Set([
   "PURCHASE_CANCELED",
   "PURCHASE_REFUNDED",
   "PURCHASE_CHARGEBACK",
+  // A assinatura chegou ao fim do período pago: aqui o acesso realmente acaba.
   "PURCHASE_EXPIRED",
-  // Evento próprio de assinatura — dispara quando a pessoa cancela pelo
-  // painel dela, mesmo sem nenhuma cobrança ter falhado.
-  "SUBSCRIPTION_CANCELLATION",
 ]);
+
+/**
+ * Evento próprio de assinatura, disparado quando a pessoa cancela pelo painel
+ * da Hotmart. Ele NÃO é o fim do acesso: quem cancela dia 3 pagou o mês
+ * inteiro e continua com direito até o fim dele. Por isso não entra na lista
+ * acima — o acesso só cai no PURCHASE_EXPIRED, ou na data agendada em
+ * profiles.access_until, o que vier primeiro.
+ */
+const SCHEDULED_CANCELLATION_EVENT = "SUBSCRIPTION_CANCELLATION";
+
+export function isScheduledCancellation(event: string): boolean {
+  return event === SCHEDULED_CANCELLATION_EVENT;
+}
 
 /**
  * A partir do nome do evento (e, se for compra aprovada, do status da

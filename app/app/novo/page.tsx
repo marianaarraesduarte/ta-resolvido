@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
-import { isCompleto, FREE_RECOGNITION_LIMIT } from "@/lib/plan";
+import { isCompleto, recognitionAllowance } from "@/lib/plan";
 import { EntryForm } from "./entry-form";
 import { listCardsWithInvoices } from "./actions";
 
@@ -39,13 +39,19 @@ export default async function NovoLancamentoPage({
     }
   }
 
-  const firstDayOfMonth = new Date();
-  firstDayOfMonth.setDate(1);
-  firstDayOfMonth.setHours(0, 0, 0, 0);
+  // O perfil vem antes das outras consultas porque a janela de contagem dos
+  // reconhecimentos depende da data de criação da conta: nos primeiros 30 dias
+  // a cota é maior e conta desde o cadastro, não desde o dia 1º.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("separate_by_account, plan, experience_level, guide_active, created_at")
+    .eq("id", user.id)
+    .single();
+
+  const allowance = recognitionAllowance(profile?.created_at);
 
   const [
     { data: categories },
-    { data: profile },
     { data: salaryPatterns },
     { data: fixedExpenses },
     { count: recognitionsUsed },
@@ -57,25 +63,20 @@ export default async function NovoLancamentoPage({
       .select("id, name, icon")
       .eq("user_id", user.id)
       .order("name", { ascending: true }),
-    supabase
-      .from("profiles")
-      .select("separate_by_account, plan, experience_level, guide_active")
-      .eq("id", user.id)
-      .single(),
     supabase.from("salary_patterns").select("description_pattern").eq("user_id", user.id),
     supabase.from("fixed_expenses").select("name, expected_amount").eq("user_id", user.id),
     supabase
       .from("photo_recognitions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .gte("created_at", firstDayOfMonth.toISOString()),
+      .gte("created_at", allowance.countFrom.toISOString()),
     supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     listCardsWithInvoices(),
   ]);
 
   const recognitionsRemaining = isCompleto(profile?.plan)
     ? null
-    : Math.max(0, FREE_RECOGNITION_LIMIT - (recognitionsUsed ?? 0));
+    : Math.max(0, allowance.limit - (recognitionsUsed ?? 0));
 
   return (
     <div className="flex justify-center px-3 py-7">

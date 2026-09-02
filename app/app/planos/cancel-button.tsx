@@ -5,15 +5,20 @@ import { useRouter } from "next/navigation";
 import { useConfirm } from "../confirm-dialog";
 import { cancelSubscription } from "./actions";
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
+}
+
 export function CancelButton() {
   const router = useRouter();
   const confirm = useConfirm();
   const [canceling, setCanceling] = useState(false);
+  const [canceledUntil, setCanceledUntil] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function handleCancel() {
     const ok = await confirm(
-      "Isso cancela sua assinatura na Hotmart e desativa o Completo aqui no app agora mesmo. Você não vai ser cobrada de novo. Quer continuar?",
+      "Isso cancela sua assinatura e você não vai ser cobrada de novo. O Completo continua funcionando até o fim do período que você já pagou. Quer continuar?",
       { confirmLabel: "Cancelar assinatura", cancelLabel: "Voltar" },
     );
     if (!ok) return;
@@ -21,12 +26,25 @@ export function CancelButton() {
     setCanceling(true);
     setError("");
     try {
-      await cancelSubscription();
+      const { accessUntil } = await cancelSubscription();
+      setCanceledUntil(accessUntil);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não deu pra cancelar agora.");
+    } finally {
       setCanceling(false);
     }
+  }
+
+  if (canceledUntil) {
+    return (
+      <div className="mt-3 rounded-2xl bg-white/10 px-4 py-3 text-center">
+        <p className="text-[12.5px] leading-relaxed text-white/85">
+          Assinatura cancelada. Você não será cobrada de novo, e o Completo continua funcionando
+          até <span className="font-semibold text-white">{formatDate(canceledUntil)}</span>.
+        </p>
+      </div>
+    );
   }
 
   return (
