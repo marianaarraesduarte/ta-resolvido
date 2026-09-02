@@ -3,11 +3,11 @@ import { AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { currency } from "@/lib/tokens";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 // Único lugar do app pensado só pra administradora — lista os alertas de
 // "isso ficou estranho" de todo mundo, pra saber quando algo deu errado sem
 // precisar que a pessoa mande mensagem contando.
-const ADMIN_EMAIL = "marianaarraesduarte@gmail.com";
 
 type AnomalyRow = {
   id: string;
