@@ -21,6 +21,7 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)", "sans-serif"],
         display: ["var(--font-baloo)", "sans-serif"],
+        caveat: ["var(--font-caveat)", "cursive"],
       },
     },
   },
