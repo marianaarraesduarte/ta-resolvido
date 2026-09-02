@@ -109,13 +109,15 @@ export default async function PlanosPage() {
           </div>
         </div>
 
+        {/* No lugar do antigo banner de "preço fundador": ele prometia R$19,90
+            nos 3 primeiros meses, mas o checkout cobrava o preço cheio e não
+            havia cupom nenhum pra aplicar — a pessoa só descobria na hora de
+            pagar. Aqui ficam só promessas que a gente cumpre de verdade. */}
         {plan !== "completo" && (
-          <div className="mt-4 rounded-2xl bg-brand-amber/12 px-5 py-4 text-center">
-            <div className="font-display text-[13.5px] font-bold text-brand-ink">
-              🎉 Preço fundador: R$19,90/mês nos primeiros 3 meses
-            </div>
-            <div className="mt-0.5 text-[12px] text-brand-ink-soft">
-              Depois, volta pro preço cheio (R$29,90/mês).
+          <div className="mt-4 rounded-2xl bg-brand-card px-5 py-4 text-center">
+            <div className="text-[12.5px] leading-relaxed text-brand-ink-soft">
+              7 dias de garantia — se não gostar, devolvemos tudo. E você cancela quando quiser,
+              aqui mesmo, sem precisar justificar nada.
             </div>
           </div>
         )}
