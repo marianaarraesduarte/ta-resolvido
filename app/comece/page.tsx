@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, HelpCircle } from "lucide-react";
 import { TOKENS } from "@/lib/tokens";
 
 type Level = {
@@ -110,27 +110,57 @@ const TRIAGEM_OPTIONS = [
   { title: "Já controlo bem, quero simplificar" },
 ];
 
-/** 2 perguntas de sim/não que já separam certinho nos 3 níveis. */
+/** 3 perguntas, cada resposta pesa pra um nível — o resultado é a média. */
 const QUIZ_QUESTIONS = [
   {
-    question: "Você tem algum jeito de controlar seus gastos hoje?",
-    yes: "Sim, de algum jeito",
-    no: "Não, nunca consegui",
+    question: "Hoje, como você lida com seus gastos?",
+    options: [
+      "Não controlo de nenhum jeito",
+      "Controlo, mas sempre com alguma dúvida",
+      "Controlo bem, sei onde tá cada real",
+    ],
   },
   {
-    question: "Quando você confere, os números costumam bater?",
-    yes: "Sim, bate certinho",
-    no: "Não, nunca sei de onde vem a diferença",
+    question: "Quando pensa em abrir a fatura ou o extrato, o que sente?",
+    options: [
+      "Prefiro nem abrir",
+      "Abro, mas sempre acho algo que não bate",
+      "Abro tranquila, já sei mais ou menos o que vou ver",
+    ],
+  },
+  {
+    question: "O que mais te incomoda hoje?",
+    options: [
+      "Nem sei por onde começar",
+      "Perco tempo tentando entender onde errei",
+      "Faço tudo certo, mas gasto tempo demais nisso",
+    ],
   },
 ];
 
-type View = "triagem" | "quiz" | "steps" | "done";
+const RESULT_COPY = [
+  {
+    title: "Você tá começando do zero",
+    body: "Sem julgamento nenhum — é só o ponto de partida. Os passos abaixo são pra sair do zero sem complicar.",
+  },
+  {
+    title: "Você já controla, só falta achar o furo",
+    body: "Isso é mais comum do que parece — geralmente é um detalhe pequeno que some sem querer. Os passos abaixo mostram onde procurar.",
+  },
+  {
+    title: "Você já manja — só quer menos trabalho",
+    body: "Seu controle já funciona. Os passos abaixo são pra você gastar menos tempo mantendo ele.",
+  },
+];
+
+type View = "triagem" | "quiz" | "result" | "steps" | "done";
 
 export default function ComecePage() {
   const [view, setView] = useState<View>("triagem");
   const [levelIndex, setLevelIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [quizStep, setQuizStep] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
 
   const level = LEVELS[levelIndex];
 
@@ -142,18 +172,21 @@ export default function ComecePage() {
 
   function startQuiz() {
     setQuizStep(0);
+    setQuizAnswers([]);
     setView("quiz");
   }
 
-  function answerQuiz(answer: "yes" | "no") {
-    if (quizStep === 0) {
-      if (answer === "no") {
-        startLevel(0);
-      } else {
-        setQuizStep(1);
-      }
+  function answerQuiz(optionIndex: number) {
+    const answers = [...quizAnswers, optionIndex];
+    if (quizStep < QUIZ_QUESTIONS.length - 1) {
+      setQuizAnswers(answers);
+      setQuizStep((s) => s + 1);
     } else {
-      startLevel(answer === "no" ? 1 : 2);
+      const average = answers.reduce((sum, v) => sum + v, 0) / answers.length;
+      const resultIndex = Math.min(2, Math.round(average));
+      setLevelIndex(resultIndex);
+      setStepIndex(0);
+      setView("result");
     }
   }
 
@@ -214,11 +247,17 @@ export default function ComecePage() {
                 </button>
               ))}
             </div>
+            <div className="mt-7 flex items-center gap-3">
+              <div className="h-px flex-1 bg-brand-line" />
+              <span className="text-[12px] font-semibold uppercase tracking-wide text-brand-ink-soft">ou</span>
+              <div className="h-px flex-1 bg-brand-line" />
+            </div>
             <button
               type="button"
               onClick={startQuiz}
-              className="mx-auto mt-6 block text-[13px] font-medium text-brand-ink-soft underline underline-offset-2"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-plum py-4 font-display text-[15px] font-bold text-white active:scale-[0.98]"
             >
+              <HelpCircle size={18} />
               Não sabe qual é o seu? Faz um teste rápido
             </button>
           </div>
@@ -255,21 +294,53 @@ export default function ComecePage() {
             </div>
 
             <div className="mt-8 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => answerQuiz("no")}
-                className="rounded-2xl border-[1.5px] border-brand-line bg-brand-card p-5 text-left font-display text-[16px] font-bold text-brand-ink active:scale-[0.98]"
-              >
-                {QUIZ_QUESTIONS[quizStep].no}
-              </button>
-              <button
-                type="button"
-                onClick={() => answerQuiz("yes")}
-                className="rounded-2xl border-[1.5px] border-brand-line bg-brand-card p-5 text-left font-display text-[16px] font-bold text-brand-ink active:scale-[0.98]"
-              >
-                {QUIZ_QUESTIONS[quizStep].yes}
-              </button>
+              {QUIZ_QUESTIONS[quizStep].options.map((option, i) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => answerQuiz(i)}
+                  className="rounded-2xl border-[1.5px] border-brand-line bg-brand-card p-5 text-left font-display text-[16px] font-bold text-brand-ink active:scale-[0.98]"
+                >
+                  {option}
+                </button>
+              ))}
             </div>
+          </div>
+        )}
+
+        {view === "result" && (
+          <div className="flex flex-col pt-4 text-center">
+            <div
+              className="mx-auto flex h-[64px] w-[64px] items-center justify-center rounded-full font-display text-[26px] font-extrabold"
+              style={{ background: tintOf(level.accent), color: level.accent }}
+            >
+              {levelIndex + 1}
+            </div>
+            <span className="mt-4 font-display text-[12px] font-bold uppercase tracking-wide" style={{ color: level.accent }}>
+              Seu resultado
+            </span>
+            <h2 className="mt-2 text-balance font-display text-[27px] font-extrabold leading-tight text-brand-ink">
+              {RESULT_COPY[levelIndex].title}
+            </h2>
+            <p className="mx-auto mt-3 max-w-[36ch] text-[15px] leading-relaxed text-brand-ink-soft">
+              {RESULT_COPY[levelIndex].body}
+            </p>
+            <button
+              type="button"
+              onClick={() => setView("steps")}
+              className="mt-8 flex items-center justify-center gap-1.5 rounded-2xl py-4 font-display text-[15px] font-bold text-white active:scale-[0.98]"
+              style={{ background: level.accent }}
+            >
+              Ver meus passos
+              <ArrowRight size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={backToTriagem}
+              className="mt-5 text-[13px] font-medium text-brand-ink-soft underline underline-offset-2"
+            >
+              Refazer o teste
+            </button>
           </div>
         )}
 
