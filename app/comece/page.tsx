@@ -110,12 +110,27 @@ const TRIAGEM_OPTIONS = [
   { title: "Já controlo bem, quero simplificar" },
 ];
 
-type View = "triagem" | "steps" | "done";
+/** 2 perguntas de sim/não que já separam certinho nos 3 níveis. */
+const QUIZ_QUESTIONS = [
+  {
+    question: "Você tem algum jeito de controlar seus gastos hoje?",
+    yes: "Sim, de algum jeito",
+    no: "Não, nunca consegui",
+  },
+  {
+    question: "Quando você confere, os números costumam bater?",
+    yes: "Sim, bate certinho",
+    no: "Não, nunca sei de onde vem a diferença",
+  },
+];
+
+type View = "triagem" | "quiz" | "steps" | "done";
 
 export default function ComecePage() {
   const [view, setView] = useState<View>("triagem");
   const [levelIndex, setLevelIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
+  const [quizStep, setQuizStep] = useState(0);
 
   const level = LEVELS[levelIndex];
 
@@ -123,6 +138,23 @@ export default function ComecePage() {
     setLevelIndex(index);
     setStepIndex(0);
     setView("steps");
+  }
+
+  function startQuiz() {
+    setQuizStep(0);
+    setView("quiz");
+  }
+
+  function answerQuiz(answer: "yes" | "no") {
+    if (quizStep === 0) {
+      if (answer === "no") {
+        startLevel(0);
+      } else {
+        setQuizStep(1);
+      }
+    } else {
+      startLevel(answer === "no" ? 1 : 2);
+    }
   }
 
   function next() {
@@ -181,6 +213,62 @@ export default function ComecePage() {
                   <ArrowRight size={18} className="flex-shrink-0 text-brand-ink-soft" />
                 </button>
               ))}
+            </div>
+            <button
+              type="button"
+              onClick={startQuiz}
+              className="mx-auto mt-6 block text-[13px] font-medium text-brand-ink-soft underline underline-offset-2"
+            >
+              Não sabe qual é o seu? Faz um teste rápido
+            </button>
+          </div>
+        )}
+
+        {view === "quiz" && (
+          <div className="flex flex-col">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={backToTriagem}
+                aria-label="Voltar"
+                className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-xl border border-brand-line bg-brand-card"
+              >
+                <ArrowLeft size={17} className="text-brand-ink" />
+              </button>
+              <span className="font-display text-[12px] font-bold uppercase tracking-wide text-brand-ink-soft">
+                Teste rápido
+              </span>
+            </div>
+
+            <div className="mt-5 flex gap-1.5">
+              {QUIZ_QUESTIONS.map((_, i) => (
+                <span
+                  key={i}
+                  className="h-[5px] flex-1 rounded-full bg-brand-ink-solid"
+                  style={{ opacity: i <= quizStep ? 1 : 0.15 }}
+                />
+              ))}
+            </div>
+
+            <div className="mt-10 text-balance font-display text-[26px] font-extrabold leading-[1.2] text-brand-ink">
+              {QUIZ_QUESTIONS[quizStep].question}
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => answerQuiz("no")}
+                className="rounded-2xl border-[1.5px] border-brand-line bg-brand-card p-5 text-left font-display text-[16px] font-bold text-brand-ink active:scale-[0.98]"
+              >
+                {QUIZ_QUESTIONS[quizStep].no}
+              </button>
+              <button
+                type="button"
+                onClick={() => answerQuiz("yes")}
+                className="rounded-2xl border-[1.5px] border-brand-line bg-brand-card p-5 text-left font-display text-[16px] font-bold text-brand-ink active:scale-[0.98]"
+              >
+                {QUIZ_QUESTIONS[quizStep].yes}
+              </button>
             </div>
           </div>
         )}
