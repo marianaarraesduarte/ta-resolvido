@@ -356,10 +356,17 @@ export async function createEntry(formData: FormData) {
 
   const type = formData.get("type") === "receita" ? "receita" : "despesa";
   const amount = parseCentsInput(String(formData.get("amount") ?? ""));
-  const description = String(formData.get("description") ?? "").trim();
   const entryDate = String(formData.get("entry_date") ?? "");
   const invoiceKind = String(formData.get("invoice_kind") ?? "");
   const isCreditCard = type === "despesa" && (invoiceKind === "existing" || invoiceKind === "new");
+
+  // Marca a compra como "1/N" no mesmo formato que a leitura de fatura já
+  // reconhece (parseInstallmentInfo), pra reaproveitar o agrupamento em
+  // installments sem precisar de um caminho separado pro lançamento manual.
+  const installmentTotal = parseInt(String(formData.get("installment_total") ?? ""), 10);
+  const hasInstallments = isCreditCard && installmentTotal >= 2 && installmentTotal <= 48;
+  const rawDescription = String(formData.get("description") ?? "").trim();
+  const description = hasInstallments ? `${rawDescription} 1/${installmentTotal}` : rawDescription;
 
   let creditSelection: CreditSelection | null = null;
   if (isCreditCard) {
@@ -375,7 +382,7 @@ export async function createEntry(formData: FormData) {
     }
   }
 
-  if (!amount || amount <= 0 || !description || (isCreditCard ? !creditSelection : !entryDate)) {
+  if (!amount || amount <= 0 || !rawDescription || (isCreditCard ? !creditSelection : !entryDate)) {
     redirect("/app/novo?error=1");
   }
 
@@ -716,7 +723,9 @@ Para cada lançamento que você identificar na mensagem, extraia:
 - type: "despesa" se foi um gasto, "receita" se foi dinheiro que entrou
 - date: data no formato YYYY-MM-DD. Resolva termos relativos ("hoje", "ontem", "anteontem") usando ${today} como referência. Se a mensagem não disser nada sobre quando, use ${today}.
 - category: só pra despesas, escolha a categoria que melhor combina entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Se for receita, ou se nenhuma categoria combinar bem, use "${NO_CATEGORY}".
-- isCreditCard: true somente se a mensagem disser claramente que esse gasto específico foi no crédito ou no cartão (ex: "no crédito", "no cartão"). Se for receita, ou se não houver menção a crédito/cartão, use false.
+- isCreditCard: true se a mensagem disser claramente que esse gasto foi no crédito ou no cartão (ex: "no crédito", "no cartão"), ou se mencionar que a compra foi parcelada (ex: "em 2 vezes", "parcelado em 3x", "dividido em 4", "5 parcelas") — parcelamento no Brasil é sempre no cartão de crédito. Se for receita, ou se não houver nenhuma dessas menções, use false.
+
+Se a mensagem mencionar em quantas vezes a compra foi parcelada, adicione ao final de description a marcação "1/N" (N = total de parcelas), no mesmo formato que aparece numa fatura — ex: "Sofá 1/10" pra uma compra "em 10 vezes". Use sempre 1 como número da parcela, já que é uma compra sendo registrada agora, não uma fatura antiga. Se não houver menção a parcelamento, não adicione nada em description.
 
 Se a mensagem descrever mais de um lançamento, retorne todos, um por item. Se não conseguir identificar nenhum lançamento de dinheiro na mensagem, retorne uma lista vazia.`;
 }
@@ -732,7 +741,9 @@ Depois, pra cada lançamento que você identificar na fala, extraia, em items:
 - type: "despesa" se foi um gasto, "receita" se foi dinheiro que entrou
 - date: data no formato YYYY-MM-DD. Resolva termos relativos ("hoje", "ontem", "anteontem") usando ${today} como referência. Se não disser nada sobre quando, use ${today}.
 - category: só pra despesas, escolha a categoria que melhor combina entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Se for receita, ou se nenhuma categoria combinar bem, use "${NO_CATEGORY}".
-- isCreditCard: true somente se a fala disser claramente que esse gasto específico foi no crédito ou no cartão. Se for receita, ou se não houver menção a crédito/cartão, use false.
+- isCreditCard: true se a fala disser claramente que esse gasto foi no crédito ou no cartão, ou se mencionar que a compra foi parcelada (ex: "em 2 vezes", "parcelado em 3x", "dividido em 4", "5 parcelas") — parcelamento no Brasil é sempre no cartão de crédito. Se for receita, ou se não houver nenhuma dessas menções, use false.
+
+Se a fala mencionar em quantas vezes a compra foi parcelada, adicione ao final de description a marcação "1/N" (N = total de parcelas), no mesmo formato que aparece numa fatura — ex: "Sofá 1/10" pra uma compra "em 10 vezes". Use sempre 1 como número da parcela, já que é uma compra sendo registrada agora, não uma fatura antiga. Se não houver menção a parcelamento, não adicione nada em description.
 
 Se a fala descrever mais de um lançamento, retorne todos em items, um por item. Se não conseguir identificar nenhum lançamento de dinheiro, items deve ser uma lista vazia — mas ainda assim preencha transcript com o que você ouviu.`;
 }

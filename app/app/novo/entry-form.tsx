@@ -93,6 +93,7 @@ export function EntryForm({
   const [incomeType, setIncomeType] = useState<"salario" | "outra">("salario");
   const [isCreditCard, setIsCreditCard] = useState(false);
   const [invoiceValue, setInvoiceValue] = useState<InvoiceValue | null>(null);
+  const [installmentTotal, setInstallmentTotal] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [addingCategory, setAddingCategory] = useState(false);
@@ -368,6 +369,7 @@ export function EntryForm({
             onClick={() => {
               setIsCreditCard((v) => !v);
               setInvoiceValue(null);
+              setInstallmentTotal("");
             }}
             className={
               isCreditCard
@@ -407,6 +409,26 @@ export function EntryForm({
               name="due_date"
               value={invoiceValue?.kind === "new" ? invoiceValue.dueDate : ""}
             />
+            <div className="mt-3">
+              <label
+                className="mb-1.5 block text-xs font-medium text-brand-ink-soft"
+                htmlFor="installment_total"
+              >
+                Foi parcelado? Em quantas vezes (deixe em branco se foi à vista)
+              </label>
+              <input
+                id="installment_total"
+                name="installment_total"
+                type="number"
+                inputMode="numeric"
+                min={2}
+                max={48}
+                placeholder="Ex.: 10"
+                value={installmentTotal}
+                onChange={(e) => setInstallmentTotal(e.target.value)}
+                className={`${inputClass} min-w-0`}
+              />
+            </div>
           </>
         ) : (
           <>
