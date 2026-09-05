@@ -583,6 +583,31 @@ export function MonthRuler({
           </div>
         </>
 
+        {hasEntries && (
+          <div className="mb-7 flex flex-wrap items-center gap-3.5">
+            {(
+              [
+                [TOKENS.sage, "entrada"],
+                [TOKENS.coral, "saída"],
+              ] as const
+            ).map(([color, label]) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full" style={{ background: color }} />
+                <span className="text-[11.5px] text-brand-ink-soft">{label}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-1.5">
+              <div
+                className="h-2 w-2 rotate-12 rounded-[2px]"
+                style={{ background: TOKENS.inkSoft }}
+              />
+              <span className="text-[11.5px] text-brand-ink-soft">
+                fatura do cartão (cor do seu cartão)
+              </span>
+            </div>
+          </div>
+        )}
+
         {assistantData && (
           <AssistantCard data={assistantData} comparisonSentence={comparisonSentence ?? null} dayOfMonth={todayDayOfMonth ?? 1} />
         )}
@@ -979,31 +1004,6 @@ export function MonthRuler({
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {hasEntries && (
-          <div className="mb-7 flex flex-wrap items-center gap-3.5">
-            {(
-              [
-                [TOKENS.sage, "entrada"],
-                [TOKENS.coral, "saída"],
-              ] as const
-            ).map(([color, label]) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full" style={{ background: color }} />
-                <span className="text-[11.5px] text-brand-ink-soft">{label}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-1.5">
-              <div
-                className="h-2 w-2 rotate-12 rounded-[2px]"
-                style={{ background: TOKENS.inkSoft }}
-              />
-              <span className="text-[11.5px] text-brand-ink-soft">
-                fatura do cartão (cor do seu cartão)
-              </span>
             </div>
           </div>
         )}
