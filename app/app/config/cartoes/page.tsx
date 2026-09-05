@@ -13,9 +13,17 @@ export default async function CartoesConfigPage() {
 
   const { data } = await supabase
     .from("cards")
-    .select("id, name, color")
+    .select("id, name, color, due_day, closing_day")
     .eq("user_id", user.id)
     .order("name", { ascending: true });
+
+  const cards = (data ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    color: c.color,
+    dueDay: c.due_day,
+    closingDay: c.closing_day,
+  }));
 
   return (
     <div className="flex justify-center px-3 py-7">
@@ -31,11 +39,12 @@ export default async function CartoesConfigPage() {
         </div>
 
         <p className="mb-5 text-[13.5px] leading-snug text-brand-ink-soft">
-          Cadastre seus cartões de crédito com nome e cor pra escolher em qual fatura entra cada
-          compra no crédito.
+          Cadastre o cartão com o dia de vencimento (e o de fechamento, se souber) — depois, ao
+          lançar uma compra no crédito, é só escolher o cartão que o app já acha a fatura certa
+          sozinho.
         </p>
 
-        <CartoesBody cards={data ?? []} />
+        <CartoesBody cards={cards} />
       </div>
     </div>
   );

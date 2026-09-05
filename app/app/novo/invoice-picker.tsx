@@ -220,6 +220,17 @@ export function InvoicePicker({
                 </button>
               );
             })}
+            {value?.kind === "new" && value.cardId === card.id && creatingForCard !== card.id && (
+              <button
+                type="button"
+                onClick={() => startCreating(card.id)}
+                className="flex items-center gap-1.5 rounded-full border px-3 py-2 text-[13px] font-medium text-white"
+                style={{ background: card.color, borderColor: card.color }}
+              >
+                <Check size={12} />
+                Nova em {brDateLabel(value.dueDate)}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => startCreating(card.id)}

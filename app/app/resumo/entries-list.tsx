@@ -22,7 +22,7 @@ import { brDateLabel, dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "../entries-actions";
-import { markInvoicePaid, updateInvoiceCard } from "../novo/actions";
+import { markInvoicePaid, updateInvoiceCard, updateInvoiceDueDate } from "../novo/actions";
 import { SwipeToDelete } from "../swipe-to-delete";
 
 type Category = { id: string; name: string };
@@ -81,7 +81,24 @@ export function EntriesList({
   const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<Set<string>>(new Set());
   const [expandedOptionsIds, setExpandedOptionsIds] = useState<Set<string>>(new Set());
   const [switchingInvoiceId, setSwitchingInvoiceId] = useState<string | null>(null);
+  const [editingDueDateId, setEditingDueDateId] = useState<string | null>(null);
+  const [dueDateDraft, setDueDateDraft] = useState("");
   const confirm = useConfirm();
+
+  async function handleUpdateDueDate(invoiceId: string) {
+    if (!dueDateDraft) return;
+    setProcessing(true);
+    setError("");
+    try {
+      await updateInvoiceDueDate(invoiceId, dueDateDraft);
+      setEditingDueDateId(null);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não deu pra mudar a data agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
 
   async function handleSwitchCard(invoiceId: string, cardId: string) {
     setProcessing(true);
@@ -253,10 +270,14 @@ export function EntriesList({
               const optionsExpanded = expandedOptionsIds.has(invoice.id);
               return (
                 <div key={`invoice-${invoice.id}`} className={borderClass}>
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => toggleInvoiceExpanded(invoice.id)}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") toggleInvoiceExpanded(invoice.id);
+                    }}
+                    className="flex w-full cursor-pointer items-center gap-3 px-4 py-3.5 text-left"
                   >
                     <div
                       className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
@@ -265,9 +286,30 @@ export function EntriesList({
                       <CreditCard size={16} className="text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[14.5px] font-medium text-brand-ink">
-                        {invoice.cardName ?? "Fatura do cartão"} · dia{" "}
-                        {dayOfMonth(invoice.invoiceDate)}
+                      <div className="flex items-center gap-1.5 text-[14.5px] font-medium text-brand-ink">
+                        <span className="truncate">
+                          {invoice.cardName ?? "Fatura do cartão"} · dia{" "}
+                          {dayOfMonth(invoice.invoiceDate)}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={processing}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTogglePaid(invoice.id, !invoice.paidAt);
+                          }}
+                          className="flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold disabled:opacity-60"
+                          style={{
+                            color: invoice.paidAt ? TOKENS.sage : TOKENS.amber,
+                            background: `color-mix(in srgb, ${invoice.paidAt ? TOKENS.sage : TOKENS.amber} 16%, transparent)`,
+                          }}
+                        >
+                          <span
+                            className="h-[5px] w-[5px] flex-shrink-0 rounded-full"
+                            style={{ background: invoice.paidAt ? TOKENS.sage : TOKENS.amber }}
+                          />
+                          {invoice.paidAt ? "paga" : "pendente"}
+                        </button>
                       </div>
                       <div className="text-xs text-brand-ink-soft">
                         {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
@@ -284,41 +326,8 @@ export function EntriesList({
                           : "flex-shrink-0 text-brand-ink-soft transition-transform"
                       }
                     />
-                  </button>
+                  </div>
                   <div className="-mt-2.5 px-4 pb-2.5 pl-16">
-                    <div className="mb-2 flex items-center justify-between gap-2 rounded-xl bg-brand-bg px-3 py-2">
-                      <div
-                        className="flex items-center gap-1.5 text-[11.5px] font-semibold"
-                        style={{ color: invoice.paidAt ? TOKENS.sage : TOKENS.amber }}
-                      >
-                        <span
-                          className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                          style={{ background: invoice.paidAt ? TOKENS.sage : TOKENS.amber }}
-                        />
-                        {invoice.paidAt
-                          ? `Paga em ${brDateLabel(invoice.paidAt.slice(0, 10))}`
-                          : "Ainda não marcada como paga"}
-                      </div>
-                      <button
-                        type="button"
-                        disabled={processing}
-                        onClick={() => handleTogglePaid(invoice.id, !invoice.paidAt)}
-                        className={
-                          invoice.paidAt
-                            ? "flex-shrink-0 text-[11px] font-medium text-brand-ink-soft underline underline-offset-2 disabled:opacity-60"
-                            : "flex flex-shrink-0 items-center gap-1 rounded-full bg-brand-sage px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
-                        }
-                      >
-                        {invoice.paidAt ? (
-                          "Desmarcar"
-                        ) : (
-                          <>
-                            <Check size={11} />
-                            Marcar como paga
-                          </>
-                        )}
-                      </button>
-                    </div>
                     <button
                       type="button"
                       onClick={() => toggleOptionsExpanded(invoice.id)}
@@ -345,6 +354,17 @@ export function EntriesList({
                         >
                           <ArrowLeftRight size={11} />
                           Trocar cartão dessa fatura
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingDueDateId((prev) => (prev === invoice.id ? null : invoice.id));
+                            setDueDateDraft(invoice.invoiceDate);
+                          }}
+                          className="flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[11.5px] font-semibold text-brand-ink"
+                        >
+                          <Pencil size={11} />
+                          Editar vencimento
                         </button>
                         <Link
                           href="/app/parcelas"
@@ -385,6 +405,24 @@ export function EntriesList({
                           })}
                         </div>
                       )}
+                    </div>
+                  )}
+                  {editingDueDateId === invoice.id && (
+                    <div className="mx-4 mb-2.5 flex gap-2 rounded-xl bg-brand-bg px-3 py-2.5">
+                      <input
+                        type="date"
+                        value={dueDateDraft}
+                        onChange={(e) => setDueDateDraft(e.target.value)}
+                        className="min-w-0 flex-1 rounded-lg border border-brand-line bg-brand-card px-2.5 py-1.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                      />
+                      <button
+                        type="button"
+                        disabled={processing}
+                        onClick={() => handleUpdateDueDate(invoice.id)}
+                        className="flex-shrink-0 rounded-lg bg-brand-ink-solid px-3 text-sm font-semibold text-white disabled:opacity-60"
+                      >
+                        OK
+                      </button>
                     </div>
                   )}
                   {expanded && (

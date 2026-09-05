@@ -18,7 +18,8 @@ import { iconForCategory } from "@/lib/category-icons";
 import { formatCentsInput } from "@/lib/tokens";
 import { PhotoTab } from "./photo-tab";
 import { ChatTab } from "./chat-tab";
-import { InvoicePicker, type InvoiceValue } from "./invoice-picker";
+import { type InvoiceValue } from "./invoice-picker";
+import { CardCreditPicker } from "./card-credit-picker";
 
 type Category = { id: string; name: string; icon: string | null };
 
@@ -386,12 +387,12 @@ export function EntryForm({
       <div className="mb-1">
         {isCreditCard && isCompleto ? (
           <>
-            <div className="mb-1.5 text-xs font-medium text-brand-ink-soft">Em qual fatura?</div>
-            <InvoicePicker
+            <div className="mb-1.5 text-xs font-medium text-brand-ink-soft">Qual cartão?</div>
+            <CardCreditPicker
               cards={cards}
+              purchaseDate={defaultDate}
               value={invoiceValue}
               onChange={setInvoiceValue}
-              defaultDate={defaultDate}
             />
             <input type="hidden" name="invoice_kind" value={invoiceValue?.kind ?? ""} />
             <input

@@ -43,12 +43,14 @@ function CardRow({
   onDeleted,
 }: {
   card: Card;
-  onSaved: (id: string, name: string, color: string) => void;
+  onSaved: (id: string, card: Card) => void;
   onDeleted: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(card.name);
   const [color, setColor] = useState(card.color);
+  const [dueDay, setDueDay] = useState(card.dueDay ? String(card.dueDay) : "");
+  const [closingDay, setClosingDay] = useState(card.closingDay ? String(card.closingDay) : "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const confirm = useConfirm();
@@ -58,8 +60,14 @@ function CardRow({
     setSaving(true);
     setError("");
     try {
-      const updated = await updateCard(card.id, name, color);
-      onSaved(card.id, updated.name, updated.color);
+      const updated = await updateCard(
+        card.id,
+        name,
+        color,
+        dueDay ? Number(dueDay) : null,
+        closingDay ? Number(closingDay) : null,
+      );
+      onSaved(card.id, updated);
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não deu pra salvar agora.");
@@ -105,8 +113,13 @@ function CardRow({
             className="flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
         ) : (
-          <div className="flex-1 truncate text-[14.5px] font-medium text-brand-ink">
-            {card.name}
+          <div className="flex-1 truncate">
+            <div className="truncate text-[14.5px] font-medium text-brand-ink">{card.name}</div>
+            <div className="text-[11.5px] text-brand-ink-soft">
+              {card.dueDay
+                ? `Vence dia ${card.dueDay}${card.closingDay ? ` · fecha dia ${card.closingDay}` : ""}`
+                : "Sem dia de vencimento cadastrado"}
+            </div>
           </div>
         )}
 
@@ -127,6 +140,8 @@ function CardRow({
                 setEditing(false);
                 setName(card.name);
                 setColor(card.color);
+                setDueDay(card.dueDay ? String(card.dueDay) : "");
+                setClosingDay(card.closingDay ? String(card.closingDay) : "");
                 setError("");
               }}
               aria-label="Cancelar"
@@ -157,8 +172,38 @@ function CardRow({
         )}
       </div>
       {editing && (
-        <div className="mt-3 pl-[46px]">
+        <div className="mt-3 flex flex-col gap-2.5 pl-[46px]">
           <ColorPicker value={color} onChange={setColor} />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] font-medium text-brand-ink-soft">
+                Dia de vencimento
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={31}
+                value={dueDay}
+                onChange={(e) => setDueDay(e.target.value)}
+                placeholder="Ex.: 10"
+                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] font-medium text-brand-ink-soft">
+                Fechamento (opcional)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={31}
+                value={closingDay}
+                onChange={(e) => setClosingDay(e.target.value)}
+                placeholder="Ex.: 2"
+                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              />
+            </div>
+          </div>
         </div>
       )}
       {error && <p className="mt-1.5 text-xs text-brand-coral">{error}</p>}
@@ -171,11 +216,13 @@ export function CartoesBody({ cards: initial }: { cards: Card[] }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>(CARD_COLORS[0].hex);
+  const [newDueDay, setNewDueDay] = useState("");
+  const [newClosingDay, setNewClosingDay] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
-  function handleSaved(id: string, name: string, color: string) {
-    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, name, color } : c)));
+  function handleSaved(id: string, card: Card) {
+    setCards((prev) => prev.map((c) => (c.id === id ? card : c)));
   }
 
   function handleDeleted(id: string) {
@@ -187,10 +234,17 @@ export function CartoesBody({ cards: initial }: { cards: Card[] }) {
     setCreating(true);
     setError("");
     try {
-      const created = await createCard(newName, newColor);
+      const created = await createCard(
+        newName,
+        newColor,
+        newDueDay ? Number(newDueDay) : null,
+        newClosingDay ? Number(newClosingDay) : null,
+      );
       setCards((prev) => (prev.some((c) => c.id === created.id) ? prev : [...prev, created]));
       setNewName("");
       setNewColor(CARD_COLORS[0].hex);
+      setNewDueDay("");
+      setNewClosingDay("");
       setAdding(false);
     } catch {
       setError("Não deu pra criar esse cartão agora.");
@@ -235,6 +289,40 @@ export function CartoesBody({ cards: initial }: { cards: Card[] }) {
             }}
           />
           <ColorPicker value={newColor} onChange={setNewColor} />
+          <div className="mt-3 flex gap-2">
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] font-medium text-brand-ink-soft">
+                Dia de vencimento
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={31}
+                value={newDueDay}
+                onChange={(e) => setNewDueDay(e.target.value)}
+                placeholder="Ex.: 10"
+                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] font-medium text-brand-ink-soft">
+                Fechamento (opcional)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={31}
+                value={newClosingDay}
+                onChange={(e) => setNewClosingDay(e.target.value)}
+                placeholder="Ex.: 2"
+                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+              />
+            </div>
+          </div>
+          <p className="mt-1.5 text-[11px] leading-snug text-brand-ink-soft">
+            Não sabe o fechamento de cabeça? Deixe em branco — a gente assume que fecha uns 7 dias
+            antes do vencimento.
+          </p>
           <button
             type="button"
             disabled={creating}

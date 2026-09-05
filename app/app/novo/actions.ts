@@ -226,6 +226,8 @@ export type CardWithInvoices = {
   id: string;
   name: string;
   color: string;
+  dueDay: number | null;
+  closingDay: number | null;
   invoices: { id: string; dueDate: string }[];
 };
 
@@ -237,7 +239,11 @@ export async function listCardsWithInvoices(): Promise<CardWithInvoices[]> {
   if (!user) return [];
 
   const [{ data: cards }, { data: invoices }] = await Promise.all([
-    supabase.from("cards").select("id, name, color").eq("user_id", user.id).order("name"),
+    supabase
+      .from("cards")
+      .select("id, name, color, due_day, closing_day")
+      .eq("user_id", user.id)
+      .order("name"),
     supabase
       .from("card_invoices")
       .select("id, card_id, invoice_date")
@@ -247,7 +253,11 @@ export async function listCardsWithInvoices(): Promise<CardWithInvoices[]> {
   ]);
 
   return (cards ?? []).map((card) => ({
-    ...card,
+    id: card.id,
+    name: card.name,
+    color: card.color,
+    dueDay: card.due_day,
+    closingDay: card.closing_day,
     invoices: (invoices ?? [])
       .filter((inv) => inv.card_id === card.id)
       .map((inv) => ({ id: inv.id, dueDate: inv.invoice_date })),
@@ -321,6 +331,36 @@ export async function updateInvoiceCard(invoiceId: string, cardId: string): Prom
   if (error) {
     throw new Error("Não deu pra trocar o cartão dessa fatura agora.");
   }
+}
+
+// Pra quando o vencimento cai num dia sem expediente (ex: domingo) só num mês
+// específico — muda a data só dessa fatura, sem mexer no dia de vencimento
+// cadastrado no cartão (que continua valendo pras próximas). Os lançamentos
+// já salvos nessa fatura têm entry_date == invoice_date (é assim que
+// createEntry/saveRecognizedItems gravam), então precisam mudar junto —
+// senão eles somem do mês novo da fatura e ficam "fantasmas" no mês antigo.
+export async function updateInvoiceDueDate(invoiceId: string, dueDate: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { error } = await supabase
+    .from("card_invoices")
+    .update({ invoice_date: dueDate })
+    .eq("id", invoiceId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error("Não deu pra mudar a data dessa fatura agora.");
+  }
+
+  await supabase
+    .from("entries")
+    .update({ entry_date: dueDate })
+    .eq("card_invoice_id", invoiceId)
+    .eq("user_id", user.id);
 }
 
 // Lançar a compra e pagar a fatura são coisas diferentes — isso só marca

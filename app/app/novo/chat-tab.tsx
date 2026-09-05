@@ -33,7 +33,8 @@ import {
   type CardWithInvoices,
   type ChatItem,
 } from "./actions";
-import { InvoicePicker, invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
+import { invoiceValueToSelection, type InvoiceValue } from "./invoice-picker";
+import { CardCreditPicker } from "./card-credit-picker";
 
 const CATEGORY_SUGGESTIONS = ["Mercado", "Transporte", "Casa", "Lazer", "Saúde"];
 const FIXED_EXPENSE_SUGGESTIONS = ["Aluguel", "Internet", "Água", "Luz"];
@@ -129,6 +130,8 @@ export function ChatTab({
   const [creatingFixed, setCreatingFixed] = useState(false);
   const [newCardName, setNewCardName] = useState("");
   const [newCardColor, setNewCardColor] = useState<string>(CARD_COLORS[0].hex);
+  const [newCardDueDay, setNewCardDueDay] = useState("");
+  const [newCardClosingDay, setNewCardClosingDay] = useState("");
   const [creatingCard, setCreatingCard] = useState(false);
   const [guideError, setGuideError] = useState("");
 
@@ -187,8 +190,15 @@ export function ChatTab({
     setCreatingCard(true);
     setGuideError("");
     try {
-      await createCard(newCardName, newCardColor);
+      await createCard(
+        newCardName,
+        newCardColor,
+        newCardDueDay ? Number(newCardDueDay) : null,
+        newCardClosingDay ? Number(newCardClosingDay) : null,
+      );
       setNewCardName("");
+      setNewCardDueDay("");
+      setNewCardClosingDay("");
       router.refresh();
     } catch {
       setGuideError("Não deu pra criar esse cartão agora.");
@@ -512,6 +522,26 @@ export function ChatTab({
                   </button>
                 ))}
               </div>
+              <div className="mb-2 flex gap-1.5">
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={newCardDueDay}
+                  onChange={(e) => setNewCardDueDay(e.target.value)}
+                  placeholder="Dia de vencimento"
+                  className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                />
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={newCardClosingDay}
+                  onChange={(e) => setNewCardClosingDay(e.target.value)}
+                  placeholder="Fechamento (opcional)"
+                  className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                />
+              </div>
               <button
                 type="button"
                 disabled={creatingCard}
@@ -688,13 +718,13 @@ export function ChatTab({
                         {item.isCreditCard && isCompleto && (
                           <div className="mt-1.5">
                             <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-wide text-brand-ink-soft">
-                              Em qual fatura?
+                              Qual cartão?
                             </div>
-                            <InvoicePicker
+                            <CardCreditPicker
                               cards={cards}
+                              purchaseDate={item.date || toDateKey(new Date())}
                               value={item.invoiceValue}
                               onChange={(v) => updateItemInvoiceValue(entry.id, item.id, v)}
-                              defaultDate={toDateKey(new Date())}
                             />
                           </div>
                         )}
