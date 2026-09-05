@@ -60,7 +60,7 @@ create table if not exists public.entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   type text not null check (type in ('despesa', 'receita')),
-  amount numeric(12, 2) not null check (amount > 0),
+  amount numeric(12, 2) not null check (amount <> 0),
   description text not null,
   entry_date date not null,
   category_id uuid references public.categories (id) on delete set null,
