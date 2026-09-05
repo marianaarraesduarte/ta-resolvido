@@ -18,12 +18,12 @@ import {
   X,
 } from "lucide-react";
 import { currency, dotSizeForAmount, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
-import { brDateLabel, dayOfMonth } from "@/lib/date";
+import { dayOfMonth } from "@/lib/date";
 import type { AssistantData } from "@/lib/assistant-data";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
-import { deleteCardInvoice, markInvoicePaid, updateInvoiceCard } from "./novo/actions";
+import { deleteCardInvoice, markInvoicePaid, updateInvoiceCard, updateInvoiceDueDate } from "./novo/actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthStrip } from "./month-strip";
 import { AssistantCard } from "./assistant-card";
@@ -111,6 +111,8 @@ export function MonthRuler({
   const [processing, setProcessing] = useState(false);
   const [bulkError, setBulkError] = useState("");
   const [switchingCard, setSwitchingCard] = useState(false);
+  const [editingDueDate, setEditingDueDate] = useState(false);
+  const [dueDateDraft, setDueDateDraft] = useState("");
   const todayRef = useRef<HTMLDivElement>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const swipeLocked = useRef<"h" | "v" | null>(null);
@@ -198,6 +200,21 @@ export function MonthRuler({
       router.refresh();
     } catch (e) {
       setBulkError(e instanceof Error ? e.message : "Não deu pra atualizar essa fatura agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleUpdateDueDate(invoiceId: string) {
+    if (!dueDateDraft) return;
+    setProcessing(true);
+    setBulkError("");
+    try {
+      await updateInvoiceDueDate(invoiceId, dueDateDraft);
+      setEditingDueDate(false);
+      router.refresh();
+    } catch (e) {
+      setBulkError(e instanceof Error ? e.message : "Não deu pra mudar a data agora.");
     } finally {
       setProcessing(false);
     }
@@ -699,10 +716,28 @@ export function MonthRuler({
         {selectedInvoice && (
           <div className="mb-4 rounded-2xl bg-brand-card px-4 py-3.5">
             <div className="mb-2.5 flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1 text-xs text-brand-ink-soft">
-                {selectedInvoice.cardName ?? "Fatura do cartão"} · dia{" "}
-                {dayOfMonth(selectedInvoice.invoiceDate)} · {selectedInvoice.items.length}{" "}
-                {selectedInvoice.items.length === 1 ? "compra" : "compras"}
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-brand-ink-soft">
+                <span className="truncate">
+                  {selectedInvoice.cardName ?? "Fatura do cartão"} · dia{" "}
+                  {dayOfMonth(selectedInvoice.invoiceDate)} · {selectedInvoice.items.length}{" "}
+                  {selectedInvoice.items.length === 1 ? "compra" : "compras"}
+                </span>
+                <button
+                  type="button"
+                  disabled={processing}
+                  onClick={() => handleTogglePaid(selectedInvoice.id, !selectedInvoice.paidAt)}
+                  className="flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold disabled:opacity-60"
+                  style={{
+                    color: selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber,
+                    background: `color-mix(in srgb, ${selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber} 16%, transparent)`,
+                  }}
+                >
+                  <span
+                    className="h-[5px] w-[5px] flex-shrink-0 rounded-full"
+                    style={{ background: selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber }}
+                  />
+                  {selectedInvoice.paidAt ? "paga" : "pendente"}
+                </button>
               </div>
               {selectedInvoice.items.length === 0 ? (
                 <button
@@ -730,40 +765,6 @@ export function MonthRuler({
               )}
             </div>
 
-            <div className="mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-brand-bg px-3 py-2.5">
-              <div
-                className="flex items-center gap-1.5 text-[12px] font-semibold"
-                style={{ color: selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber }}
-              >
-                <span
-                  className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                  style={{ background: selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber }}
-                />
-                {selectedInvoice.paidAt
-                  ? `Paga em ${brDateLabel(selectedInvoice.paidAt.slice(0, 10))}`
-                  : "Ainda não marcada como paga"}
-              </div>
-              <button
-                type="button"
-                disabled={processing}
-                onClick={() => handleTogglePaid(selectedInvoice.id, !selectedInvoice.paidAt)}
-                className={
-                  selectedInvoice.paidAt
-                    ? "flex-shrink-0 text-[11.5px] font-medium text-brand-ink-soft underline underline-offset-2 disabled:opacity-60"
-                    : "flex flex-shrink-0 items-center gap-1 rounded-full bg-brand-sage px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
-                }
-              >
-                {selectedInvoice.paidAt ? (
-                  "Desmarcar"
-                ) : (
-                  <>
-                    <Check size={12} />
-                    Marcar como paga
-                  </>
-                )}
-              </button>
-            </div>
-
             <div className="mb-2.5 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -777,6 +778,17 @@ export function MonthRuler({
                 <ArrowLeftRight size={12} />
                 Trocar cartão dessa fatura
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDueDate((prev) => !prev);
+                  setDueDateDraft(selectedInvoice.invoiceDate);
+                }}
+                className="flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
+              >
+                <Pencil size={12} />
+                Editar vencimento
+              </button>
               <Link
                 href="/app/parcelas"
                 className="flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-bg px-3 py-1.5 text-[12px] font-semibold text-brand-ink"
@@ -785,6 +797,24 @@ export function MonthRuler({
                 Ver parcelas
               </Link>
             </div>
+            {editingDueDate && (
+              <div className="mb-2.5 flex gap-2 rounded-xl bg-brand-bg px-3 py-2.5">
+                <input
+                  type="date"
+                  value={dueDateDraft}
+                  onChange={(e) => setDueDateDraft(e.target.value)}
+                  className="min-w-0 flex-1 rounded-lg border border-brand-line bg-brand-card px-2.5 py-1.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                />
+                <button
+                  type="button"
+                  disabled={processing}
+                  onClick={() => handleUpdateDueDate(selectedInvoice.id)}
+                  className="flex-shrink-0 rounded-lg bg-brand-ink-solid px-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  OK
+                </button>
+              </div>
+            )}
             {switchingCard && (
               <div className="mb-2.5 rounded-xl bg-brand-bg px-3 py-2.5">
                 <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink-soft">
