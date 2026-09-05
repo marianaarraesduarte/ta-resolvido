@@ -10,6 +10,7 @@ import {
   ImagePlus,
   ListChecks,
   Repeat,
+  RefreshCcw,
   RotateCw,
   Square,
   SquareCheck,
@@ -159,11 +160,17 @@ export function CardInvoiceReview({
     );
   }
 
+  function toggleRefund(id: string) {
+    setItems((prev) =>
+      prev ? prev.map((it) => (it.id === id ? { ...it, isRefund: !it.isRefund } : it)) : prev,
+    );
+  }
+
   function matchedFixedExpense(description: string, amount: number): string | null {
     return matchFixedExpense(description, amount, fixedExpenses);
   }
 
-  const total = (items ?? []).reduce((sum, it) => sum + it.amount, 0);
+  const total = (items ?? []).reduce((sum, it) => sum + (it.isRefund ? -it.amount : it.amount), 0);
 
   const [anomaly, setAnomaly] = useState<AnomalyResult | null>(null);
   const [flaggingAnomaly, setFlaggingAnomaly] = useState(false);
@@ -223,7 +230,11 @@ export function CardInvoiceReview({
     setError("");
     try {
       await saveCardInvoice(
-        items.map(({ description, amount, category }) => ({ description, amount, category })),
+        items.map(({ description, amount, category, isRefund }) => ({
+          description,
+          amount: isRefund ? -amount : amount,
+          category,
+        })),
         selection,
       );
       router.push(`/app?saved=lote&count=${items.length}`);
@@ -355,8 +366,18 @@ export function CardInvoiceReview({
                         )}
                       </button>
                     )}
-                    <span className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-coral/15">
-                      <ArrowDownCircle size={14} className="text-brand-coral" />
+                    <span
+                      className={
+                        item.isRefund
+                          ? "flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-sage/15"
+                          : "flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-brand-coral/15"
+                      }
+                    >
+                      {item.isRefund ? (
+                        <RefreshCcw size={13} className="text-brand-sage" />
+                      ) : (
+                        <ArrowDownCircle size={14} className="text-brand-coral" />
+                      )}
                     </span>
                     <div className="min-w-0 flex-1">
                       <input
@@ -385,6 +406,18 @@ export function CardInvoiceReview({
                             fixo
                           </span>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => toggleRefund(item.id)}
+                          className={
+                            item.isRefund
+                              ? "inline-flex items-center gap-1 rounded-full border border-brand-sage bg-brand-sage/10 px-2 py-1 text-[10.5px] font-semibold text-brand-sage"
+                              : "inline-flex items-center gap-1 rounded-full border border-brand-line px-2 py-1 text-[10.5px] font-medium text-brand-ink-soft"
+                          }
+                        >
+                          <RefreshCcw size={10} className="flex-shrink-0" />
+                          estorno
+                        </button>
                       </div>
                       {duplicateIds.has(item.id) && (
                         <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-coral">
@@ -393,14 +426,24 @@ export function CardInvoiceReview({
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-ink">
-                      -
+                    <div
+                      className={
+                        item.isRefund
+                          ? "flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-sage"
+                          : "flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-ink"
+                      }
+                    >
+                      {item.isRefund ? "+" : "-"}
                       <input
                         value={item.amountText}
                         onChange={(e) => updateItemAmountText(item.id, e.target.value)}
                         inputMode="decimal"
                         aria-label="Valor"
-                        className="w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
+                        className={
+                          item.isRefund
+                            ? "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-sage outline-none focus:border-brand-line focus:bg-brand-card"
+                            : "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
+                        }
                       />
                     </div>
                     <button

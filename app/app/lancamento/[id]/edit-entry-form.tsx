@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDownCircle, ArrowUpCircle, ChevronLeft, CreditCard, Trash2 } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronLeft, CreditCard, RefreshCcw, Trash2 } from "lucide-react";
 import { amountToInputValue, formatCentsInput, parseCentsInput } from "@/lib/tokens";
 import { useConfirm } from "../../confirm-dialog";
 import { updateEntry, deleteEntry } from "./actions";
@@ -35,7 +35,8 @@ export function EditEntryForm({
   separateByAccount: boolean;
 }) {
   const router = useRouter();
-  const [amount, setAmount] = useState(amountToInputValue(entry.amount));
+  const [amount, setAmount] = useState(amountToInputValue(Math.abs(entry.amount)));
+  const [isRefund, setIsRefund] = useState(entry.amount < 0);
   const [description, setDescription] = useState(entry.description);
   const [entryDate, setEntryDate] = useState(entry.entry_date);
   const [categoryId, setCategoryId] = useState(entry.category_id ?? "");
@@ -53,7 +54,7 @@ export function EditEntryForm({
     setError("");
     try {
       await updateEntry(entry.id, {
-        amount: parseCentsInput(amount),
+        amount: parseCentsInput(amount) * (isRefund ? -1 : 1),
         description,
         entry_date: entryDate,
         category_id: entry.type === "despesa" ? categoryId || null : null,
@@ -132,6 +133,20 @@ export function EditEntryForm({
               className={`${inputClass} pl-9`}
             />
           </div>
+          {entry.card_invoice_id && (
+            <button
+              type="button"
+              onClick={() => setIsRefund((v) => !v)}
+              className={
+                isRefund
+                  ? "mt-2 flex items-center gap-1.5 rounded-full border border-brand-sage bg-brand-sage/10 px-3 py-1.5 text-[12.5px] font-semibold text-brand-sage"
+                  : "mt-2 flex items-center gap-1.5 rounded-full border border-brand-line bg-brand-card px-3 py-1.5 text-[12.5px] font-medium text-brand-ink-soft"
+              }
+            >
+              <RefreshCcw size={12} />
+              {isRefund ? "Estorno/devolução — reduz a fatura" : "Foi estorno ou devolução?"}
+            </button>
+          )}
         </div>
 
         <div className="mb-4">

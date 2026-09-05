@@ -1099,6 +1099,7 @@ export type RecognizedCardItem = {
   description: string;
   amount: number;
   category: string | null;
+  isRefund: boolean;
 };
 
 function cardInvoiceSchema(categoryNames: string[]) {
@@ -1110,8 +1111,9 @@ function cardInvoiceSchema(categoryNames: string[]) {
         description: { type: Type.STRING },
         amount: { type: Type.NUMBER },
         category: { type: Type.STRING, enum: [...categoryNames, NO_CATEGORY] },
+        isRefund: { type: Type.BOOLEAN },
       },
-      required: ["description", "amount", "category"],
+      required: ["description", "amount", "category", "isRefund"],
     },
   };
 }
@@ -1121,8 +1123,9 @@ function cardInvoicePrompt(categoryNames: string[]): string {
 
 Para cada compra, extraia:
 - description: descrição curta (nome do estabelecimento)
-- amount: valor em reais, sempre um número positivo
+- amount: valor em reais, sempre um número positivo — mesmo pra estorno/devolução (o sinal é indicado só por isRefund, não por amount)
 - category: escolha a categoria que melhor descreve o estabelecimento entre exatamente estas opções: ${categoryNames.join(", ") || "(nenhuma cadastrada)"}. Use seu conhecimento geral sobre o tipo de estabelecimento pra decidir, mesmo que o nome seja abreviado ou tenha código (ex: "UBER *TRIP", "IFD*IFOOD"). Se nenhuma categoria se encaixar bem, use "${NO_CATEGORY}".
+- isRefund: true se essa linha for um estorno, devolução, crédito ou ajuste a favor — normalmente aparece com sinal negativo (ex: "-45,00") ou entre parênteses na fatura, e reduz o total em vez de aumentar. false pras compras normais.
 
 Se a compra for parcelada (a fatura mostrar algo como "3/10", "PARC 3/10" ou "3 de 10" junto do nome), mantenha essa marcação exatamente como aparece, no final de description — não invente parcelamento que não estiver escrito na fatura.
 
