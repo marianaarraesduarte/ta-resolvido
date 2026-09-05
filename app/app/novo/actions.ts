@@ -85,10 +85,25 @@ async function resolveInvoiceId(
     .select("id")
     .single();
 
-  if (error || !created) {
-    throw new Error("Não deu pra salvar a fatura agora.");
+  if (created) return created.id;
+
+  // Corrida: duas faturas novas do mesmo cartão+data podem ser criadas ao
+  // mesmo tempo (ex: duas fotos da fatura salvas em sequência rápida) — a
+  // constraint única barra a segunda, então reaproveita a que ganhou em vez
+  // de falhar (ou pior, criar duas de qualquer jeito).
+  if (error?.code === "23505") {
+    const { data: afterRace } = await supabase
+      .from("card_invoices")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("card_id", selection.cardId)
+      .eq("invoice_date", selection.dueDate)
+      .limit(1)
+      .maybeSingle();
+    if (afterRace) return afterRace.id;
   }
-  return created.id;
+
+  throw new Error("Não deu pra salvar a fatura agora.");
 }
 
 // Depois de salvar lançamentos no crédito, vê se a descrição termina com uma
