@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { entryAmountError } from "@/lib/entry-amount";
 
 export async function updateEntry(
   id: string,
@@ -26,19 +27,18 @@ export async function updateEntry(
     throw new Error("Confere os campos antes de salvar.");
   }
 
-  // Valor negativo só faz sentido pra um estorno/devolução dentro de uma
-  // fatura de cartão — confere isso no servidor, não só na tela, já que é a
-  // única situação em que o app entende um "gasto" reduzindo o total.
-  if (data.amount < 0) {
+  // A regra de valor mora em lib/entry-amount.ts, compartilhada com os outros
+  // caminhos que salvam lançamento — antes cada um tinha a sua, e o de
+  // foto/chat/áudio não tinha nenhuma.
+  {
     const { data: existing } = await supabase
       .from("entries")
       .select("card_invoice_id")
       .eq("id", id)
       .eq("user_id", user.id)
       .single();
-    if (!existing?.card_invoice_id) {
-      throw new Error("Valor negativo só é permitido em lançamentos dentro de uma fatura (estorno).");
-    }
+    const amountError = entryAmountError(data.amount, Boolean(existing?.card_invoice_id));
+    if (amountError) throw new Error(amountError);
   }
 
   const { error } = await supabase

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { parseCentsInput } from "@/lib/tokens";
+import { entryAmountError } from "@/lib/entry-amount";
 import { suggestCategoryName } from "@/lib/category-keywords";
 import { isCompleto, isRecognitionLimitReached, recognitionAllowance } from "@/lib/plan";
 import { isPossibleDuplicate } from "@/lib/duplicate-check";
@@ -966,6 +967,15 @@ export async function saveRecognizedItems(
     throw new Error("Confere as datas antes de salvar.");
   }
 
+  // Os valores vêm da leitura por IA e passam pelo cliente, então são
+  // conferidos aqui também. Sem isso, um estorno mal lido num extrato virava
+  // um gasto negativo solto, fora de fatura — o exato caso que a regra do
+  // lançamento manual já barrava.
+  for (const item of items) {
+    const amountError = entryAmountError(item.amount, Boolean(item.creditSelection));
+    if (amountError) throw new Error(amountError);
+  }
+
   const { data: categories } = await supabase
     .from("categories")
     .select("id, name")
@@ -1291,6 +1301,13 @@ export async function saveCardInvoice(
 
   if (items.length === 0) {
     throw new Error("Nada pra salvar.");
+  }
+
+  // Tudo aqui entra numa fatura, então negativo é permitido — é o estorno que
+  // a leitura da fatura por foto reconhece. Zero continua barrado.
+  for (const item of items) {
+    const amountError = entryAmountError(item.amount, true);
+    if (amountError) throw new Error(amountError);
   }
 
   const invoiceId = await resolveInvoiceId(supabase, user.id, selection);
