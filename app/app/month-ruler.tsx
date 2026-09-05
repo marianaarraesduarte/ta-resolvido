@@ -23,7 +23,12 @@ import type { AssistantData } from "@/lib/assistant-data";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
 import { useConfirm } from "./confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "./entries-actions";
-import { deleteCardInvoice, markInvoicePaid, updateInvoiceCard, updateInvoiceDueDate } from "./novo/actions";
+import {
+  deleteInvoiceWithEntries,
+  markInvoicePaid,
+  updateInvoiceCard,
+  updateInvoiceDueDate,
+} from "./novo/actions";
 import { clearMonthSelection, goToMonth } from "./month-actions";
 import { MonthStrip } from "./month-strip";
 import { AssistantCard } from "./assistant-card";
@@ -220,14 +225,18 @@ export function MonthRuler({
     }
   }
 
-  async function handleDeleteInvoice(invoiceId: string) {
-    const confirmed = await confirm("Excluir essa fatura vazia? Essa ação não pode ser desfeita.");
+  async function handleDeleteInvoice(invoiceId: string, itemCount: number) {
+    const confirmed = await confirm(
+      itemCount > 0
+        ? `Excluir essa fatura inteira, com ${itemCount} ${itemCount === 1 ? "lançamento" : "lançamentos"}? Essa ação não pode ser desfeita.`
+        : "Excluir essa fatura vazia? Essa ação não pode ser desfeita.",
+    );
     if (!confirmed) return;
 
     setProcessing(true);
     setBulkError("");
     try {
-      await deleteCardInvoice(invoiceId);
+      await deleteInvoiceWithEntries(invoiceId);
       selectAndReset(null);
       router.refresh();
     } catch (e) {
@@ -764,17 +773,7 @@ export function MonthRuler({
                   {selectedInvoice.paidAt ? "paga" : "pendente"}
                 </button>
               </div>
-              {selectedInvoice.items.length === 0 ? (
-                <button
-                  type="button"
-                  disabled={processing}
-                  onClick={() => handleDeleteInvoice(selectedInvoice.id)}
-                  className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-coral px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
-                >
-                  <Trash2 size={12} />
-                  Excluir fatura vazia
-                </button>
-              ) : (
+              {selectedInvoice.items.length > 0 && (
                 <button
                   type="button"
                   onClick={() => (selecting ? exitSelection() : setSelecting(true))}
@@ -821,6 +820,15 @@ export function MonthRuler({
                 <Layers size={12} />
                 Ver parcelas
               </Link>
+              <button
+                type="button"
+                disabled={processing}
+                onClick={() => handleDeleteInvoice(selectedInvoice.id, selectedInvoice.items.length)}
+                className="flex items-center gap-1.5 rounded-full border border-brand-coral bg-brand-coral/10 px-3 py-1.5 text-[12px] font-semibold text-brand-coral disabled:opacity-60"
+              >
+                <Trash2 size={12} />
+                Excluir fatura inteira
+              </button>
             </div>
             {editingDueDate && (
               <div className="mb-2.5 flex gap-2 rounded-xl bg-brand-bg px-3 py-2.5">
@@ -940,7 +948,7 @@ export function MonthRuler({
         )}
 
         {selecting && selectedIds.size > 0 && (
-          <div className="fixed inset-x-0 bottom-[68px] z-20 flex justify-center px-3">
+          <div className="fixed inset-x-0 bottom-[132px] z-30 flex justify-center px-3">
             <div className="w-full max-w-sm rounded-2xl bg-brand-ink-solid px-4 py-3.5 shadow-lg">
               {pickingCategory ? (
                 <div>

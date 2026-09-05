@@ -22,7 +22,12 @@ import { brDateLabel, dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
 import { bulkDeleteEntries, bulkSetCategory } from "../entries-actions";
-import { markInvoicePaid, updateInvoiceCard, updateInvoiceDueDate } from "../novo/actions";
+import {
+  deleteInvoiceWithEntries,
+  markInvoicePaid,
+  updateInvoiceCard,
+  updateInvoiceDueDate,
+} from "../novo/actions";
 import { SwipeToDelete } from "../swipe-to-delete";
 
 type Category = { id: string; name: string };
@@ -122,6 +127,26 @@ export function EntriesList({
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não deu pra atualizar essa fatura agora.");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleDeleteInvoice(invoiceId: string, itemCount: number) {
+    const confirmed = await confirm(
+      itemCount > 0
+        ? `Excluir essa fatura inteira, com ${itemCount} ${itemCount === 1 ? "lançamento" : "lançamentos"}? Essa ação não pode ser desfeita.`
+        : "Excluir essa fatura vazia? Essa ação não pode ser desfeita.",
+    );
+    if (!confirmed) return;
+
+    setProcessing(true);
+    setError("");
+    try {
+      await deleteInvoiceWithEntries(invoiceId);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não deu pra excluir agora.");
     } finally {
       setProcessing(false);
     }
@@ -373,6 +398,15 @@ export function EntriesList({
                           <Layers size={11} />
                           Ver parcelas
                         </Link>
+                        <button
+                          type="button"
+                          disabled={processing}
+                          onClick={() => handleDeleteInvoice(invoice.id, invoice.items.length)}
+                          className="flex items-center gap-1.5 rounded-full border border-brand-coral bg-brand-coral/10 px-3 py-1.5 text-[11.5px] font-semibold text-brand-coral disabled:opacity-60"
+                        >
+                          <Trash2 size={11} />
+                          Excluir fatura inteira
+                        </button>
                       </div>
                     )}
                   </div>

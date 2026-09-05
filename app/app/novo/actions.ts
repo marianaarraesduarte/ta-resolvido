@@ -298,24 +298,15 @@ export async function checkExistingInvoiceDate(cardId: string, invoiceDate: stri
   return !!data;
 }
 
-// Só deixa excluir uma fatura vazia (sem lançamentos) — se tiver compras
-// dentro, é pra excluir as compras primeiro, não a fatura por baixo delas.
-export async function deleteCardInvoice(id: string): Promise<void> {
+// Apaga a fatura inteira — os lançamentos dentro dela saem junto (entries.
+// card_invoice_id tem "on delete cascade"), pra quem subiu a foto errada e
+// quer refazer do zero sem precisar excluir compra por compra antes.
+export async function deleteInvoiceWithEntries(id: string): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Não autenticado.");
-
-  const { count } = await supabase
-    .from("entries")
-    .select("id", { count: "exact", head: true })
-    .eq("card_invoice_id", id)
-    .eq("user_id", user.id);
-
-  if ((count ?? 0) > 0) {
-    throw new Error("Essa fatura ainda tem compras — exclua elas primeiro.");
-  }
 
   const { error } = await supabase
     .from("card_invoices")
