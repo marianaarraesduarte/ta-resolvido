@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { monthLabel, toDateKey } from "@/lib/date";
 import type { MonthlyInsightSections } from "@/lib/monthly-insight";
 import { calculateSaldo } from "@/lib/saldo";
+import { fetchEntriesWithEffectiveDate } from "@/lib/saldo-entries";
 import { InsightThread } from "./insight-thread";
 import { PartialInsightButton } from "./partial-insight-button";
 import { Upsell } from "../upsell";
@@ -87,18 +88,16 @@ export default async function InsightsPage() {
     const latestMonthEnd = toDateKey(
       new Date(latestMonthStart.getFullYear(), latestMonthStart.getMonth() + 1, 0),
     );
-    const { data: balanceEntries } = await supabase
-      .from("entries")
-      .select("type, amount, income_type, entry_date")
-      .eq("user_id", user.id)
-      .gte("entry_date", initialBalanceDate)
-      .lte("entry_date", latestMonthEnd);
-
-    const rows = balanceEntries ?? [];
+    const rows = await fetchEntriesWithEffectiveDate(
+      supabase,
+      user.id,
+      initialBalanceDate,
+      latestMonthEnd,
+    );
     for (const insight of insights) {
       const monthStart = new Date(`${insight.month_start}T00:00:00`);
       const monthEnd = toDateKey(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0));
-      const relevant = rows.filter((e) => e.entry_date <= monthEnd);
+      const relevant = rows.filter((e) => e.effectiveDate <= monthEnd);
       saldoEntriesByInsightId.set(
         insight.id,
         calculateSaldo(relevant, { initialBalance, salaryOnly }),

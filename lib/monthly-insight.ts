@@ -3,6 +3,7 @@ import { extractFromText, Type } from "@/lib/gemini";
 import { toDateKey, monthLabel, daysInMonth } from "@/lib/date";
 import { comparePeriods, type SpendEntry } from "@/lib/period-comparison";
 import { currency } from "@/lib/tokens";
+import { effectiveDateOf, fetchPaidInvoiceDates } from "@/lib/saldo-entries";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -12,6 +13,8 @@ type EntryRow = {
   categories: { name: string } | null;
   investment_goal_id: string | null;
   income_type: string | null;
+  entry_date: string;
+  card_invoice_id: string | null;
 };
 
 export type CategoriaStat = { nome: string; valor: number; pct: number };
@@ -62,33 +65,53 @@ async function computeInsightSections(
 ): Promise<MonthlyInsightSections | null> {
   const currentStartKey = toDateKey(current.firstDay);
   const currentEndKey = toDateKey(current.lastDay);
+  const previousStartKey = toDateKey(previous.firstDay);
+  const previousEndKey = toDateKey(previous.lastDay);
 
-  const [{ data: entriesData }, { data: prevEntriesData }, { data: goalsData }, { data: confirmedData }] =
-    await Promise.all([
-      supabase
-        .from("entries")
-        .select("type, amount, categories(name), investment_goal_id, income_type")
-        .eq("user_id", userId)
-        .gte("entry_date", currentStartKey)
-        .lte("entry_date", currentEndKey),
-      supabase
-        .from("entries")
-        .select("type, amount, categories(name), investment_goal_id, income_type")
-        .eq("user_id", userId)
-        .eq("type", "despesa")
-        .gte("entry_date", toDateKey(previous.firstDay))
-        .lte("entry_date", toDateKey(previous.lastDay)),
-      supabase.from("investment_goals").select("id, name, percent").eq("user_id", userId),
-      supabase
-        .from("entries")
-        .select("investment_goal_id")
-        .eq("user_id", userId)
-        .not("investment_goal_id", "is", null)
-        .gte("entry_date", currentStartKey)
-        .lte("entry_date", currentEndKey),
-    ]);
+  // Busca num intervalo largo (o anterior inteiro até o atual inteiro) e
+  // agrupa pela data efetiva, não pela de vencimento crua — uma fatura
+  // antecipada (marcada como paga antes do vencimento) precisa cair no
+  // período em que o dinheiro realmente saiu, senão o "sobrou" do mês não
+  // bate com o saldo de verdade. O OR cobre o caso do vencimento cair fora
+  // desse intervalo (ex: mês que vem) mesmo já tendo sido paga agora.
+  const paidDateByInvoiceId = await fetchPaidInvoiceDates(supabase, userId);
+  const paidInvoiceIds = [...paidDateByInvoiceId.keys()];
 
-  const rows = (entriesData as unknown as EntryRow[]) ?? [];
+  let entriesQuery = supabase
+    .from("entries")
+    .select("type, amount, categories(name), investment_goal_id, income_type, entry_date, card_invoice_id")
+    .eq("user_id", userId)
+    .gte("entry_date", previousStartKey);
+  entriesQuery =
+    paidInvoiceIds.length > 0
+      ? entriesQuery.or(
+          `entry_date.lte.${currentEndKey},card_invoice_id.in.(${paidInvoiceIds.join(",")})`,
+        )
+      : entriesQuery.lte("entry_date", currentEndKey);
+
+  const [{ data: rawEntriesData }, { data: goalsData }, { data: confirmedData }] = await Promise.all([
+    entriesQuery,
+    supabase.from("investment_goals").select("id, name, percent").eq("user_id", userId),
+    supabase
+      .from("entries")
+      .select("investment_goal_id")
+      .eq("user_id", userId)
+      .not("investment_goal_id", "is", null)
+      .gte("entry_date", currentStartKey)
+      .lte("entry_date", currentEndKey),
+  ]);
+
+  const allRows = ((rawEntriesData as unknown as EntryRow[]) ?? []).map((row) => ({
+    ...row,
+    effectiveDate: effectiveDateOf(row, paidDateByInvoiceId),
+  }));
+  // Uma fatura paga antecipada pode ter sido buscada com entry_date fora do
+  // intervalo (ex: vencimento mês que vem) — o filtro pela data efetiva no
+  // fim garante que só entra em current/prev quem realmente pertence ali.
+  const rows = allRows.filter((r) => r.effectiveDate >= currentStartKey && r.effectiveDate <= currentEndKey);
+  const prevEntriesData = allRows.filter(
+    (r) => r.type === "despesa" && r.effectiveDate >= previousStartKey && r.effectiveDate <= previousEndKey,
+  );
   if (rows.length === 0) return null;
 
   const despesas = rows.filter((r) => r.type === "despesa");
@@ -143,7 +166,7 @@ async function computeInsightSections(
     amount: d.amount,
     categoryName: d.categories?.name ?? null,
   }));
-  const lastPeriod: SpendEntry[] = ((prevEntriesData as unknown as EntryRow[]) ?? [])
+  const lastPeriod: SpendEntry[] = prevEntriesData
     .filter((d) => !d.investment_goal_id)
     .map((d) => ({
       amount: d.amount,

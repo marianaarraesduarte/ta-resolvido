@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { generatePartialInsight, type MonthlyInsightSections } from "@/lib/monthly-insight";
 import { calculateSaldo } from "@/lib/saldo";
+import { fetchSaldoEntries } from "@/lib/saldo-entries";
 import { toDateKey } from "@/lib/date";
 
 export async function fetchPartialInsight(): Promise<{
@@ -28,14 +29,14 @@ export async function fetchPartialInsight(): Promise<{
     const sections = await generatePartialInsight(supabase, user.id, salaryOnly);
     if (!sections) return null;
 
-    const { data: entriesData } = await supabase
-      .from("entries")
-      .select("type, amount, income_type")
-      .eq("user_id", user.id)
-      .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01")
-      .lte("entry_date", toDateKey(new Date()));
+    const entriesData = await fetchSaldoEntries(
+      supabase,
+      user.id,
+      profile?.initial_balance_date ?? "1900-01-01",
+      toDateKey(new Date()),
+    );
 
-    const saldoAtMonthEnd = calculateSaldo(entriesData ?? [], {
+    const saldoAtMonthEnd = calculateSaldo(entriesData, {
       initialBalance: profile?.initial_balance ?? 0,
       salaryOnly,
     });
