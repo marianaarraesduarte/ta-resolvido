@@ -66,19 +66,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const viewed = resolveViewedMonth(undefined, selectedMonthKey);
   const saldoEndDate = computeSaldoEndDate(viewed);
 
-  const [{ count: unreadInsights }, { data: entriesData }] = await Promise.all([
+  const [{ count: unreadInsights }, { data: paidInvoicesData }] = await Promise.all([
     supabase
       .from("monthly_insights")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .is("read_at", null),
-    supabase
-      .from("entries")
-      .select("type, amount, income_type")
-      .eq("user_id", user.id)
-      .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01")
-      .lte("entry_date", toDateKey(saldoEndDate)),
+    supabase.from("card_invoices").select("id").eq("user_id", user.id).not("paid_at", "is", null),
   ]);
+
+  // Por padrão, uma compra no crédito só desconta o saldo no vencimento da
+  // fatura — mas quem antecipa o pagamento (marca como paga antes do
+  // vencimento) já viu esse dinheiro sair da conta de verdade, então o
+  // saldo tem que descontar na hora, não esperar o dia "oficial".
+  const paidInvoiceIds = (paidInvoicesData ?? []).map((i) => i.id);
+  let entriesQuery = supabase
+    .from("entries")
+    .select("type, amount, income_type")
+    .eq("user_id", user.id)
+    .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01");
+  entriesQuery =
+    paidInvoiceIds.length > 0
+      ? entriesQuery.or(
+          `entry_date.lte.${toDateKey(saldoEndDate)},card_invoice_id.in.(${paidInvoiceIds.join(",")})`,
+        )
+      : entriesQuery.lte("entry_date", toDateKey(saldoEndDate));
+  const { data: entriesData } = await entriesQuery;
 
   const saldo = calculateSaldo(entriesData ?? [], {
     initialBalance: profile?.initial_balance ?? 0,
