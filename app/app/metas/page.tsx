@@ -3,13 +3,13 @@ import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/date";
 import { calculateSaldo } from "@/lib/saldo";
+import { fetchSaldoEntries } from "@/lib/saldo-entries";
 import { MetasBody } from "./metas-body";
 import { Upsell } from "../upsell";
 
 type ReceitaRow = { amount: number; income_type: string | null };
 type GoalRow = { id: string; name: string; percent: number };
 type ReserveRow = { id: string; name: string; target_amount: number; saved_amount: number };
-type SaldoEntryRow = { type: "despesa" | "receita"; amount: number; income_type: string | null };
 
 export default async function MetasPage() {
   const supabase = await createClient();
@@ -58,7 +58,7 @@ export default async function MetasPage() {
     { data: goalsData },
     { data: reservesData },
     { data: confirmedData },
-    { data: saldoEntriesData },
+    saldoEntriesData,
   ] = await Promise.all([
     supabase
       .from("entries")
@@ -84,12 +84,12 @@ export default async function MetasPage() {
       .not("investment_goal_id", "is", null)
       .gte("entry_date", toDateKey(firstDay))
       .lte("entry_date", toDateKey(lastDay)),
-    supabase
-      .from("entries")
-      .select("type, amount, income_type")
-      .eq("user_id", user.id)
-      .gte("entry_date", profile?.initial_balance_date ?? "1900-01-01")
-      .lte("entry_date", toDateKey(today)),
+    fetchSaldoEntries(
+      supabase,
+      user.id,
+      profile?.initial_balance_date ?? "1900-01-01",
+      toDateKey(today),
+    ),
   ]);
 
   const receitas = (receitasData as ReceitaRow[] | null) ?? [];
@@ -105,7 +105,7 @@ export default async function MetasPage() {
       .filter((id): id is string => id != null),
   );
 
-  const saldo = calculateSaldo((saldoEntriesData as SaldoEntryRow[] | null) ?? [], {
+  const saldo = calculateSaldo(saldoEntriesData, {
     initialBalance: profile?.initial_balance ?? 0,
     salaryOnly: profile?.income_basis === "salary_only",
   });
