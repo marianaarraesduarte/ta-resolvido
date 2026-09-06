@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -95,6 +95,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <header className="flex items-start justify-between gap-3.5 px-4 py-4">
           <SaldoBadge saldo={saldo} previsto={viewed.isFutureMonth} />
           <div className="flex flex-shrink-0 items-center gap-3 pt-1">
+            <Link
+              href="/app/analise-completa"
+              aria-label="Análise completa do mês"
+              className="relative flex h-7 w-7 items-center justify-center rounded-[9px] bg-brand-plum text-white shadow-sm"
+            >
+              <Sparkles size={14} />
+              <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-amber opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-amber" />
+              </span>
+            </Link>
             <Link href="/app/insights" aria-label="Análises" className="relative text-brand-ink-soft">
               <Bell size={18} />
               {!!unreadInsights && (
