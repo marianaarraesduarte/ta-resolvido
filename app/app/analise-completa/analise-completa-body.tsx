@@ -3,14 +3,19 @@
 import { useState } from "react";
 import {
   AlertTriangle,
+  Check,
   CreditCard,
+  Lightbulb,
+  Minus,
+  PiggyBank,
   Sparkles,
+  TrendingDown,
+  TrendingUp,
   Trophy,
 } from "lucide-react";
 import { currency, TOKENS } from "@/lib/tokens";
 import { monthLabel } from "@/lib/date";
 import type { FullMonthInsight } from "@/lib/full-month-insight";
-import { InsightThread } from "../insights/insight-thread";
 import { fetchFullMonthInsight } from "./actions";
 
 const CHART_COLORS = [TOKENS.coral, TOKENS.amber, TOKENS.sage, TOKENS.plum, "#3E6E8E"];
@@ -19,20 +24,32 @@ function Block({
   icon,
   color,
   title,
+  warm,
   children,
 }: {
   icon: React.ReactNode;
   color: string;
   title: string;
+  warm?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-3 rounded-2xl bg-brand-card p-3.5">
-      <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wide" style={{ color }}>
+    <div className="mb-3 flex items-start gap-2.5">
+      <div
+        className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-white"
+        style={{ background: color }}
+      >
         {icon}
-        {title}
       </div>
-      {children}
+      <div
+        className="min-w-0 flex-1 rounded-tl-[4px] rounded-tr-2xl rounded-br-2xl rounded-bl-2xl p-3.5"
+        style={{ background: warm ? `color-mix(in srgb, ${color} 18%, ${TOKENS.card})` : TOKENS.card }}
+      >
+        <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-wide" style={{ color }}>
+          {title}
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
@@ -104,8 +121,9 @@ export function AnaliseCompletaBody() {
           Análise completa de {monthLabel(new Date())}
         </div>
         <p className="max-w-[240px] text-[13px] leading-snug text-brand-ink-soft">
-          Resumo com os maiores gastos nomeados (incluindo os de dentro de uma fatura), categorias, saldo dia a
-          dia e um alerta se algo fugiu do padrão. Leva uns segundos pra gerar.
+          Uma explicação completa do mês, como se você tivesse que prestar contas pra alguém — os maiores
+          gastos nomeados (incluindo os de dentro de uma fatura), categorias, saldo dia a dia e uma direção
+          pro resto do mês. Leva uns segundos pra gerar.
         </p>
         <button
           type="button"
@@ -121,32 +139,44 @@ export function AnaliseCompletaBody() {
     );
   }
 
-  const catMax = Math.max(...result.categoriasChart.map((c) => c.valor), 1);
+  const catMax = Math.max(...result.categorias.items.map((c) => c.valor), 1);
 
   return (
     <div>
-      <div className="mb-3 text-[13px] font-bold text-brand-ink-soft">
-        {monthLabel(new Date())}, até dia {new Date().getDate()}
+      <div className="mb-3 text-[13px] font-bold text-brand-ink-soft">{result.periodLabel}</div>
+
+      <div className="mb-4 flex gap-2">
+        <div className="flex-1 rounded-2xl bg-brand-card px-2.5 py-2.5 text-center">
+          <div className="text-[10px] font-bold uppercase tracking-wide text-brand-ink-soft">Entrou</div>
+          <div className="font-display text-[15px] font-bold text-brand-sage">{currency(result.entrou)}</div>
+        </div>
+        <div className="flex-1 rounded-2xl bg-brand-card px-2.5 py-2.5 text-center">
+          <div className="text-[10px] font-bold uppercase tracking-wide text-brand-ink-soft">Saiu</div>
+          <div className="font-display text-[15px] font-bold text-brand-coral">{currency(result.saiu)}</div>
+        </div>
+        <div className="flex-1 rounded-2xl bg-brand-card px-2.5 py-2.5 text-center">
+          <div className="text-[10px] font-bold uppercase tracking-wide text-brand-ink-soft">Sobrou</div>
+          <div className="font-display text-[15px] font-bold text-brand-ink">{currency(result.sobrou)}</div>
+        </div>
       </div>
 
+      <Block icon={<Sparkles size={14} />} color={TOKENS.ink} title="Como foi o mês">
+        <p className="text-[14px] leading-relaxed text-brand-ink">{result.abertura}</p>
+      </Block>
+
       {result.alerta && (
-        <div className="mb-3 rounded-2xl border border-brand-coral/40 bg-brand-coral/10 p-3.5">
-          <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wide text-brand-coral">
-            <AlertTriangle size={12} />
-            Fugiu do padrão
-          </div>
-          <p className="text-[13.5px] leading-relaxed text-brand-ink">{result.alerta.text}</p>
-        </div>
+        <Block icon={<AlertTriangle size={14} />} color={TOKENS.coral} title="Fugiu do padrão">
+          <p className="text-[14px] leading-relaxed text-brand-ink">{result.alerta.text}</p>
+        </Block>
       )}
 
-      <InsightThread sections={result} saldoAtMonthEnd={result.resumo.entrou - result.resumo.saiu} />
-
-      <Block icon={<Trophy size={12} />} color={TOKENS.amber} title="Os 5 maiores gastos">
+      <Block icon={<Trophy size={14} />} color={TOKENS.amber} title="Os maiores gastos">
+        <p className="mb-2.5 text-[14px] leading-relaxed text-brand-ink">{result.maioresGastos.text}</p>
         <div className="flex flex-col">
-          {result.topLancamentos.map((item, i) => (
+          {result.maioresGastos.items.map((item, i) => (
             <div
               key={`${item.description}-${i}`}
-              className="flex items-center gap-2.5 border-b border-brand-line py-2 last:border-none"
+              className="flex items-center gap-2.5 border-t border-brand-line py-2 first:border-none"
             >
               <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-brand-line text-[10.5px] font-bold text-brand-ink-soft">
                 {i + 1}
@@ -171,9 +201,10 @@ export function AnaliseCompletaBody() {
         </div>
       </Block>
 
-      <Block icon={<Sparkles size={12} />} color={TOKENS.sage} title="Por categoria">
+      <Block icon={<Sparkles size={14} />} color={TOKENS.sage} title="Por categoria">
+        <p className="mb-2.5 text-[14px] leading-relaxed text-brand-ink">{result.categorias.text}</p>
         <div className="flex flex-col gap-2">
-          {result.categoriasChart.map((c, i) => (
+          {result.categorias.items.map((c, i) => (
             <div key={c.nome} className="flex items-center gap-2">
               <span className="w-[68px] flex-shrink-0 truncate text-[11.5px] font-semibold text-brand-ink">
                 {c.nome}
@@ -195,8 +226,68 @@ export function AnaliseCompletaBody() {
         </div>
       </Block>
 
-      <Block icon={<Sparkles size={12} />} color={TOKENS.plum} title="Saldo dia a dia">
-        <DailyLineChart data={result.dailySaldo} />
+      <Block icon={<Sparkles size={14} />} color={TOKENS.plum} title="Saldo dia a dia">
+        <DailyLineChart data={result.saldoDiaADia.items} />
+        <p className="mt-2 text-[13px] leading-relaxed text-brand-ink">{result.saldoDiaADia.text}</p>
+      </Block>
+
+      {result.comparacao && (
+        <Block
+          icon={result.comparacao.direction === "up" ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+          color={
+            result.comparacao.direction === "up"
+              ? TOKENS.coral
+              : result.comparacao.direction === "down"
+                ? TOKENS.sage
+                : TOKENS.inkSoft
+          }
+          title="Comparado ao mês passado"
+        >
+          {result.comparacao.direction !== "flat" && (
+            <div
+              className="mb-2 inline-flex items-center rounded-full px-3 py-1 font-display text-[15px] font-bold text-white"
+              style={{ background: result.comparacao.direction === "up" ? TOKENS.coral : TOKENS.sage }}
+            >
+              {result.comparacao.direction === "up" ? "▲" : "▼"} {result.comparacao.pct}%
+            </div>
+          )}
+          <p className="text-[14px] leading-relaxed text-brand-ink">{result.comparacao.text}</p>
+        </Block>
+      )}
+
+      {result.metas && (
+        <Block icon={<PiggyBank size={14} />} color={TOKENS.sage} title="Guardando dinheiro">
+          {result.metas.items.length > 0 && (
+            <div className="mb-2.5 flex flex-wrap gap-1.5">
+              {result.metas.items.map((m) => (
+                <span
+                  key={m.nome}
+                  className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                  style={{
+                    background: m.done ? `color-mix(in srgb, ${TOKENS.sage} 16%, ${TOKENS.card})` : TOKENS.bg,
+                    color: m.done ? TOKENS.sage : TOKENS.inkSoft,
+                  }}
+                >
+                  <span
+                    className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-white"
+                    style={{
+                      background: m.done ? TOKENS.sage : TOKENS.card,
+                      border: m.done ? "none" : `1.5px dashed ${TOKENS.line}`,
+                    }}
+                  >
+                    {m.done ? <Check size={9} /> : <Minus size={7} color={TOKENS.inkSoft} />}
+                  </span>
+                  {m.nome}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-[14px] leading-relaxed text-brand-ink">{result.metas.text}</p>
+        </Block>
+      )}
+
+      <Block icon={<Lightbulb size={14} />} color={TOKENS.plum} title="Sua direção pro resto do mês" warm>
+        <p className="text-[14px] leading-relaxed text-brand-ink">{result.direcionamento}</p>
       </Block>
     </div>
   );
