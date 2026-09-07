@@ -6,64 +6,75 @@ import { createClient } from "@/lib/supabase/client";
 const inputClass =
   "rounded-xl border border-brand-line bg-brand-card px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
 
+type PendingLink =
+  | { kind: "tokens"; accessToken: string; refreshToken: string }
+  | { kind: "code"; code: string }
+  | { kind: "token_hash"; tokenHash: string }
+  | { kind: "session-only" }
+  | null;
+
+// O link do e-mail de redefinição de senha pode chegar de formas diferentes
+// dependendo de onde é aberto e de quem mexeu nele no caminho (o app de
+// e-mail, um antivírus, um filtro de segurança corporativo). Muitos desses
+// programas "clicam" no link sozinhos, antes da pessoa, só pra checar se é
+// seguro — e como cada link só vale uma vez, isso já consome o link, e aí a
+// pessoa clica de verdade e ele já não vale mais, mesmo sem ter passado nem
+// um minuto. Por isso a gente não gasta o link assim que a página abre: só
+// guarda o que veio nele e só usa de verdade quando a pessoa escreve a senha
+// nova e aperta "Salvar" — um programa automático não faz isso.
+function readPendingLink(): PendingLink {
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = hash.get("access_token");
+  const refreshToken = hash.get("refresh_token");
+  if (accessToken && refreshToken) {
+    return { kind: "tokens", accessToken, refreshToken };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  if (code) return { kind: "code", code };
+
+  const tokenHash = params.get("token_hash");
+  if (tokenHash) return { kind: "token_hash", tokenHash };
+
+  return null;
+}
+
 export default function ResetPasswordPage() {
-  const [checking, setChecking] = useState(true);
   const [linkInvalid, setLinkInvalid] = useState(false);
+  const [pending, setPending] = useState<PendingLink>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // O link do e-mail de redefinição de senha pode chegar de duas formas
-  // diferentes dependendo de onde é aberto (comum trocar de app no celular):
-  // com um "?code=" na URL, ou com os tokens depois de "#" (o cliente do
-  // Supabase não processa esse segundo formato sozinho — só o servidor não
-  // consegue ler nenhum dos dois, por isso isso é tratado aqui, não em
-  // /auth/callback).
   useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
-
-    async function establishSession() {
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const accessToken = hash.get("access_token");
-      const refreshToken = hash.get("refresh_token");
-
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-
-      if (accessToken && refreshToken) {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        window.history.replaceState(null, "", window.location.pathname);
-        return !error;
-      }
-
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        window.history.replaceState(null, "", window.location.pathname);
-        return !error;
-      }
-
-      const { data } = await supabase.auth.getUser();
-      return !!data.user;
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    // O Supabase já avisa aqui mesmo, sem a gente precisar tentar nada, quando
+    // o link foi aberto por outra coisa antes da pessoa (o caso mais comum).
+    if (params.get("error") || hash.get("error")) {
+      setLinkInvalid(true);
+      return;
     }
 
-    establishSession().then((ok) => {
-      if (cancelled) return;
-      if (ok) {
-        setChecking(false);
+    const found = readPendingLink();
+    if (found) {
+      setPending(found);
+      window.history.replaceState(null, "", window.location.pathname);
+      return;
+    }
+
+    // Sem nada na URL: só segue se já tiver uma sessão válida (ex: a pessoa
+    // atualizou a página depois de já ter aberto o link corretamente).
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setPending({ kind: "session-only" });
       } else {
         setLinkInvalid(true);
-        setChecking(false);
       }
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -83,6 +94,30 @@ export default function ResetPasswordPage() {
 
     setStatus("saving");
     const supabase = createClient();
+
+    if (pending && pending.kind !== "session-only") {
+      let sessionError: { message?: string } | null = null;
+      if (pending.kind === "tokens") {
+        ({ error: sessionError } = await supabase.auth.setSession({
+          access_token: pending.accessToken,
+          refresh_token: pending.refreshToken,
+        }));
+      } else if (pending.kind === "code") {
+        ({ error: sessionError } = await supabase.auth.exchangeCodeForSession(pending.code));
+      } else {
+        ({ error: sessionError } = await supabase.auth.verifyOtp({
+          type: "recovery",
+          token_hash: pending.tokenHash,
+        }));
+      }
+
+      if (sessionError) {
+        setLinkInvalid(true);
+        setStatus("idle");
+        return;
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
@@ -92,8 +127,6 @@ export default function ResetPasswordPage() {
       setStatus("done");
     }
   }
-
-  if (checking) return null;
 
   if (linkInvalid) {
     return (
@@ -116,6 +149,8 @@ export default function ResetPasswordPage() {
       </main>
     );
   }
+
+  if (!pending) return null;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-brand-bg px-4">
