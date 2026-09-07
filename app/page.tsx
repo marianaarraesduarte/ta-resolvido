@@ -586,7 +586,7 @@ export default async function RootPage() {
             <div className="mx-auto mb-3.5 flex h-[46px] w-[46px] items-center justify-center rounded-2xl bg-brand-card">
               <ShieldCheck size={20} className="text-brand-plum" />
             </div>
-            <h3 className="mb-1.5 font-display text-[15px] font-bold text-brand-ink">Sem conectar no banco</h3>
+            <h3 className="mb-1.5 font-display text-[18px] font-bold leading-[1.35] text-brand-ink">Sem conectar no banco</h3>
             <p className="text-[13.5px] leading-relaxed text-brand-ink-soft">
               Você manda o print quando quiser. A gente lê só o que está ali — a imagem não fica
               guardada depois.
@@ -602,7 +602,7 @@ export default async function RootPage() {
                 />
               </svg>
             </div>
-            <h3 className="mb-1.5 font-display text-[15px] font-bold text-brand-ink">7 dias de garantia</h3>
+            <h3 className="mb-1.5 font-display text-[18px] font-bold leading-[1.35] text-brand-ink">7 dias de garantia</h3>
             <p className="text-[13.5px] leading-relaxed text-brand-ink-soft">
               Se não gostar, é só pedir. A gente devolve tudo, sem perguntas e sem letra miúda.
             </p>
@@ -617,7 +617,7 @@ export default async function RootPage() {
                 />
               </svg>
             </div>
-            <h3 className="mb-1.5 font-display text-[15px] font-bold text-brand-ink">Cancela quando quiser</h3>
+            <h3 className="mb-1.5 font-display text-[18px] font-bold leading-[1.35] text-brand-ink">Cancela quando quiser</h3>
             <p className="text-[13.5px] leading-relaxed text-brand-ink-soft">
               Direto no app, sem precisar ligar pra ninguém nem justificar nada.
             </p>
