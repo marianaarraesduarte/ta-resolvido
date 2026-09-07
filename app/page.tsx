@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ArrowRight, Camera, MessageCircle, Mic, PenLine, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { caveat } from "@/lib/fonts";
+import { StickyLandingCta } from "./sticky-landing-cta";
 
 const MIRROR_ITEMS = [
   "Já baixou um app de finanças. Ou dois. Ou três.",
@@ -691,6 +692,7 @@ export default async function RootPage() {
         </div>
         <div>Tá Resolvido — taresolvido.app</div>
       </footer>
+      <StickyLandingCta />
     </div>
   );
 }
