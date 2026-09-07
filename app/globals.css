@@ -21,6 +21,9 @@
      fica sempre escuro nos dois temas, porque sempre é combinado com texto
      branco fixo, não com o texto normal da página. */
   --color-brand-ink-solid: 26 26 26;
+  /* Anel de foco (border/focus do design system) — plum.700, mais escuro
+     que o accent normal pra garantir contorno ≥ 3:1 contra fundo claro. */
+  --color-brand-focus-ring: 114 84 112;
 }
 
 /* Segue o sistema por padrão (:not([data-theme="light"]) pra uma escolha
@@ -38,6 +41,7 @@
     --color-brand-sage: 127 174 138;
     --color-brand-plum: 176 140 174;
     --color-brand-line: 44 59 57;
+    --color-brand-focus-ring: 202 172 200;
   }
 }
 
@@ -51,10 +55,22 @@
   --color-brand-sage: 127 174 138;
   --color-brand-plum: 176 140 174;
   --color-brand-line: 44 59 57;
+  --color-brand-focus-ring: 202 172 200;
 }
 
 body {
   @apply bg-brand-bg text-brand-ink;
+}
+
+/* Anel de foco visível em todo elemento interativo, navegando só pelo
+   teclado — regra global em vez de anotar cada componente. A utility
+   "outline-none" do Tailwind já reserva outline: 2px solid transparent (só
+   esconde a cor, não o espaço); essa regra vence por ordem no CSS (mesma
+   especificidade) e troca a cor só quando o foco é de teclado de verdade,
+   sem aparecer num clique de mouse. */
+:focus-visible {
+  outline: 2px solid rgb(var(--color-brand-focus-ring));
+  outline-offset: 2px;
 }
 
 /* Safari no iOS renderiza o ícone de calendário de type="date" fora da
