@@ -11,6 +11,7 @@ const config: Config = {
           ink: "rgb(var(--color-brand-ink) / <alpha-value>)",
           "ink-soft": "rgb(var(--color-brand-ink-soft) / <alpha-value>)",
           amber: "rgb(var(--color-brand-amber) / <alpha-value>)",
+          "amber-text": "rgb(var(--color-brand-amber-text) / <alpha-value>)",
           coral: "rgb(var(--color-brand-coral) / <alpha-value>)",
           sage: "rgb(var(--color-brand-sage) / <alpha-value>)",
           plum: "rgb(var(--color-brand-plum) / <alpha-value>)",

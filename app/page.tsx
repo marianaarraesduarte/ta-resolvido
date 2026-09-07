@@ -420,7 +420,7 @@ export default async function RootPage() {
       {/* 4. Simples por fora, completo por dentro */}
       <section className="bg-brand-card px-5 py-16 sm:px-10 sm:py-[88px]">
         <div className="mx-auto max-w-6xl">
-          <div className="inline-block rounded-full bg-brand-amber/22 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-[#8c6214] dark:text-brand-amber">
+          <div className="inline-block rounded-full bg-brand-amber/22 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-amber-text">
             O que ninguém vê
           </div>
           <h2 className="mt-4 text-balance font-display text-[28px] font-bold text-brand-ink">

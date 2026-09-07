@@ -23,7 +23,7 @@ function rateLimitAwareMessage(error: { status?: number; message?: string }, fal
 function SpamNotice() {
   return (
     <div className="mt-3 rounded-xl bg-brand-amber/15 px-3.5 py-3">
-      <p className="text-[13.5px] font-bold leading-snug text-brand-amber">
+      <p className="text-[13.5px] font-bold leading-snug text-brand-amber-text">
         Não achou o e-mail? Olha na caixa de Spam ou Lixo Eletrônico.
       </p>
       <p className="mt-1 text-[12.5px] leading-snug text-brand-ink-soft">

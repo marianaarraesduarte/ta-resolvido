@@ -66,7 +66,7 @@ export default async function LembretePage() {
         </div>
         <div className="flex gap-3 rounded-2xl bg-brand-card px-[18px] py-4">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-bg">
-            <Bell size={18} className="text-brand-amber" />
+            <Bell size={18} className="text-brand-amber-text" />
           </div>
           <div>
             <div className="text-sm font-semibold text-brand-ink">Tá Resolvido</div>

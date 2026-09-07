@@ -21,6 +21,11 @@
      fica sempre escuro nos dois temas, porque sempre é combinado com texto
      branco fixo, não com o texto normal da página. */
   --color-brand-ink-solid: 26 26 26;
+  /* --color-brand-amber como TEXTO/ícone sobre fundo claro reprova
+     contraste WCAG (2.25:1) — essa variante mais escura é só pra isso;
+     preenchimento decorativo (selo, bolinha de destaque) continua usando
+     --color-brand-amber normal. Sem diferença no escuro (não é o bug ali). */
+  --color-brand-amber-text: 130 85 0;
 }
 
 /* Segue o sistema por padrão (:not([data-theme="light"]) pra uma escolha
@@ -38,6 +43,7 @@
     --color-brand-sage: 127 174 138;
     --color-brand-plum: 176 140 174;
     --color-brand-line: 44 59 57;
+    --color-brand-amber-text: 224 169 76;
   }
 }
 
@@ -51,6 +57,7 @@
   --color-brand-sage: 127 174 138;
   --color-brand-plum: 176 140 174;
   --color-brand-line: 44 59 57;
+  --color-brand-amber-text: 224 169 76;
 }
 
 body {

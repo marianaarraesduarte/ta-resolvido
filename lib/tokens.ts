@@ -10,11 +10,25 @@ export const TOKENS = {
   ink: "rgb(var(--color-brand-ink))",
   inkSoft: "rgb(var(--color-brand-ink-soft))",
   amber: "rgb(var(--color-brand-amber))",
+  // Só pra texto/ícone de fato renderizado sobre fundo claro — amber puro
+  // reprova contraste WCAG nesse uso (2.25:1). Preenchimento decorativo
+  // (selo, bolinha de destaque) continua usando TOKENS.amber normal.
+  amberText: "rgb(var(--color-brand-amber-text))",
   coral: "rgb(var(--color-brand-coral))",
   sage: "rgb(var(--color-brand-sage))",
   plum: "rgb(var(--color-brand-plum))",
   line: "rgb(var(--color-brand-line))",
 } as const;
+
+/**
+ * Quando uma cor "de tema" (sage/amber/coral/plum) é usada como cor de
+ * TEXTO — não preenchimento — chama isso em vez de usar a cor direto: hoje
+ * só o amber precisa de uma variante mais escura pra passar no contraste,
+ * as outras já passam sem ajuste.
+ */
+export function textSafe(color: string): string {
+  return color === TOKENS.amber ? TOKENS.amberText : color;
+}
 
 export function currency(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

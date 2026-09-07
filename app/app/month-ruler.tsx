@@ -17,7 +17,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { currency, dotSizeForAmount, levelFor, LEVEL_COLOR, TOKENS } from "@/lib/tokens";
+import { currency, dotSizeForAmount, levelFor, LEVEL_COLOR, textSafe, TOKENS } from "@/lib/tokens";
 import { dayOfMonth } from "@/lib/date";
 import type { AssistantData } from "@/lib/assistant-data";
 import type { FrequentExpense } from "@/lib/frequent-expenses";
@@ -762,7 +762,7 @@ export function MonthRuler({
                   onClick={() => handleTogglePaid(selectedInvoice.id, !selectedInvoice.paidAt)}
                   className="flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold disabled:opacity-60"
                   style={{
-                    color: selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber,
+                    color: textSafe(selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber),
                     background: `color-mix(in srgb, ${selectedInvoice.paidAt ? TOKENS.sage : TOKENS.amber} 16%, transparent)`,
                   }}
                 >

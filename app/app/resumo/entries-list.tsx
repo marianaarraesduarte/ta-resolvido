@@ -17,7 +17,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { currency, TOKENS } from "@/lib/tokens";
+import { currency, textSafe, TOKENS } from "@/lib/tokens";
 import { brDateLabel, dayOfMonth } from "@/lib/date";
 import { iconForCategory } from "@/lib/category-icons";
 import { useConfirm } from "../confirm-dialog";
@@ -60,7 +60,7 @@ function CategoryTag({ name, leading = true }: { name: string | null; leading?: 
       {name}
     </span>
   ) : (
-    <span className="font-medium" style={{ color: TOKENS.amber }}>
+    <span className="font-medium" style={{ color: TOKENS.amberText }}>
       {separator}Sem categoria
     </span>
   );
@@ -325,7 +325,7 @@ export function EntriesList({
                           }}
                           className="flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold disabled:opacity-60"
                           style={{
-                            color: invoice.paidAt ? TOKENS.sage : TOKENS.amber,
+                            color: textSafe(invoice.paidAt ? TOKENS.sage : TOKENS.amber),
                             background: `color-mix(in srgb, ${invoice.paidAt ? TOKENS.sage : TOKENS.amber} 16%, transparent)`,
                           }}
                         >

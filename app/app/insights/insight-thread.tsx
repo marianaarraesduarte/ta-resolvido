@@ -1,5 +1,5 @@
 import { Check, Lightbulb, Minus, PiggyBank, Sparkles, ShoppingBag, TrendingDown, TrendingUp } from "lucide-react";
-import { currency, TOKENS } from "@/lib/tokens";
+import { currency, textSafe, TOKENS } from "@/lib/tokens";
 import type { MonthlyInsightSections } from "@/lib/monthly-insight";
 
 function Msg({
@@ -29,7 +29,7 @@ function Msg({
       >
         <div
           className="mb-1 text-[10.5px] font-bold uppercase tracking-wide"
-          style={{ color }}
+          style={{ color: textSafe(color) }}
         >
           {eyebrow}
         </div>

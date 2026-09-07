@@ -5,7 +5,7 @@ export function Upsell({ feature }: { feature: string }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-[24px] bg-brand-card px-6 py-12 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-amber/15">
-        <Lock size={20} className="text-brand-amber" />
+        <Lock size={20} className="text-brand-amber-text" />
       </div>
       <div className="font-display text-lg font-bold text-brand-ink">
         {feature} é do plano Completo

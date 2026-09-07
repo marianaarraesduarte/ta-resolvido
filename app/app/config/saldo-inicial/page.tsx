@@ -37,7 +37,7 @@ export default async function SaldoInicialPage() {
         </p>
 
         <div className="mb-5 rounded-xl bg-brand-amber/10 px-3.5 py-2.5">
-          <p className="text-[12px] font-medium leading-snug text-brand-amber">
+          <p className="text-[12px] font-medium leading-snug text-brand-amber-text">
             Usa sempre a data de <strong>hoje</strong> e o saldo que você vê no banco{" "}
             <strong>agora</strong> — mesmo se for lançar gastos de dias anteriores do mês. Gastos
             antigos não mexem nesse saldo, só aparecem no resumo do mês.

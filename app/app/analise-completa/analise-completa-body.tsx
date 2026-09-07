@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Trophy,
 } from "lucide-react";
-import { currency, TOKENS } from "@/lib/tokens";
+import { currency, textSafe, TOKENS } from "@/lib/tokens";
 import { monthLabel } from "@/lib/date";
 import type { FullMonthInsight } from "@/lib/full-month-insight";
 import { fetchFullMonthInsight } from "./actions";
@@ -45,7 +45,7 @@ function Block({
         className="min-w-0 flex-1 rounded-tl-[4px] rounded-tr-2xl rounded-br-2xl rounded-bl-2xl p-3.5"
         style={{ background: warm ? `color-mix(in srgb, ${color} 18%, ${TOKENS.card})` : TOKENS.card }}
       >
-        <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-wide" style={{ color }}>
+        <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-wide" style={{ color: textSafe(color) }}>
           {title}
         </div>
         {children}

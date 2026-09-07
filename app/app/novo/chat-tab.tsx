@@ -709,7 +709,7 @@ export function ChatTab({
                           )}
                           {item.type === "despesa" &&
                             matchedFixedExpense(item.description, item.amount) && (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-brand-amber px-2 py-1 text-[10.5px] font-semibold text-brand-amber">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-brand-amber-text px-2 py-1 text-[10.5px] font-semibold text-brand-amber-text">
                                 <Repeat size={10} className="flex-shrink-0" />
                                 fixo
                               </span>

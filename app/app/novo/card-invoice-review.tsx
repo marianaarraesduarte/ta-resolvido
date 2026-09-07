@@ -401,7 +401,7 @@ export function CardInvoiceReview({
                           ))}
                         </select>
                         {matchedFixedExpense(item.description, item.amount) && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-brand-amber px-2 py-1 text-[10.5px] font-semibold text-brand-amber">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-brand-amber-text px-2 py-1 text-[10.5px] font-semibold text-brand-amber-text">
                             <Repeat size={10} className="flex-shrink-0" />
                             fixo
                           </span>
@@ -535,7 +535,7 @@ export function CardInvoiceReview({
               {anomaly && (
                 <div className="mb-4 rounded-2xl border border-brand-amber/40 bg-brand-amber/10 px-4 py-3.5">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-brand-amber" />
+                    <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-brand-amber-text" />
                     <p className="text-[13px] leading-snug text-brand-ink">
                       Essa fatura ({currency(total)}) tá bem acima da média das suas últimas
                       faturas desse cartão ({currency(anomaly.average)}). Confere se não tem algo
@@ -546,7 +546,7 @@ export function CardInvoiceReview({
                     type="button"
                     disabled={flaggingAnomaly || flaggedAnomaly}
                     onClick={handleFlagAnomaly}
-                    className="mt-2 text-[12px] font-semibold text-brand-amber underline underline-offset-2 disabled:opacity-60"
+                    className="mt-2 text-[12px] font-semibold text-brand-amber-text underline underline-offset-2 disabled:opacity-60"
                   >
                     {flaggedAnomaly ? "Marcado — obrigada!" : "Isso não parece certo, quero avisar"}
                   </button>

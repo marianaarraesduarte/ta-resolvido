@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { amountToInputValue, currency, formatCentsInput, LEVEL_COLOR, parseCentsInput, TOKENS } from "@/lib/tokens";
+import {
+  amountToInputValue,
+  currency,
+  formatCentsInput,
+  LEVEL_COLOR,
+  parseCentsInput,
+  textSafe,
+  TOKENS,
+} from "@/lib/tokens";
 import { iconForCategory } from "@/lib/category-icons";
 import { setCategoryLimit } from "./actions";
 
@@ -157,7 +165,7 @@ export function CategoryLimitRow({
           {near && (
             <div
               className="mt-1.5 flex items-center gap-1 text-[11.5px] font-medium"
-              style={{ color: TOKENS.amber }}
+              style={{ color: textSafe(TOKENS.amber) }}
             >
               <AlertTriangle size={11} className="flex-shrink-0" />
               Perto do limite — já foi {pct}%
