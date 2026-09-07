@@ -297,7 +297,7 @@ export default async function RootPage() {
           <div className="inline-block rounded-full bg-brand-coral/14 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-coral">
             Se algum desses parece familiar...
           </div>
-          <h2 className="mt-4 text-balance font-display text-[28px] font-bold text-brand-ink">
+          <h2 className="mt-4 text-balance font-display text-[28px] font-bold leading-[1.2] text-brand-ink">
             Você já tentou. Mais de uma vez.
           </h2>
           <div className="mt-9 grid gap-x-7 gap-y-3.5 sm:grid-cols-2">
@@ -334,7 +334,7 @@ export default async function RootPage() {
           <div className="inline-block rounded-full bg-brand-sage/16 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-sage">
             Como funciona, de verdade
           </div>
-          <h2 className="mt-4 text-balance font-display text-[28px] font-bold text-brand-ink">
+          <h2 className="mt-4 text-balance font-display text-[28px] font-bold leading-[1.2] text-brand-ink">
             Você manda. A gente organiza.
           </h2>
           <p className="mt-2.5 max-w-[52ch] text-[15.5px] leading-relaxed text-brand-ink-soft">
@@ -424,7 +424,7 @@ export default async function RootPage() {
           <div className="inline-block rounded-full bg-brand-amber/22 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-amber-text">
             O que ninguém vê
           </div>
-          <h2 className="mt-4 text-balance font-display text-[28px] font-bold text-brand-ink">
+          <h2 className="mt-4 text-balance font-display text-[28px] font-bold leading-[1.2] text-brand-ink">
             Simples por fora. Completo por dentro.
           </h2>
 
@@ -488,7 +488,7 @@ export default async function RootPage() {
             <div className="inline-block rounded-full bg-brand-plum/14 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-plum">
               Pra ser sincera com você
             </div>
-            <h2 className="mt-4 text-balance font-display text-[28px] font-bold text-brand-ink">
+            <h2 className="mt-4 text-balance font-display text-[28px] font-bold leading-[1.2] text-brand-ink">
               Isso é pra você — ou não é.
             </h2>
           </div>
@@ -526,7 +526,7 @@ export default async function RootPage() {
             <div className="inline-block rounded-full bg-brand-sage/14 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-sage">
               Preço
             </div>
-            <h2 className="mt-4 text-balance font-display text-[28px] font-bold text-brand-ink">
+            <h2 className="mt-4 text-balance font-display text-[28px] font-bold leading-[1.2] text-brand-ink">
               Comece de graça. Evolua quando fizer sentido.
             </h2>
           </div>
@@ -629,7 +629,7 @@ export default async function RootPage() {
       {/* 9. FAQ */}
       <section className="px-5 py-16 sm:px-10 sm:py-[88px]">
         <div className="mx-auto max-w-2xl">
-          <h2 className="mb-8 text-center font-display text-2xl font-bold text-brand-ink">
+          <h2 className="mb-8 text-center font-display text-2xl font-bold leading-[1.2] text-brand-ink">
             Perguntas frequentes
           </h2>
           <div className="flex flex-col gap-2.5">
@@ -653,7 +653,7 @@ export default async function RootPage() {
 
       {/* Dúvidas / Contato */}
       <section className="px-5 pb-16 text-center sm:px-10">
-        <h2 className="mb-2.5 font-display text-2xl font-bold text-brand-ink">Ficou com alguma dúvida?</h2>
+        <h2 className="mb-2.5 font-display text-2xl font-bold leading-[1.2] text-brand-ink">Ficou com alguma dúvida?</h2>
         <p className="text-[15px] text-brand-ink-soft">
           Manda um e-mail pra gente:{" "}
           <a
@@ -668,7 +668,7 @@ export default async function RootPage() {
       {/* 10. CTA final */}
       <section className="px-5 pb-20 sm:px-10">
         <div className="mx-auto max-w-2xl rounded-[28px] bg-brand-ink-solid px-8 py-12 text-center">
-          <h2 className="mx-auto max-w-sm text-balance font-display text-2xl font-bold text-white sm:text-[28px]">
+          <h2 className="mx-auto max-w-sm text-balance font-display text-2xl font-bold leading-[1.2] text-white sm:text-[28px]">
             Tá na hora de tirar isso da sua cabeça.
           </h2>
           <Link
