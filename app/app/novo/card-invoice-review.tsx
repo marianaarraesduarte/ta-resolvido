@@ -429,8 +429,8 @@ export function CardInvoiceReview({
                     <div
                       className={
                         item.isRefund
-                          ? "flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-sage"
-                          : "flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 font-display text-[14px] font-bold text-brand-ink"
+                          ? "flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 text-[14px] font-bold tabular-nums text-brand-sage"
+                          : "flex flex-shrink-0 items-baseline gap-0.5 whitespace-nowrap pt-0.5 text-[14px] font-bold tabular-nums text-brand-ink"
                       }
                     >
                       {item.isRefund ? "+" : "-"}
@@ -517,7 +517,7 @@ export function CardInvoiceReview({
 
               <div className="mb-4 flex items-center justify-between rounded-2xl bg-brand-bg px-4 py-3">
                 <span className="text-[13px] text-brand-ink-soft">Total da fatura</span>
-                <span className="font-display text-base font-bold text-brand-ink">
+                <span className="text-base font-bold tabular-nums text-brand-ink">
                   {currency(total)}
                 </span>
               </div>

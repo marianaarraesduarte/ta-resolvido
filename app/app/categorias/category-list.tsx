@@ -60,7 +60,7 @@ export function CategoryList({
                 </div>
               </div>
               <div className="flex-shrink-0 text-right">
-                <div className="font-display text-[15px] font-bold text-brand-ink">
+                <div className="text-[15px] font-bold tabular-nums text-brand-ink">
                   {currency(c.total)}
                 </div>
                 <div className="text-[11px] text-brand-ink-soft">{pct}% do mês</div>

@@ -148,15 +148,15 @@ export function AnaliseCompletaBody() {
       <div className="mb-4 flex gap-2">
         <div className="flex-1 rounded-2xl bg-brand-card px-2.5 py-2.5 text-center">
           <div className="text-[10px] font-bold uppercase tracking-wide text-brand-ink-soft">Entrou</div>
-          <div className="font-display text-[15px] font-bold text-brand-sage">{currency(result.entrou)}</div>
+          <div className="text-[15px] font-bold tabular-nums text-brand-sage">{currency(result.entrou)}</div>
         </div>
         <div className="flex-1 rounded-2xl bg-brand-card px-2.5 py-2.5 text-center">
           <div className="text-[10px] font-bold uppercase tracking-wide text-brand-ink-soft">Saiu</div>
-          <div className="font-display text-[15px] font-bold text-brand-coral">{currency(result.saiu)}</div>
+          <div className="text-[15px] font-bold tabular-nums text-brand-coral">{currency(result.saiu)}</div>
         </div>
         <div className="flex-1 rounded-2xl bg-brand-card px-2.5 py-2.5 text-center">
           <div className="text-[10px] font-bold uppercase tracking-wide text-brand-ink-soft">Sobrou</div>
-          <div className="font-display text-[15px] font-bold text-brand-ink">{currency(result.sobrou)}</div>
+          <div className="text-[15px] font-bold tabular-nums text-brand-ink">{currency(result.sobrou)}</div>
         </div>
       </div>
 
@@ -193,7 +193,7 @@ export function AnaliseCompletaBody() {
                   )}
                 </div>
               </div>
-              <div className="flex-shrink-0 font-display text-[13px] font-bold text-brand-ink">
+              <div className="flex-shrink-0 text-[13px] font-bold tabular-nums text-brand-ink">
                 {currency(item.amount)}
               </div>
             </div>
@@ -218,7 +218,7 @@ export function AnaliseCompletaBody() {
                   }}
                 />
               </div>
-              <span className="w-[56px] flex-shrink-0 text-right text-[11.5px] font-bold text-brand-ink-soft">
+              <span className="w-[56px] flex-shrink-0 text-right text-[11.5px] font-bold tabular-nums text-brand-ink-soft">
                 {currency(c.valor)}
               </span>
             </div>

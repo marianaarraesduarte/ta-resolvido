@@ -340,7 +340,7 @@ export function EntriesList({
                         {invoice.items.length} {invoice.items.length === 1 ? "compra" : "compras"}
                       </div>
                     </div>
-                    <div className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
+                    <div className="flex-shrink-0 whitespace-nowrap text-[15px] font-bold tabular-nums text-brand-ink">
                       {currency(invoice.total)}
                     </div>
                     <ChevronDown
@@ -483,7 +483,7 @@ export function EntriesList({
                                 <CategoryTag name={item.categoryName} leading={false} />
                               </span>
                             </span>
-                            <span className="flex-shrink-0 whitespace-nowrap text-[13.5px] font-semibold text-brand-ink">
+                            <span className="flex-shrink-0 whitespace-nowrap text-[13.5px] font-semibold tabular-nums text-brand-ink">
                               {currency(item.amount)}
                             </span>
                           </>
@@ -540,7 +540,7 @@ export function EntriesList({
                     <CategoryTag name={d.categories?.name ?? null} />
                   </div>
                 </div>
-                <div className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
+                <div className="flex-shrink-0 whitespace-nowrap text-[15px] font-bold tabular-nums text-brand-ink">
                   {currency(d.amount)}
                 </div>
                 {!selecting && <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />}

@@ -80,7 +80,7 @@ export function EntrySearch() {
                       {brDateLabel(entry.entry_date)}
                     </div>
                   </div>
-                  <div className="flex-shrink-0 whitespace-nowrap font-display text-[14px] font-bold text-brand-ink">
+                  <div className="flex-shrink-0 whitespace-nowrap text-[14px] font-bold tabular-nums text-brand-ink">
                     {entry.type === "receita" ? "+" : "-"}
                     {currency(entry.amount)}
                   </div>

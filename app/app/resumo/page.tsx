@@ -184,7 +184,7 @@ export default async function ResumoPage({
           <div className="w-1 self-stretch rounded-full bg-brand-plum" />
           <div>
             <div className="text-[13px] text-brand-ink-soft">Total do mês</div>
-            <div className="font-display text-[26px] font-bold leading-none text-brand-ink [font-variant-numeric:tabular-nums]">
+            <div className="text-[26px] font-bold leading-none tabular-nums text-brand-ink">
               {currency(total)}
             </div>
             <div className="mt-1 text-[12px] text-brand-ink-soft">

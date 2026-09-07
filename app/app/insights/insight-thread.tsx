@@ -73,7 +73,7 @@ export function InsightThread({
       <Msg icon={<Sparkles size={14} />} color={TOKENS.ink} eyebrow="Como foi o mês">
         <p className="text-[14px] leading-relaxed text-brand-ink">{resumo.text}</p>
         <div
-          className="mt-2.5 inline-flex items-baseline gap-1 rounded-full px-3.5 py-1 font-display text-[16px] font-bold text-white"
+          className="mt-2.5 inline-flex items-baseline gap-1 rounded-full px-3.5 py-1 text-[16px] font-bold tabular-nums text-white"
           style={{ background: resumo.sobrou >= 0 ? TOKENS.sage : TOKENS.coral }}
         >
           <span className="font-sans text-[11px] font-medium opacity-90">
@@ -83,7 +83,7 @@ export function InsightThread({
         </div>
         <p className="mt-1.5 text-[11px] leading-snug text-brand-ink-soft">
           Isso é só o que entrou menos o que saiu nesse período. Seu saldo total é{" "}
-          <strong className="font-semibold text-brand-ink">{currency(saldoAtMonthEnd)}</strong> —
+          <strong className="font-semibold tabular-nums text-brand-ink">{currency(saldoAtMonthEnd)}</strong> —
           um pode estar bom mesmo com o outro apertado, por causa de meses anteriores.
         </p>
       </Msg>

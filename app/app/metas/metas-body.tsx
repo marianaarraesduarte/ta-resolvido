@@ -226,7 +226,7 @@ function ReserveRow({
           {reserve.name}
         </div>
         {!editing && (
-          <div className="whitespace-nowrap text-right text-[13px] font-semibold text-brand-ink">
+          <div className="whitespace-nowrap text-right text-[13px] font-semibold tabular-nums text-brand-ink">
             {currency(reserve.saved_amount)}{" "}
             <span className="font-normal text-brand-ink-soft">
               de {currency(reserve.target_amount)}
@@ -488,7 +488,7 @@ export function MetasBody({
             {incomeBasis === "all" ? "toda renda lançada" : "só salário"}
           </div>
         </div>
-        <div className="font-display text-lg font-bold text-brand-ink">{currency(receita)}</div>
+        <div className="text-lg font-bold tabular-nums text-brand-ink">{currency(receita)}</div>
       </div>
       <div className="mb-5 flex gap-2">
         {(
@@ -599,7 +599,7 @@ export function MetasBody({
             Se você guardar tudo isso esse mês, seu saldo fica em
           </div>
           <div
-            className="font-display text-lg font-bold"
+            className="text-lg font-bold tabular-nums"
             style={{ color: simulatedSaldo >= 0 ? TOKENS.sage : TOKENS.coral }}
           >
             {currency(simulatedSaldo)}

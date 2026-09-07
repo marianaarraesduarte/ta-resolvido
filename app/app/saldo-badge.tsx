@@ -10,7 +10,7 @@ export function SaldoBadge({ saldo, previsto }: { saldo: number; previsto?: bool
         {previsto ? "Saldo previsto" : "Saldo"}
       </div>
       <div
-        className="font-display text-[30px] font-bold leading-none [font-variant-numeric:tabular-nums]"
+        className="text-[30px] font-bold leading-none tabular-nums"
         style={{ color }}
       >
         {currency(saldo)}

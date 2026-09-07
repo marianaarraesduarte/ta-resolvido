@@ -680,7 +680,7 @@ export function MonthRuler({
                       {item.description}
                     </span>
                     <span
-                      className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold"
+                      className="flex-shrink-0 whitespace-nowrap text-[15px] font-bold tabular-nums"
                       style={{
                         color:
                           selected.type === "receita"
@@ -738,7 +738,7 @@ export function MonthRuler({
                   <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-brand-ink">
                     {invoice.cardName ?? "Fatura do cartão"}
                   </span>
-                  <span className="flex-shrink-0 text-[13px] font-semibold text-brand-ink-soft">
+                  <span className="flex-shrink-0 text-[13px] font-semibold tabular-nums text-brand-ink-soft">
                     {currency(invoice.total)}
                   </span>
                 </button>
@@ -917,7 +917,7 @@ export function MonthRuler({
                     <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-brand-ink">
                       {item.description}
                     </span>
-                    <span className="flex-shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-brand-ink">
+                    <span className="flex-shrink-0 whitespace-nowrap text-[15px] font-bold tabular-nums text-brand-ink">
                       -{currency(item.amount)}
                     </span>
                     {!selecting && <Pencil size={13} className="flex-shrink-0 text-brand-ink-soft" />}

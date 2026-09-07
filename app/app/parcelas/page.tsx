@@ -125,7 +125,7 @@ export default async function ParcelasPage() {
             {open.length > 0 && (
               <div className="mb-4 flex items-end justify-between rounded-2xl bg-brand-plum/10 px-4 py-3.5">
                 <div>
-                  <div className="font-display text-xl font-bold text-brand-plum [font-variant-numeric:tabular-nums]">
+                  <div className="text-xl font-bold tabular-nums text-brand-plum">
                     {currency(monthlyCommitted)}
                   </div>
                   <div className="mt-0.5 text-[11.5px] text-brand-ink-soft">comprometido por mês</div>
@@ -171,7 +171,7 @@ export default async function ParcelasPage() {
                           )}
                         </div>
                         <div className="flex-shrink-0 text-right">
-                          <div className="font-display text-[14.5px] font-bold text-brand-ink [font-variant-numeric:tabular-nums]">
+                          <div className="text-[14.5px] font-bold tabular-nums text-brand-ink">
                             {currency(inst.monthlyAmount)}
                           </div>
                           <div className="text-[10.5px] text-brand-ink-soft">/ mês</div>
