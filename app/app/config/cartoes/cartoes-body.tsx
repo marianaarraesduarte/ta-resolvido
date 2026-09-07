@@ -110,7 +110,7 @@ function CardRow({
                 handleSave();
               }
             }}
-            className="flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="flex-1 rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
         ) : (
           <div className="flex-1 truncate">
@@ -186,7 +186,7 @@ function CardRow({
                 value={dueDay}
                 onChange={(e) => setDueDay(e.target.value)}
                 placeholder="Ex.: 10"
-                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                className="w-full rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               />
             </div>
             <div className="flex-1">
@@ -200,7 +200,7 @@ function CardRow({
                 value={closingDay}
                 onChange={(e) => setClosingDay(e.target.value)}
                 placeholder="Ex.: 2"
-                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                className="w-full rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               />
             </div>
           </div>
@@ -280,7 +280,7 @@ export function CartoesBody({ cards: initial }: { cards: Card[] }) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Nome do cartão (ex: Nubank)"
-            className="mb-3 w-full rounded-xl border border-brand-line bg-brand-card px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="mb-3 w-full rounded-xl border border-brand-strong bg-brand-card px-3.5 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -301,7 +301,7 @@ export function CartoesBody({ cards: initial }: { cards: Card[] }) {
                 value={newDueDay}
                 onChange={(e) => setNewDueDay(e.target.value)}
                 placeholder="Ex.: 10"
-                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                className="w-full rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               />
             </div>
             <div className="flex-1">
@@ -315,7 +315,7 @@ export function CartoesBody({ cards: initial }: { cards: Card[] }) {
                 value={newClosingDay}
                 onChange={(e) => setNewClosingDay(e.target.value)}
                 placeholder="Ex.: 2"
-                className="w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                className="w-full rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
               />
             </div>
           </div>

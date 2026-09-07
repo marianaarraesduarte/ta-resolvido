@@ -16,6 +16,10 @@
   --color-brand-sage: 63 107 74;
   --color-brand-plum: 122 92 126;
   --color-brand-line: 227 217 196;
+  /* Contorno de campo/controle — mais forte que --color-brand-line (que é só
+     divisor decorativo) pra garantir contraste ≥ 3:1 contra o fundo, senão
+     não dá pra enxergar onde um campo começa e termina. */
+  --color-brand-strong: 134 125 99;
   /* "ink" de texto inverte entre claro/escuro (pra continuar legível); esse
      aqui é o fundo escuro sólido usado em botões/toasts/balões de chat —
      fica sempre escuro nos dois temas, porque sempre é combinado com texto
@@ -46,6 +50,7 @@
     --color-brand-sage: 127 174 138;
     --color-brand-plum: 176 140 174;
     --color-brand-line: 44 59 57;
+    --color-brand-strong: 92 124 118;
     --color-brand-amber-text: 224 169 76;
     --color-brand-focus-ring: 202 172 200;
   }
@@ -61,6 +66,7 @@
   --color-brand-sage: 127 174 138;
   --color-brand-plum: 176 140 174;
   --color-brand-line: 44 59 57;
+  --color-brand-strong: 92 124 118;
   --color-brand-amber-text: 224 169 76;
   --color-brand-focus-ring: 202 172 200;
 }

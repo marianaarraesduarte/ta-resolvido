@@ -122,7 +122,7 @@ export function InvoicePicker({
         value={newCardName}
         onChange={(e) => setNewCardName(e.target.value)}
         placeholder="Nome do cartão (ex: Nubank)"
-        className="mb-2.5 w-full rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+        className="mb-2.5 w-full rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -254,7 +254,7 @@ export function InvoicePicker({
                   type="date"
                   value={draftDate}
                   onChange={(e) => handleDraftDateChange(card.id, e.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                  className="min-w-0 flex-1 rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
                 />
                 <button
                   type="button"

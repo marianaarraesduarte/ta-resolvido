@@ -16,6 +16,7 @@ const config: Config = {
           sage: "rgb(var(--color-brand-sage) / <alpha-value>)",
           plum: "rgb(var(--color-brand-plum) / <alpha-value>)",
           line: "rgb(var(--color-brand-line) / <alpha-value>)",
+          strong: "rgb(var(--color-brand-strong) / <alpha-value>)",
           "ink-solid": "rgb(var(--color-brand-ink-solid) / <alpha-value>)",
         },
       },

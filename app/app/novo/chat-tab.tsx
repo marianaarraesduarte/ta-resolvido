@@ -476,14 +476,14 @@ export function ChatTab({
                   value={newFixedName}
                   onChange={(e) => setNewFixedName(e.target.value)}
                   placeholder="Nome"
-                  className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                  className="min-w-0 flex-1 rounded-xl border border-brand-strong bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
                 />
                 <input
                   value={newFixedAmount}
                   onChange={(e) => setNewFixedAmount(formatCentsInput(e.target.value))}
                   inputMode="decimal"
                   placeholder="0,00"
-                  className="w-20 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                  className="w-20 rounded-xl border border-brand-strong bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
                 />
                 <button
                   type="button"
@@ -503,7 +503,7 @@ export function ChatTab({
                 value={newCardName}
                 onChange={(e) => setNewCardName(e.target.value)}
                 placeholder="Nome do cartão (ex: Nubank)"
-                className="mb-2 w-full rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                className="mb-2 w-full rounded-xl border border-brand-strong bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
               />
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {CARD_COLORS.map((c) => (
@@ -530,7 +530,7 @@ export function ChatTab({
                   value={newCardDueDay}
                   onChange={(e) => setNewCardDueDay(e.target.value)}
                   placeholder="Dia de vencimento"
-                  className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                  className="min-w-0 flex-1 rounded-xl border border-brand-strong bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
                 />
                 <input
                   type="number"
@@ -539,7 +539,7 @@ export function ChatTab({
                   value={newCardClosingDay}
                   onChange={(e) => setNewCardClosingDay(e.target.value)}
                   placeholder="Fechamento (opcional)"
-                  className="min-w-0 flex-1 rounded-xl border border-brand-line bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
+                  className="min-w-0 flex-1 rounded-xl border border-brand-strong bg-brand-card px-2.5 py-2 text-[12.5px] text-brand-ink outline-none focus:border-brand-ink"
                 />
               </div>
               <button
@@ -665,7 +665,7 @@ export function ChatTab({
                           value={item.description}
                           onChange={(e) => updateItemDescription(entry.id, item.id, e.target.value)}
                           aria-label="Descrição"
-                          className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
+                          className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-strong focus:bg-brand-card"
                         />
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                           <span className="rounded-lg bg-brand-bg px-2.5 py-1.5 text-[11px] text-brand-ink-soft">
@@ -765,7 +765,7 @@ export function ChatTab({
                           className={
                             missing
                               ? "w-16 rounded-md border border-dashed border-brand-coral bg-brand-card px-0.5 text-right text-[14px] font-bold text-brand-coral outline-none"
-                              : "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
+                              : "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-strong focus:bg-brand-card"
                           }
                         />
                       </div>
@@ -837,7 +837,7 @@ export function ChatTab({
                 }
               }}
               placeholder="Escreve aqui..."
-              className="flex-1 rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
+              className="flex-1 rounded-2xl border border-brand-strong bg-brand-card px-3.5 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
             />
             {input.trim() ? (
               <button

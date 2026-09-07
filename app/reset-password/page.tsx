@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
-  "rounded-xl border border-brand-line bg-brand-card px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
+  "rounded-xl border border-brand-strong bg-brand-card px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
 
 type PendingLink =
   | { kind: "tokens"; accessToken: string; refreshToken: string }

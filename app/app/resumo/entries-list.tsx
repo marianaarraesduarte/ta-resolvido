@@ -447,7 +447,7 @@ export function EntriesList({
                         type="date"
                         value={dueDateDraft}
                         onChange={(e) => setDueDateDraft(e.target.value)}
-                        className="min-w-0 flex-1 rounded-lg border border-brand-line bg-brand-card px-2.5 py-1.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
+                        className="min-w-0 flex-1 rounded-lg border border-brand-strong bg-brand-card px-2.5 py-1.5 text-sm text-brand-ink outline-none focus:border-brand-ink"
                       />
                       <button
                         type="button"

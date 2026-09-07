@@ -44,7 +44,7 @@ export function EntrySearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar um lançamento (qualquer mês)"
-          className="w-full rounded-2xl border border-brand-line bg-brand-card py-3 pl-9 pr-9 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
+          className="w-full rounded-2xl border border-brand-strong bg-brand-card py-3 pl-9 pr-9 text-[14px] text-brand-ink outline-none focus:border-brand-ink"
         />
         {query && (
           <button

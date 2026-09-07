@@ -75,7 +75,7 @@ function CategoryRow({
                 handleSave();
               }
             }}
-            className="flex-1 rounded-xl border border-brand-line bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
+            className="flex-1 rounded-xl border border-brand-strong bg-brand-card px-3 py-2 text-sm text-brand-ink outline-none focus:border-brand-ink"
           />
           <button
             type="button"
@@ -200,7 +200,7 @@ export function CategoriasBody({ categories: initial }: { categories: Category[]
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Nome da categoria"
-            className="flex-1 rounded-2xl border border-brand-line bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
+            className="flex-1 rounded-2xl border border-brand-strong bg-brand-card px-3.5 py-3 text-[15px] text-brand-ink outline-none focus:border-brand-ink"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();

@@ -384,7 +384,7 @@ export function CardInvoiceReview({
                         value={item.description}
                         onChange={(e) => updateItemDescription(item.id, e.target.value)}
                         aria-label="Descrição"
-                        className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
+                        className="w-full truncate rounded-md border border-transparent bg-transparent px-0.5 text-[13.5px] font-medium text-brand-ink outline-none focus:border-brand-strong focus:bg-brand-card"
                       />
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <select
@@ -441,8 +441,8 @@ export function CardInvoiceReview({
                         aria-label="Valor"
                         className={
                           item.isRefund
-                            ? "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-sage outline-none focus:border-brand-line focus:bg-brand-card"
-                            : "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-line focus:bg-brand-card"
+                            ? "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-sage outline-none focus:border-brand-strong focus:bg-brand-card"
+                            : "w-16 rounded-md border border-transparent bg-transparent px-0.5 text-right text-[14px] font-bold text-brand-ink outline-none focus:border-brand-strong focus:bg-brand-card"
                         }
                       />
                     </div>

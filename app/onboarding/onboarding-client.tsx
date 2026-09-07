@@ -183,7 +183,7 @@ export function OnboardingClient() {
                     onChange={(e) => setBalance(formatCentsInput(e.target.value))}
                     inputMode="decimal"
                     placeholder="0,00"
-                    className="w-full rounded-2xl border border-brand-line bg-brand-card py-3 pl-9 pr-3.5 text-center text-[16px] text-brand-ink outline-none focus:border-brand-ink"
+                    className="w-full rounded-2xl border border-brand-strong bg-brand-card py-3 pl-9 pr-3.5 text-center text-[16px] text-brand-ink outline-none focus:border-brand-ink"
                   />
                 </div>
                 <p className="mx-auto mt-3.5 max-w-[260px] text-center text-[12px] leading-snug text-brand-ink-soft">

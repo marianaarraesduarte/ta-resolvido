@@ -7,7 +7,7 @@ type PasswordMode = "signin" | "signup" | "forgot";
 type Status = "idle" | "sending" | "sent" | "error";
 
 const inputClass =
-  "rounded-xl border border-brand-line bg-brand-card px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
+  "rounded-xl border border-brand-strong bg-brand-card px-4 py-3 text-brand-ink outline-none focus:border-brand-ink";
 
 function rateLimitAwareMessage(error: { status?: number; message?: string }, fallback: string): string {
   if (error.status !== 429) return fallback;
